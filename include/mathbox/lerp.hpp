@@ -22,7 +22,7 @@ namespace math {
  * @param alpha interpolation or extrapolation factor \f$\alpha\f$
  * @return Scalar interpolation or extrapolation result \f$\mathbf{y}\f$
  */
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 Scalar lerp(const ArithmeticType& y_0, const ArithmeticType& y_1, const Scalar alpha);
 
 /**
@@ -42,7 +42,7 @@ Scalar lerp(const ArithmeticType& y_0, const ArithmeticType& y_1, const Scalar a
  * @param y_1
  * @return ArithmeticType
  */
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 inline ArithmeticType linear_function(const Scalar x, const Scalar x_0, const Scalar x_1, const ArithmeticType y_0,
         const ArithmeticType y_1);
 
