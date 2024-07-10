@@ -4,7 +4,9 @@ enable_testing()
 # Build Example
 add_executable(mathbox_tests
     src/decompose.cpp
+    src/geometry.cpp
     src/integrator.cpp
+    src/matrix_operations.cpp
     src/normal.cpp
     src/nsphere.cpp
     src/stiffness.cpp

@@ -31,6 +31,31 @@ constexpr Derived cumulative_col_top_sum(const Eigen::DenseBase<Derived>& m) {
     return m_cumulative;
 }
 
+template<typename Derived>
+Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eigen::Index boundary) {
+    if (boundary == 0) {
+        throw std::runtime_error("Reorder boundary cannot be 0.");
+    }
+    const Eigen::Index size = m.rows();
+    if (size != m.cols()) {
+        throw std::runtime_error("Matrix must be square.");
+    }
+    if (boundary >= size) {
+        throw std::runtime_error("Reorder boundary outside of m matrix.");
+    }
+    return (Derived() << m.block(boundary, boundary, size - boundary, size - boundary),
+            m.block(boundary, 0, size - boundary, boundary), m.block(0, boundary, boundary, size - boundary),
+            m.block(0, 0, boundary, boundary))
+            .finished();
+}
+
+template<typename Scalar>
+inline Eigen::Matrix<Scalar, 3, 3> skew_symmetric_cross(const Eigen::Matrix<Scalar, 3, 1>& v) {
+    return (Eigen::Matrix<Scalar, 3, 3>() << static_cast<Scalar>(0), -v[2], v[1], v[2], static_cast<Scalar>(0), -v[0],
+            -v[1], v[0], static_cast<Scalar>(0))
+            .finished();
+}
+
 }
 
 #endif
