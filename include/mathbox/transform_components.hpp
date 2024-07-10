@@ -8,8 +8,8 @@ namespace math {
 /**
  * @brief Precompute and store the components of a transformation. The purpose of this class is primarily to avoid
  * repeated computation, when these components are needed many times.
- * 
- * @tparam Scalar 
+ *
+ * @tparam Scalar
  */
 template<typename Scalar>
 class TransformComponents {

@@ -8,11 +8,11 @@ namespace math {
 
 /**
  * @brief Check if matrix has all diagonals positive (strictly greater than zero).
- * 
- * @tparam Derived 
- * @param m 
- * @return true 
- * @return false 
+ *
+ * @tparam Derived
+ * @param m
+ * @return true
+ * @return false
  */
 template<typename Derived>
 bool has_positive_diagonals(const Eigen::MatrixBase<Derived>& m);
@@ -42,12 +42,12 @@ bool is_skew_symmetric(const Eigen::DenseBase<Derived>& m);
 
 /**
  * @brief Check if a matrix is symmetric about its diagonal, up to some level of precision (default = exact).
- * 
- * @tparam Derived 
- * @param m 
- * @param precision 
- * @return true 
- * @return false 
+ *
+ * @tparam Derived
+ * @param m
+ * @param precision
+ * @return true
+ * @return false
  */
 template<typename Derived>
 bool is_symmetric(const Eigen::DenseBase<Derived>& m,

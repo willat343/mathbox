@@ -73,11 +73,11 @@ Eigen::Matrix<Scalar, D, 1> cartesian_to_spherical(const Eigen::Matrix<Scalar, D
 
 /**
  * @brief Same as `cartesian_to_spherical` except only the spherical angles are returned, and range is not.
- * 
- * @tparam D 
- * @tparam Scalar 
- * @param unit_cartesian_coordinates 
- * @return Eigen::Matrix<Scalar, D - 1, 1> 
+ *
+ * @tparam D
+ * @tparam Scalar
+ * @param unit_cartesian_coordinates
+ * @return Eigen::Matrix<Scalar, D - 1, 1>
  */
 template<int D, typename Scalar = double>
 Eigen::Matrix<Scalar, D - 1, 1> cartesian_to_spherical_angles(
@@ -85,11 +85,11 @@ Eigen::Matrix<Scalar, D - 1, 1> cartesian_to_spherical_angles(
 
 /**
  * @brief Same as `spherical_to_cartesian` except only spherical angles are provided as input, and range is assumed 1.
- * 
+ *
  * @tparam D dimensionality (e.g. 1 = line, 2 = circle, 3 = sphere)
- * @tparam Scalar 
- * @param spherical_angles 
- * @return Eigen::Matrix<Scalar, D, 1> 
+ * @tparam Scalar
+ * @param spherical_angles
+ * @return Eigen::Matrix<Scalar, D, 1>
  */
 template<int D, typename Scalar = double>
 Eigen::Matrix<Scalar, D, 1> spherical_angles_to_unit_cartesian(const Eigen::Matrix<Scalar, D - 1, 1>& spherical_angles);

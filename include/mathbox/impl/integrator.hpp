@@ -11,8 +11,8 @@ namespace math {
 
 template<typename ArithmeticType, typename Scalar>
 inline auto Integrator<ArithmeticType, Scalar>::integrate(const Scalar start, const Scalar end,
-        const int num_subintervals, const IntegrandFunction<ArithmeticType, Scalar>& integrand) const
-        -> ArithmeticType {
+        const int num_subintervals,
+        const IntegrandFunction<ArithmeticType, Scalar>& integrand) const -> ArithmeticType {
     if (num_subintervals < 1) {
         throw std::runtime_error("Must integrate with a positive number of subintervals, however " +
                                  std::to_string(num_subintervals) + " was given.");

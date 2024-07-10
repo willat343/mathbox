@@ -15,10 +15,10 @@ namespace math {
  * @tparam ArithmeticType arithmetic type, supporting addition and multiplication with a scalar
  * @tparam Scalar type of the independent variable (e.g. time)
  */
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using IntegrandFunction = std::function<ArithmeticType(const Scalar)>;
 
-template<typename ArithmeticType_, typename Scalar_ = ArithmeticTypeTraits<ArithmeticType_>::Scalar>
+template<typename ArithmeticType_, typename Scalar_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
 class Integrator {
 public:
     using ArithmeticType = ArithmeticType_;
@@ -33,7 +33,7 @@ public:
 
 namespace newton_cotes {
 
-template<int N_, typename ArithmeticType_, typename Scalar_ = ArithmeticTypeTraits<ArithmeticType_>::Scalar>
+template<int N_, typename ArithmeticType_, typename Scalar_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
 class Integrator : public math::Integrator<ArithmeticType_, Scalar_> {
 public:
     using Base = math::Integrator<ArithmeticType_, Scalar_>;
@@ -55,7 +55,7 @@ public:
 
 namespace closed {
 
-template<int N_, typename ArithmeticType_, typename Scalar_ = ArithmeticTypeTraits<ArithmeticType_>::Scalar>
+template<int N_, typename ArithmeticType_, typename Scalar_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
 class Integrator : public math::newton_cotes::Integrator<N_, ArithmeticType_, Scalar_> {
 public:
     using Base = math::newton_cotes::Integrator<N_, ArithmeticType_, Scalar_>;
@@ -122,7 +122,7 @@ public:
 
 namespace open {
 
-template<int N_, typename ArithmeticType_, typename Scalar_ = ArithmeticTypeTraits<ArithmeticType_>::Scalar>
+template<int N_, typename ArithmeticType_, typename Scalar_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
 class Integrator : public math::newton_cotes::Integrator<N_, ArithmeticType_, Scalar_> {
 public:
     using Base = math::newton_cotes::Integrator<N_, ArithmeticType_, Scalar_>;
@@ -189,56 +189,56 @@ public:
 
 namespace rectangle {
 
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using Integrator = newton_cotes::open::Integrator<0, ArithmeticType, Scalar>;
 
 }
 
 namespace open1 {
 
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using Integrator = newton_cotes::open::Integrator<1, ArithmeticType, Scalar>;
 
 }
 
 namespace milnes {
 
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using Integrator = newton_cotes::open::Integrator<2, ArithmeticType, Scalar>;
 
 }
 
 namespace open3 {
 
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using Integrator = newton_cotes::open::Integrator<3, ArithmeticType, Scalar>;
 
 }
 
 namespace trapezoidal {
 
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using Integrator = newton_cotes::closed::Integrator<1, ArithmeticType, Scalar>;
 
 }
 
 namespace simpsons {
 
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using Integrator = newton_cotes::closed::Integrator<1, ArithmeticType, Scalar>;
 
 }
 
 namespace simpsons38 {
 
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using Integrator = newton_cotes::closed::Integrator<1, ArithmeticType, Scalar>;
 
 }
 
 namespace booles {
 
-template<typename ArithmeticType, typename Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar>
+template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
 using Integrator = newton_cotes::closed::Integrator<1, ArithmeticType, Scalar>;
 
 }
