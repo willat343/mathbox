@@ -6,8 +6,8 @@
 namespace math {
 
 template<typename ArithmeticType, typename Scalar>
-Scalar lerp(const ArithmeticType& x, const ArithmeticType& y, const Scalar alpha) {
-    return (static_cast<Scalar>(1) - alpha) * x + alpha * y;
+inline ArithmeticType lerp(const ArithmeticType& y_0, const ArithmeticType& y_1, const Scalar alpha) {
+    return (static_cast<Scalar>(1) - alpha) * y_0 + alpha * y_1;
 }
 
 template<typename ArithmeticType, typename Scalar>

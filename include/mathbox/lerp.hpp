@@ -20,13 +20,13 @@ namespace math {
  * @param y_0 start point (\f$\alpha = 0\f$) of interpolation \f$\mathbf{y}_0\f$
  * @param y_1 end point (\f$\alpha = 1\f$) of interpolation \f$\mathbf{y}_1\f$
  * @param alpha interpolation or extrapolation factor \f$\alpha\f$
- * @return Scalar interpolation or extrapolation result \f$\mathbf{y}\f$
+ * @return ArithmeticType interpolation or extrapolation result \f$\mathbf{y}\f$
  */
 template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
-Scalar lerp(const ArithmeticType& y_0, const ArithmeticType& y_1, const Scalar alpha);
+ArithmeticType lerp(const ArithmeticType& y_0, const ArithmeticType& y_1, const Scalar alpha);
 
 /**
- * @brief Linear function which passes through \f$(x_0, y_0)\f$ and \f$(x_1, y_1)\f$. The functoin returns `lerp(y_0,
+ * @brief Linear function which passes through \f$(x_0, y_0)\f$ and \f$(x_1, y_1)\f$. The function returns `lerp(y_0,
  * y_1, alpha)` where `alpha` \f$\alpha\f$ is:
  *
  * \f[
