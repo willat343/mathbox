@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(mathbox
     VERSION 1.0
-    DESCRIPTION "Math Toolbox Library"
+    DESCRIPTION "Math Toolbox"
     LANGUAGES CXX
 )
 
@@ -26,15 +26,15 @@ list(APPEND MATHBOX_SYSTEM_LIBRARIES
     Eigen3::Eigen
 )
 
+# Installation directories
+include(GNUInstallDirs)
+
 # Interface Library
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-
-# Installation directories
-include(GNUInstallDirs)
 
 # Configure package version and config files
 include(CMakePackageConfigHelpers)

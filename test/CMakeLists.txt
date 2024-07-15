@@ -2,7 +2,7 @@
 enable_testing()
 
 # Build Example
-add_executable(mathbox_tests
+add_executable(${PROJECT_NAME}_tests
     src/decompose.cpp
     src/geometry.cpp
     src/integrator.cpp
@@ -13,26 +13,26 @@ add_executable(mathbox_tests
 )
 
 # Properties
-set_target_properties(mathbox_tests PROPERTIES
+set_target_properties(${PROJECT_NAME}_tests PROPERTIES
     CXX_STANDARD 20
 )
 
 # Compile Options
-target_compile_options(mathbox_tests PRIVATE
+target_compile_options(${PROJECT_NAME}_tests PRIVATE
     -Wall -Wextra -Wpedantic
 )
 
 # Include Directories
-target_include_directories(mathbox_tests PUBLIC
+target_include_directories(${PROJECT_NAME}_tests PUBLIC
     ../include
     include
 )
 
 # System Include Directories
-# target_include_directories(mathbox_tests SYSTEM PUBLIC)
+# target_include_directories(${PROJECT_NAME}_tests SYSTEM PUBLIC)
 
 # Link Libraries
-target_link_libraries(mathbox_tests PUBLIC
+target_link_libraries(${PROJECT_NAME}_tests PUBLIC
     ${MATHBOX_SYSTEM_LIBRARIES}
     gtest_main
     gtest
@@ -40,4 +40,4 @@ target_link_libraries(mathbox_tests PUBLIC
 )
 
 # Add test
-add_test(NAME mathbox_tests COMMAND mathbox_tests)
+add_test(NAME ${PROJECT_NAME}_tests COMMAND ${PROJECT_NAME}_tests)
