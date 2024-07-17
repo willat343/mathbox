@@ -17,6 +17,13 @@ set_target_properties(${PROJECT_NAME}_tests PROPERTIES
     CXX_STANDARD 20
 )
 
+# Ensure the tests link to the built library, not installed library (this works by setting BUILD_RPATH, and then
+# stopping the linker from setting RUNPATH instead of RPATH (RPATH is checked before LD_LIBRARY_PATH, while
+# RUNPATH is checked after))
+target_link_options(${PROJECT_NAME}_tests PUBLIC
+    -Wl,--disable-new-dtags
+)
+
 # Compile Options
 target_compile_options(${PROJECT_NAME}_tests PRIVATE
     -Wall -Wextra -Wpedantic
@@ -24,8 +31,8 @@ target_compile_options(${PROJECT_NAME}_tests PRIVATE
 
 # Include Directories
 target_include_directories(${PROJECT_NAME}_tests PUBLIC
-    ../include
-    include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
 )
 
 # System Include Directories
