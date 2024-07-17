@@ -123,6 +123,29 @@ TEST(compute_constant_rates, compute_constant_rates_2) {
     EXPECT_TRUE(rates.isApprox(rates_reference));
 }
 
+TEST(glerp, identity_identity) {
+    const Eigen::Isometry3d T_0 = Eigen::Isometry3d::Identity();
+    const Eigen::Isometry3d T_1 = Eigen::Isometry3d::Identity();
+    EXPECT_TRUE(math::glerp(T_0, T_1, 0.0).isApprox(T_0));
+    EXPECT_TRUE(math::glerp(T_0, T_1, 1.0).isApprox(T_1));
+}
+
+TEST(glerp, lhs_identity) {
+    const Eigen::Isometry3d T_0 =
+            Eigen::Translation<double, 3>{1.0, 2.0, 3.0} * Eigen::Quaterniond{0.8, 0.1, 0.05, 0.2}.normalized();
+    const Eigen::Isometry3d T_1 = Eigen::Isometry3d::Identity();
+    EXPECT_TRUE(math::glerp(T_0, T_1, 0.0).isApprox(T_0));
+    EXPECT_TRUE(math::glerp(T_0, T_1, 1.0).isApprox(T_1));
+}
+
+TEST(glerp, rhs_identity) {
+    const Eigen::Isometry3d T_0 = Eigen::Isometry3d::Identity();
+    const Eigen::Isometry3d T_1 =
+            Eigen::Translation<double, 3>{1.0, 2.0, 3.0} * Eigen::Quaterniond{0.8, 0.1, 0.05, 0.2}.normalized();
+    EXPECT_TRUE(math::glerp(T_0, T_1, 0.0).isApprox(T_0));
+    EXPECT_TRUE(math::glerp(T_0, T_1, 1.0).isApprox(T_1));
+}
+
 TEST(relative_transform, transform_0) {
     const Eigen::Isometry3d I = Eigen::Isometry3d::Identity();
     const Eigen::Isometry3d pose =
@@ -139,7 +162,6 @@ TEST(relative_transform, transform_0_inv) {
     const Eigen::Isometry3d transform = math::relative_transform(pose, I);
     EXPECT_TRUE(transform.isApprox(pose.inverse()));
 }
-
 
 TEST(relative_transform_change_frame, identity_with_transform) {
     const Eigen::Isometry3d relative_transform_A = Eigen::Isometry3d::Identity();
@@ -207,8 +229,8 @@ TEST(transform_adjoint, translation_only) {
 }
 
 TEST(transform_adjoint, transform) {
-    const Eigen::Isometry3d transform = Eigen::Translation<double, 3>{1.0, 2.0, 3.0} *
-            Eigen::Quaterniond(0.17, 0.68, 0.55, 0.14).normalized();
+    const Eigen::Isometry3d transform =
+            Eigen::Translation<double, 3>{1.0, 2.0, 3.0} * Eigen::Quaterniond(0.17, 0.68, 0.55, 0.14).normalized();
     const Eigen::Matrix<double, 6, 6> transform_adjoint = math::transform_adjoint(transform);
     check_transform_adjoint_blocks(transform_adjoint, transform);
 }

@@ -2,6 +2,7 @@
 #define MATHBOX_IMPL_GEOMETRY_HPP
 
 #include "mathbox/geometry.hpp"
+#include "mathbox/lerp.hpp"
 #include "mathbox/matrix_operations.hpp"
 
 namespace math {
@@ -62,6 +63,16 @@ Eigen::Matrix<Scalar, 6, 1> compute_constant_rates(const typename Eigen::Transfo
     return (typename Eigen::Matrix<Scalar, 6, 1>() << rotation.axis() * rotation.angle() / dt,
             transform.translation() / dt)
             .finished();
+}
+
+template<typename Scalar>
+inline Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_0,
+        const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_1, const Scalar alpha) {
+    const Eigen::Translation<Scalar, 3> t_lerp = Eigen::Translation<Scalar, 3>{lerp(
+            Eigen::Matrix<Scalar, 3, 1>{T_0.translation()}, Eigen::Matrix<Scalar, 3, 1>{T_1.translation()}, alpha)};
+    const Eigen::Quaternion<Scalar> q_lerp =
+            Eigen::Quaternion<Scalar>{T_0.rotation()}.slerp(alpha, Eigen::Quaternion<Scalar>{T_1.rotation()});
+    return t_lerp * q_lerp;
 }
 
 template<typename Scalar, int Dim>

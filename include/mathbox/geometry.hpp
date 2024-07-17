@@ -137,6 +137,19 @@ Eigen::Matrix<Scalar, 6, 1> compute_constant_rates(const typename Eigen::Transfo
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& pose_2, const Scalar dt);
 
 /**
+ * @brief Compute the general linear interpolation for an SE(3) pose/transform.
+ * 
+ * @tparam Scalar 
+ * @param T_0 
+ * @param T_1 
+ * @param alpha 
+ * @return Eigen::Transform<Scalar, 3, Eigen::Isometry> 
+ */
+template<typename Scalar>
+Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_0,
+        const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_1, const Scalar alpha);
+
+/**
  * @brief Compute the relative transform \f$T_B^C = (T_A^B)^{-1} T_A^C\f$ between two poses \f$T_A^B\f$ and \f$T_A^C\f$.
  *
  * @tparam Scalar
