@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(mathbox_catkin
-    VERSION 1.1.0
+    VERSION 0.2.0
     DESCRIPTION "IIO C++ catkin"
     LANGUAGES CXX
 )
