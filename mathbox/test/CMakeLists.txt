@@ -12,6 +12,14 @@ add_executable(${PROJECT_NAME}_tests
     src/stiffness.cpp
 )
 
+# Link Libraries
+target_link_libraries(${PROJECT_NAME}_tests PUBLIC
+    ${mathbox_SYSTEM_LIBRARIES}
+    gtest_main
+    gtest
+    pthread
+)
+
 # Properties
 set_target_properties(${PROJECT_NAME}_tests PROPERTIES
     CXX_STANDARD 20
@@ -36,14 +44,8 @@ target_include_directories(${PROJECT_NAME}_tests PUBLIC
 )
 
 # System Include Directories
-# target_include_directories(${PROJECT_NAME}_tests SYSTEM PUBLIC)
-
-# Link Libraries
-target_link_libraries(${PROJECT_NAME}_tests PUBLIC
-    ${MATHBOX_SYSTEM_LIBRARIES}
-    gtest_main
-    gtest
-    pthread
+target_include_directories(${PROJECT_NAME}_tests SYSTEM PUBLIC
+    ${mathbox_SYSTEM_INCLUDE_DIRS}
 )
 
 # Add test

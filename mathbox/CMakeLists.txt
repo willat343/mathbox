@@ -5,29 +5,8 @@ project(mathbox
     LANGUAGES CXX
 )
 
-# CMake Build Type
-if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    message(STATUS "Setting build type to Release" )
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose build type" FORCE)
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel" )
-endif()
-
-# General Options
-option(BUILD_DOCUMENTATION "Build Doxygen Documentation" OFF)
-option(BUILD_TESTS "Build Tests" OFF)
-
-# Variables
-set(MATHBOX_SYSTEM_INCLUDE_DIRS "")
-set(MATHBOX_SYSTEM_LIBRARIES "")
-
-# Eigen3 Package
-find_package(Eigen3 3.3 REQUIRED)
-list(APPEND MATHBOX_SYSTEM_LIBRARIES
-    Eigen3::Eigen
-)
-
-# Installation directories
-include(GNUInstallDirs)
+# Setup
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/setup.cmake)
 
 # Interface Library
 add_library(${PROJECT_NAME} INTERFACE)
