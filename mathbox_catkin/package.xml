@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>mathbox_catkin</name>
-    <version>0.2.1</version>
+    <version>0.3.0</version>
     <description>mathbox_catkin</description>
 
     <maintainer email="william.talbot97@gmail.com">William Talbot</maintainer>
