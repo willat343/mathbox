@@ -10,6 +10,7 @@ add_executable(${PROJECT_NAME}_tests
     src/normal.cpp
     src/nsphere.cpp
     src/stiffness.cpp
+    src/vector_operations.cpp
 )
 
 # Link Libraries
