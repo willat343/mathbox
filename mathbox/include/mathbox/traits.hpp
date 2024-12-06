@@ -3,70 +3,73 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <type_traits>
 
 namespace math {
 
-template<typename ArithmeticType>
-class ArithmeticTypeTraits;
+template<class ArithmeticType, typename = void>
+class ArithmeticTypeTraits {};
 
-template<>
-class ArithmeticTypeTraits<float> {
+template<class ArithmeticType_>
+class ArithmeticTypeTraits<ArithmeticType_, typename std::enable_if_t<std::is_arithmetic_v<ArithmeticType_>>> {
 public:
-    using ArithmeticType = float;
-    using Scalar = float;
+    using ArithmeticType = ArithmeticType_;
+    using Scalar = ArithmeticType;
 
     /**
      * @brief Return zero for this type.
      *
      * @return constexpr ArithmeticType
      */
-    static constexpr ArithmeticType zero();
+    static constexpr ArithmeticType zero() {
+        return static_cast<ArithmeticType>(0);
+    }
 };
 
-template<>
-class ArithmeticTypeTraits<double> {
+template<class Derived>
+class ArithmeticTypeTraits<Derived, typename std::enable_if_t<std::is_base_of_v<Eigen::MatrixBase<Derived>, Derived>>> {
 public:
-    using ArithmeticType = double;
-    using Scalar = double;
+    using ArithmeticType = Derived;
+    using Scalar = Derived::Scalar;
 
     /**
-     * @brief Return zero for this type
-     *
-     * @return constexpr ArithmeticType
-     */
-    static constexpr ArithmeticType zero();
-};
-
-template<>
-class ArithmeticTypeTraits<long double> {
-public:
-    using ArithmeticType = long double;
-    using Scalar = long double;
-
-    /**
-     * @brief Return zero for this type
-     *
-     * @return constexpr ArithmeticType
-     */
-    static constexpr ArithmeticType zero();
-};
-
-template<typename Scalar_, int Rows_, int Cols_, int Options_, int MaxRows_, int MaxCols_>
-class ArithmeticTypeTraits<Eigen::Matrix<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_>> {
-public:
-    using ArithmeticType = Eigen::Matrix<Scalar_, Rows_, Cols_, Options_, MaxRows_, MaxCols_>;
-    using Scalar = Scalar_;
-
-    /**
-     * @brief Return zero for this type. Note doxygen bug: https://github.com/doxygen/doxygen/issues/8497
+     * @brief Return zero for this type.
      *
      * @return ArithmeticType
      */
-    static constexpr ArithmeticType zero();
+    static constexpr ArithmeticType zero() {
+        return ArithmeticType::Zero();
+    }
 };
 
-}
+/**
+ * @brief False version of type trait to check if type is a mathbox arithmetic type (of which std::is_arithmetic types
+ * are a subset).
+ *
+ * @tparam T type
+ */
+template<typename T, typename = void>
+struct is_arithmetic_type : std::false_type {};
 
-#include "mathbox/impl/traits.hpp"
+/**
+ * @brief True version of type trait to check if type is a mathbox arithmetic type (of which std::is_arithmetic types
+ * are a subset).
+ *
+ * @tparam T type
+ */
+template<typename T>
+struct is_arithmetic_type<T, std::enable_if_t<std::is_arithmetic_v<T> || std::is_base_of_v<Eigen::MatrixBase<T>, T>>>
+    : std::true_type {};
+
+/**
+ * @brief Value for type trait to check if type is a mathbox arithmetic type (of which std::is_arithmetic types are a
+ * subset).
+ *
+ * @tparam T type
+ */
+template<typename T>
+constexpr bool is_arithmetic_type_v = is_arithmetic_type<T>::value;
+
+}
 
 #endif
