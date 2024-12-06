@@ -2,6 +2,7 @@
 #define MATHBOX_IMPL_INTEGRATOR_HPP
 
 #include <array>
+#include <chrono>
 #include <numeric>
 
 #include "mathbox/integrator.hpp"
@@ -9,27 +10,43 @@
 
 namespace math {
 
-template<typename ArithmeticType, typename Scalar>
-inline auto Integrator<ArithmeticType, Scalar>::integrate(const Scalar start, const Scalar end,
-        const int num_subintervals,
-        const IntegrandFunction<ArithmeticType, Scalar>& integrand) const -> ArithmeticType {
+template<typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<ArithmeticType, IndependentVariableType>::integrate(const IndependentVariableType start,
+        const IndependentVariableType end, const int num_subintervals,
+        const IntegrandFunction<ArithmeticType, IndependentVariableType>& integrand) const -> ArithmeticType {
     if (num_subintervals < 1) {
         throw std::runtime_error("Must integrate with a positive number of subintervals, however " +
                                  std::to_string(num_subintervals) + " was given.");
     }
     ArithmeticType integral = ArithmeticTypeTraits<ArithmeticType>::zero();
     for (int i = 0; i < num_subintervals; ++i) {
-        integral += integrate(lerp(start, end, static_cast<Scalar>(i) / static_cast<Scalar>(num_subintervals)),
-                lerp(start, end, static_cast<Scalar>(i + 1) / static_cast<Scalar>(num_subintervals)), integrand);
+        integral += integrate(
+                lerp(start, end,
+                        static_cast<ArithmeticTypeScalar>(i) / static_cast<ArithmeticTypeScalar>(num_subintervals)),
+                lerp(start, end,
+                        static_cast<ArithmeticTypeScalar>(i + 1) / static_cast<ArithmeticTypeScalar>(num_subintervals)),
+                integrand);
     }
     return integral;
 }
 
+template<typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<ArithmeticType, IndependentVariableType>::difference_as_scalar(
+        const IndependentVariableType start, const IndependentVariableType end) const -> ArithmeticTypeScalar {
+    if constexpr (is_time_point_v<IndependentVariableType>) {
+        // Convert step size to seconds as a ArithmeticTypeScalar, because integrands are assumed to be per second.
+        return to_sec(end - start);
+    } else {
+        return end - start;
+    }
+}
+
 namespace newton_cotes {
 
-template<int N, typename ArithmeticType, typename Scalar>
-inline auto Integrator<N, ArithmeticType, Scalar>::integrate(const Scalar start, const Scalar end,
-        const IntegrandFunction<ArithmeticType, Scalar>& integrand) const -> ArithmeticType {
+template<int N, typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<N, ArithmeticType, IndependentVariableType>::integrate(const IndependentVariableType start,
+        const IndependentVariableType end,
+        const IntegrandFunction<ArithmeticType, IndependentVariableType>& integrand) const -> ArithmeticType {
     ArithmeticType integral = ArithmeticTypeTraits<ArithmeticType>::zero();
     for (std::size_t i = 0; i <= N; ++i) {
         integral += weight(i) * integrand(lerp(start, end, alpha(i)));
@@ -39,19 +56,22 @@ inline auto Integrator<N, ArithmeticType, Scalar>::integrate(const Scalar start,
 
 namespace closed {
 
-template<int N, typename ArithmeticType, typename Scalar>
-inline auto Integrator<N, ArithmeticType, Scalar>::alpha(const std::size_t i) const -> Scalar {
-    return static_cast<Scalar>(i) / static_cast<Scalar>(N);
+template<int N, typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<N, ArithmeticType, IndependentVariableType>::alpha(
+        const std::size_t i) const -> ArithmeticTypeScalar {
+    return static_cast<ArithmeticTypeScalar>(i) / static_cast<ArithmeticTypeScalar>(N);
 }
 
-template<int N, typename ArithmeticType, typename Scalar>
-inline auto Integrator<N, ArithmeticType, Scalar>::step_size(const Scalar start, const Scalar end) const -> Scalar {
-    return (end - start) / static_cast<Scalar>(N);
+template<int N, typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<N, ArithmeticType, IndependentVariableType>::step_size(const IndependentVariableType start,
+        const IndependentVariableType end) const -> ArithmeticTypeScalar {
+    return this->difference_as_scalar(start, end) / static_cast<ArithmeticTypeScalar>(N);
 }
 
-template<int N, typename ArithmeticType, typename Scalar>
-inline auto Integrator<N, ArithmeticType, Scalar>::weight(const std::size_t i) const -> Scalar {
-    return Weights<N, Scalar>::weight(i);
+template<int N, typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<N, ArithmeticType, IndependentVariableType>::weight(
+        const std::size_t i) const -> ArithmeticTypeScalar {
+    return Weights<N, ArithmeticTypeScalar>::weight(i);
 }
 
 template<typename Scalar>
@@ -85,19 +105,22 @@ auto Weights<4, Scalar>::weight(const std::size_t i) -> Scalar {
 
 namespace open {
 
-template<int N, typename ArithmeticType, typename Scalar>
-inline auto Integrator<N, ArithmeticType, Scalar>::alpha(const std::size_t i) const -> Scalar {
-    return static_cast<Scalar>(i + 1) / static_cast<Scalar>(N + 2);
+template<int N, typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<N, ArithmeticType, IndependentVariableType>::alpha(
+        const std::size_t i) const -> ArithmeticTypeScalar {
+    return static_cast<ArithmeticTypeScalar>(i + 1) / static_cast<ArithmeticTypeScalar>(N + 2);
 }
 
-template<int N, typename ArithmeticType, typename Scalar>
-inline auto Integrator<N, ArithmeticType, Scalar>::step_size(const Scalar start, const Scalar end) const -> Scalar {
-    return (end - start) / static_cast<Scalar>(N + 2);
+template<int N, typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<N, ArithmeticType, IndependentVariableType>::step_size(const IndependentVariableType start,
+        const IndependentVariableType end) const -> ArithmeticTypeScalar {
+    return this->difference_as_scalar(start, end) / static_cast<ArithmeticTypeScalar>(N + 2);
 }
 
-template<int N, typename ArithmeticType, typename Scalar>
-inline auto Integrator<N, ArithmeticType, Scalar>::weight(const std::size_t i) const -> Scalar {
-    return Weights<N, Scalar>::weight(i);
+template<int N, typename ArithmeticType, typename IndependentVariableType>
+inline auto Integrator<N, ArithmeticType, IndependentVariableType>::weight(
+        const std::size_t i) const -> ArithmeticTypeScalar {
+    return Weights<N, ArithmeticTypeScalar>::weight(i);
 }
 
 template<typename Scalar>

@@ -4,6 +4,7 @@
 #include <functional>
 #include <type_traits>
 
+#include "mathbox/time.hpp"
 #include "mathbox/traits.hpp"
 
 namespace math {
@@ -12,65 +13,82 @@ namespace math {
  * @brief Integrand function type. std::function is used to allow for a wide variety of callables (e.g. function
  * pointers, lambdas, bound functions, etc.), while still restricting the type.
  *
- * @tparam ArithmeticType arithmetic type, supporting addition and multiplication with a scalar
- * @tparam Scalar type of the independent variable (e.g. time)
+ * @tparam ArithmeticType arithmetic type, supporting addition and multiplication with scalar values
+ * @tparam IndependentVariableType type of the independent variable (e.g. time)
  */
-template<typename ArithmeticType, typename Scalar = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
-using IntegrandFunction = std::function<ArithmeticType(const Scalar)>;
+template<typename ArithmeticType,
+        typename IndependentVariableType = typename ArithmeticTypeTraits<ArithmeticType>::Scalar>
+using IntegrandFunction = std::function<ArithmeticType(const IndependentVariableType)>;
 
-template<typename ArithmeticType_, typename Scalar_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
+template<typename ArithmeticType_,
+        typename IndependentVariableType_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
 class Integrator {
 public:
     using ArithmeticType = ArithmeticType_;
-    using Scalar = Scalar_;
+    static_assert(is_arithmetic_type_v<ArithmeticType>, "ArithmeticType must be an arithmetic type.");
+    using ArithmeticTypeScalar = ArithmeticTypeTraits<ArithmeticType>::Scalar;
+    using IndependentVariableType = IndependentVariableType_;
+    static_assert(std::is_arithmetic_v<IndependentVariableType> || is_time_point_v<IndependentVariableType>,
+            "IndependentVariableType must be an Scalar or std::chrono::time_point<Clock, Duration>.");
 
-    ArithmeticType integrate(const Scalar start, const Scalar end, const int num_subintervals,
-            const IntegrandFunction<ArithmeticType, Scalar>& integrand) const;
+    ArithmeticType integrate(const IndependentVariableType start, const IndependentVariableType end,
+            const int num_subintervals,
+            const IntegrandFunction<ArithmeticType, IndependentVariableType>& integrand) const;
 
-    virtual ArithmeticType integrate(const Scalar start, const Scalar end,
-            const IntegrandFunction<ArithmeticType, Scalar>& integrand) const = 0;
+    virtual ArithmeticType integrate(const IndependentVariableType start, const IndependentVariableType end,
+            const IntegrandFunction<ArithmeticType, IndependentVariableType>& integrand) const = 0;
+
+protected:
+    ArithmeticTypeScalar difference_as_scalar(const IndependentVariableType start,
+            const IndependentVariableType end) const;
 };
 
 namespace newton_cotes {
 
-template<int N_, typename ArithmeticType_, typename Scalar_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
-class Integrator : public math::Integrator<ArithmeticType_, Scalar_> {
+template<int N_, typename ArithmeticType_,
+        typename IndependentVariableType_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
+class Integrator : public math::Integrator<ArithmeticType_, IndependentVariableType_> {
 public:
-    using Base = math::Integrator<ArithmeticType_, Scalar_>;
+    using Base = math::Integrator<ArithmeticType_, IndependentVariableType_>;
     using ArithmeticType = Base::ArithmeticType;
-    using Scalar = Base::Scalar;
+    using ArithmeticTypeScalar = Base::ArithmeticTypeScalar;
+    using IndependentVariableType = Base::IndependentVariableType;
     static constexpr int N = N_;
 
-    virtual Scalar alpha(const std::size_t i) const = 0;
+    virtual ArithmeticTypeScalar alpha(const std::size_t i) const = 0;
 
     using Base::integrate;
 
-    ArithmeticType integrate(const Scalar start, const Scalar end,
-            const IntegrandFunction<ArithmeticType, Scalar>& integrand) const override;
+    ArithmeticType integrate(const IndependentVariableType start, const IndependentVariableType end,
+            const IntegrandFunction<ArithmeticType, IndependentVariableType>& integrand) const override;
 
-    virtual Scalar step_size(const Scalar start, const Scalar end) const = 0;
+    virtual ArithmeticTypeScalar step_size(const IndependentVariableType start,
+            const IndependentVariableType end) const = 0;
 
-    virtual Scalar weight(const std::size_t i) const = 0;
+    virtual ArithmeticTypeScalar weight(const std::size_t i) const = 0;
 };
 
 namespace closed {
 
-template<int N_, typename ArithmeticType_, typename Scalar_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
-class Integrator : public math::newton_cotes::Integrator<N_, ArithmeticType_, Scalar_> {
+template<int N_, typename ArithmeticType_,
+        typename IndependentVariableType_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
+class Integrator : public math::newton_cotes::Integrator<N_, ArithmeticType_, IndependentVariableType_> {
 public:
-    using Base = math::newton_cotes::Integrator<N_, ArithmeticType_, Scalar_>;
+    using Base = math::newton_cotes::Integrator<N_, ArithmeticType_, IndependentVariableType_>;
     using ArithmeticType = Base::ArithmeticType;
-    using Scalar = Base::Scalar;
+    using ArithmeticTypeScalar = Base::ArithmeticTypeScalar;
+    using IndependentVariableType = Base::IndependentVariableType;
     static constexpr int N = Base::N;
 
     // Type Requirements
     static_assert(N > 0, "N must be > 0.");
 
-    Scalar alpha(const std::size_t i) const override;
+    ArithmeticTypeScalar alpha(const std::size_t i) const override;
 
-    Scalar step_size(const Scalar start, const Scalar end) const override;
+    ArithmeticTypeScalar step_size(const IndependentVariableType start,
+            const IndependentVariableType end) const override;
 
-    Scalar weight(const std::size_t i) const override;
+    ArithmeticTypeScalar weight(const std::size_t i) const override;
 };
 
 template<int N_, typename Scalar_>
@@ -122,22 +140,25 @@ public:
 
 namespace open {
 
-template<int N_, typename ArithmeticType_, typename Scalar_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
-class Integrator : public math::newton_cotes::Integrator<N_, ArithmeticType_, Scalar_> {
+template<int N_, typename ArithmeticType_,
+        typename IndependentVariableType_ = typename ArithmeticTypeTraits<ArithmeticType_>::Scalar>
+class Integrator : public math::newton_cotes::Integrator<N_, ArithmeticType_, IndependentVariableType_> {
 public:
-    using Base = math::newton_cotes::Integrator<N_, ArithmeticType_, Scalar_>;
+    using Base = math::newton_cotes::Integrator<N_, ArithmeticType_, IndependentVariableType_>;
     using ArithmeticType = Base::ArithmeticType;
-    using Scalar = Base::Scalar;
+    using ArithmeticTypeScalar = Base::ArithmeticTypeScalar;
+    using IndependentVariableType = Base::IndependentVariableType;
     static constexpr int N = Base::N;
 
     // Type Requirements
     static_assert(N >= 0, "N must be >= 0.");
 
-    Scalar alpha(const std::size_t i) const override;
+    ArithmeticTypeScalar alpha(const std::size_t i) const override;
 
-    Scalar step_size(const Scalar start, const Scalar end) const override;
+    ArithmeticTypeScalar step_size(const IndependentVariableType start,
+            const IndependentVariableType end) const override;
 
-    Scalar weight(const std::size_t i) const override;
+    ArithmeticTypeScalar weight(const std::size_t i) const override;
 };
 
 template<int N_, typename Scalar_>
