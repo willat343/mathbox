@@ -58,7 +58,7 @@ constexpr bool is_time_point_v = is_time_point<T>::value;
 /**
  * @brief Convert seconds to duration.
  *
- * @tparam Duration
+ * @tparam Duration type satisfying `std::is_arithemetic_v` or `is_duration_v`
  * @tparam Scalar
  * @param seconds
  * @return Duration
@@ -67,20 +67,31 @@ template<class Duration, typename Scalar = double>
 Duration to_duration(const Scalar seconds);
 
 /**
- * @brief Convert time (since clock epoch) or duration to scalar value.
+ * @brief Convert time (since clock epoch) or duration to scalar seconds.
  *
- * @tparam Time
+ * @tparam TimeOrDuration type satisfying `std::is_arithemetic_v`, `is_time_point_v` or `is_duration_v`
  * @tparam Scalar
  * @param time_or_duration
  * @return Scalar
  */
-template<class TimeOrDuration, typename Scalar = double>
+template<typename Scalar, class TimeOrDuration>
 Scalar to_sec(const TimeOrDuration& time_or_duration);
+
+/**
+ * @brief Convert time (since clock epoch) or duration to double seconds. This function overload allows the user to
+ * avoid explicitly stating the Scalar output type as double.
+ *
+ * @tparam TimeOrDuration type satisfying `std::is_arithemetic_v`, `is_time_point_v` or `is_duration_v`
+ * @param time_or_duration
+ * @return double
+ */
+template<class TimeOrDuration>
+double to_sec(const TimeOrDuration& time_or_duration);
 
 /**
  * @brief Convert seconds to time (since clock epoch).
  *
- * @tparam Time
+ * @tparam Time type satisfying `std::is_arithemetic_v` or `is_time_point_v`
  * @tparam Scalar
  * @param seconds
  * @return Time

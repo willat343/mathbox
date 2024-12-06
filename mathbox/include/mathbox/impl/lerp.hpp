@@ -39,8 +39,7 @@ inline ArithmeticType linear_function(const IndependentVariableType x, const Ind
     } else if constexpr (is_time_point_v<IndependentVariableType>) {
         // Cast is required to avoid integer division.
         using Scalar = ArithmeticTypeTraits<ArithmeticType>::Scalar;
-        return lerp(y_0, y_1,
-                to_sec<decltype(x - x_0), Scalar>(x - x_0) / to_sec<decltype(x_1 - x_0), Scalar>(x_1 - x_0));
+        return lerp(y_0, y_1, to_sec<Scalar>(x - x_0) / to_sec<Scalar>(x_1 - x_0));
     }
 }
 
