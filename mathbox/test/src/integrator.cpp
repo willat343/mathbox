@@ -7,22 +7,22 @@
 template<typename Integrator>
 void test_integrate_constant(const std::vector<typename Integrator::IndependentVariableType>& starts,
         const std::vector<typename Integrator::IndependentVariableType>& ends,
-        const std::vector<typename Integrator::ArithmeticType> constants, const int num_subintervals,
+        const std::vector<typename Integrator::MathType> constants, const int num_subintervals,
         const double precision = 1.0e-12) {
     Integrator integrator;
-    using ArithmeticType = Integrator::ArithmeticType;
+    using MathType = Integrator::MathType;
     using IndependentVariableType = Integrator::IndependentVariableType;
     for (const IndependentVariableType start : starts) {
         for (const IndependentVariableType end : ends) {
-            for (const ArithmeticType constant : constants) {
-                ArithmeticType expected_value = constant;
+            for (const MathType constant : constants) {
+                MathType expected_value = constant;
                 if constexpr (math::is_time_point_v<IndependentVariableType>) {
                     expected_value *= math::to_sec(end - start);
                 } else {
                     expected_value *= (end - start);
                 }
                 EXPECT_NEAR(integrator.integrate(start, end, num_subintervals,
-                                    [constant](const IndependentVariableType) -> ArithmeticType { return constant; }),
+                                    [constant](const IndependentVariableType) -> MathType { return constant; }),
                         expected_value, precision);
             }
         }
@@ -32,29 +32,29 @@ void test_integrate_constant(const std::vector<typename Integrator::IndependentV
 template<typename Integrator>
 void test_integrate_linear(const std::vector<typename Integrator::IndependentVariableType>& starts,
         const std::vector<typename Integrator::IndependentVariableType>& ends,
-        const std::vector<typename Integrator::ArithmeticType> start_heights,
-        const std::vector<typename Integrator::ArithmeticType> end_heights, const int num_subintervals,
+        const std::vector<typename Integrator::MathType> start_heights,
+        const std::vector<typename Integrator::MathType> end_heights, const int num_subintervals,
         const double precision = 1.0e-12) {
     Integrator integrator;
-    using ArithmeticType = Integrator::ArithmeticType;
+    using MathType = Integrator::MathType;
     using IndependentVariableType = Integrator::IndependentVariableType;
     for (const IndependentVariableType start : starts) {
         for (const IndependentVariableType end : ends) {
-            for (const ArithmeticType start_height : start_heights) {
-                for (const ArithmeticType end_height : end_heights) {
-                    typename Integrator::ArithmeticType expected_value = (start_height + end_height) / 2.0;
+            for (const MathType start_height : start_heights) {
+                for (const MathType end_height : end_heights) {
+                    typename Integrator::MathType expected_value = (start_height + end_height) / 2.0;
                     if constexpr (math::is_time_point_v<typename Integrator::IndependentVariableType>) {
                         expected_value *= math::to_sec(end - start);
                     } else {
                         expected_value *= (end - start);
                     }
                     EXPECT_NEAR(integrator.integrate(start, end, num_subintervals,
-                                        std::bind(math::linear_function<ArithmeticType, IndependentVariableType>,
+                                        std::bind(math::linear_function<MathType, IndependentVariableType>,
                                                 std::placeholders::_1, start, end, start_height, end_height)),
                             expected_value, precision);
                     EXPECT_NEAR(integrator.integrate(start, end, num_subintervals,
                                         [start, end, start_height, end_height](
-                                                const IndependentVariableType t) -> ArithmeticType {
+                                                const IndependentVariableType t) -> MathType {
                                             return math::linear_function(t, start, end, start_height, end_height);
                                         }),
                             expected_value, precision);
@@ -100,9 +100,9 @@ end_instances<std::chrono::time_point<std::chrono::steady_clock>>() {
             std::chrono::time_point<std::chrono::steady_clock>(std::chrono::steady_clock::duration(94357128))}};
 }
 
-template<typename ArithmeticType>
-std::vector<ArithmeticType> constants_instances(const unsigned int i = 0) {
-    static_assert("ArithmeticType not one of specialised types.");
+template<typename MathType>
+std::vector<MathType> constants_instances(const unsigned int i = 0) {
+    static_assert("MathType not one of specialised types.");
 }
 
 template<>
@@ -114,18 +114,18 @@ std::vector<double> constants_instances<double>(const unsigned int i) {
     }
 }
 
-template<typename ArithmeticType, typename IndependentVariableType>
-std::vector<math::IntegrandFunction<ArithmeticType, IndependentVariableType>> integrands_instances() {
+template<typename MathType, typename IndependentVariableType>
+std::vector<math::IntegrandFunction<MathType, IndependentVariableType>> integrands_instances() {
     static_assert("IntegrandFunction not one of specialised types.");
 }
 
 template<typename Integrator>
 void test_integrate_constant_with_instances(const double precision = 1.0e-12) {
-    using ArithmeticType = typename Integrator::ArithmeticType;
+    using MathType = typename Integrator::MathType;
     using IndependentVariableType = typename Integrator::IndependentVariableType;
     const std::vector<IndependentVariableType> starts = start_instances<IndependentVariableType>();
     const std::vector<IndependentVariableType> ends = end_instances<IndependentVariableType>();
-    const std::vector<ArithmeticType> constants = constants_instances<ArithmeticType>();
+    const std::vector<MathType> constants = constants_instances<MathType>();
     test_integrate_constant<Integrator>(starts, ends, constants, 1, precision);
     test_integrate_constant<Integrator>(starts, ends, constants, 13, precision);
     test_integrate_constant<Integrator>(starts, ends, constants, 77, precision);
@@ -135,12 +135,12 @@ void test_integrate_constant_with_instances(const double precision = 1.0e-12) {
 
 template<typename Integrator>
 void test_integrate_linear_with_instances(const double precision = 1.0e-12) {
-    using ArithmeticType = typename Integrator::ArithmeticType;
+    using MathType = typename Integrator::MathType;
     using IndependentVariableType = typename Integrator::IndependentVariableType;
     const std::vector<IndependentVariableType> starts = start_instances<IndependentVariableType>();
     const std::vector<IndependentVariableType> ends = end_instances<IndependentVariableType>();
-    const std::vector<ArithmeticType> start_heights = constants_instances<ArithmeticType>(0);
-    const std::vector<ArithmeticType> end_heights = constants_instances<ArithmeticType>(1);
+    const std::vector<MathType> start_heights = constants_instances<MathType>(0);
+    const std::vector<MathType> end_heights = constants_instances<MathType>(1);
     test_integrate_linear<Integrator>(starts, ends, start_heights, end_heights, 1, precision);
     test_integrate_linear<Integrator>(starts, ends, start_heights, end_heights, 13, precision);
     test_integrate_linear<Integrator>(starts, ends, start_heights, end_heights, 77, precision);

@@ -7,38 +7,38 @@
 
 namespace math {
 
-template<class ArithmeticType, typename = void>
-class ArithmeticTypeTraits {};
+template<class MathType, typename = void>
+class MathTypeTraits {};
 
-template<class ArithmeticType_>
-class ArithmeticTypeTraits<ArithmeticType_, typename std::enable_if_t<std::is_arithmetic_v<ArithmeticType_>>> {
+template<class MathType_>
+class MathTypeTraits<MathType_, typename std::enable_if_t<std::is_floating_point_v<MathType_>>> {
 public:
-    using ArithmeticType = ArithmeticType_;
-    using Scalar = ArithmeticType;
+    using MathType = MathType_;
+    using Scalar = MathType;
 
     /**
      * @brief Return zero for this type.
      *
-     * @return constexpr ArithmeticType
+     * @return constexpr MathType
      */
-    static constexpr ArithmeticType zero() {
-        return static_cast<ArithmeticType>(0);
+    static constexpr MathType zero() {
+        return static_cast<MathType>(0);
     }
 };
 
 template<class Derived>
-class ArithmeticTypeTraits<Derived, typename std::enable_if_t<std::is_base_of_v<Eigen::MatrixBase<Derived>, Derived>>> {
+class MathTypeTraits<Derived, typename std::enable_if_t<std::is_base_of_v<Eigen::MatrixBase<Derived>, Derived>>> {
 public:
-    using ArithmeticType = Derived;
+    using MathType = Derived;
     using Scalar = Derived::Scalar;
 
     /**
      * @brief Return zero for this type.
      *
-     * @return ArithmeticType
+     * @return MathType
      */
-    static constexpr ArithmeticType zero() {
-        return ArithmeticType::Zero();
+    static constexpr MathType zero() {
+        return MathType::Zero();
     }
 };
 
@@ -49,7 +49,7 @@ public:
  * @tparam T type
  */
 template<typename T, typename = void>
-struct is_arithmetic_type : std::false_type {};
+struct is_math_type : std::false_type {};
 
 /**
  * @brief True version of type trait to check if type is a mathbox arithmetic type (of which std::is_arithmetic types
@@ -58,7 +58,7 @@ struct is_arithmetic_type : std::false_type {};
  * @tparam T type
  */
 template<typename T>
-struct is_arithmetic_type<T, std::enable_if_t<std::is_arithmetic_v<T> || std::is_base_of_v<Eigen::MatrixBase<T>, T>>>
+struct is_math_type<T, std::enable_if_t<std::is_floating_point_v<T> || std::is_base_of_v<Eigen::MatrixBase<T>, T>>>
     : std::true_type {};
 
 /**
@@ -68,7 +68,7 @@ struct is_arithmetic_type<T, std::enable_if_t<std::is_arithmetic_v<T> || std::is
  * @tparam T type
  */
 template<typename T>
-constexpr bool is_arithmetic_type_v = is_arithmetic_type<T>::value;
+constexpr bool is_math_type_v = is_math_type<T>::value;
 
 }
 

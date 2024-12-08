@@ -41,18 +41,18 @@ T lerp(const T& y_0, const T& y_1, const Scalar alpha);
  *      \alpha = \frac{x - x_0}{x_1 - x_0}
  * \f]
  *
- * @tparam ArithmeticType
+ * @tparam MathType
  * @tparam IndependentVariableType
  * @param x
  * @param x_0
  * @param x_1
  * @param y_0
  * @param y_1
- * @return ArithmeticType
+ * @return MathType
  */
-template<typename ArithmeticType, typename IndependentVariableType>
-inline ArithmeticType linear_function(const IndependentVariableType x, const IndependentVariableType x_0,
-        const IndependentVariableType x_1, const ArithmeticType y_0, const ArithmeticType y_1);
+template<typename MathType, typename IndependentVariableType>
+inline MathType linear_function(const IndependentVariableType x, const IndependentVariableType x_0,
+        const IndependentVariableType x_1, const MathType y_0, const MathType y_1);
 
 }
 

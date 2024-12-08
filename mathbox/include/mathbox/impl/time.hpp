@@ -7,10 +7,16 @@
 
 namespace math {
 
+template<typename Scalar, class Duration>
+Scalar fraction(const Duration numerator, const Duration denominator) {
+    return to_sec<Scalar>(numerator) / to_sec<Scalar>(denominator);
+}
+
 template<class Duration, typename Scalar>
 Duration to_duration(const Scalar seconds) {
-    static_assert(std::is_arithmetic_v<Duration> || is_duration_v<Duration>, "Duration must be of duration type.");
-    if constexpr (std::is_arithmetic_v<Duration>) {
+    static_assert(std::is_floating_point_v<Duration> || is_duration_v<Duration>,
+            "Duration must be of floating point scalar or duration type.");
+    if constexpr (std::is_floating_point_v<Duration>) {
         return static_cast<Duration>(seconds);
     } else if constexpr (is_duration_v<Duration>) {
         return std::chrono::duration_cast<Duration>(std::chrono::duration<Scalar>(seconds));
@@ -19,10 +25,10 @@ Duration to_duration(const Scalar seconds) {
 
 template<typename Scalar, class TimeOrDuration>
 Scalar to_sec(const TimeOrDuration& time_or_duration) {
-    static_assert(
-            std::is_arithmetic_v<TimeOrDuration> || is_time_point_v<TimeOrDuration> || is_duration_v<TimeOrDuration>,
-            "TimeOrDuration must be of arithmetic scalar, time_point or duration type.");
-    if constexpr (std::is_arithmetic_v<TimeOrDuration>) {
+    static_assert(std::is_floating_point_v<TimeOrDuration> || is_time_point_v<TimeOrDuration> ||
+                          is_duration_v<TimeOrDuration>,
+            "TimeOrDuration must be of floating point scalar, time_point or duration type.");
+    if constexpr (std::is_floating_point_v<TimeOrDuration>) {
         return static_cast<Scalar>(time_or_duration);
     } else if constexpr (is_time_point_v<TimeOrDuration>) {
         return to_sec<Scalar, typename TimeOrDuration::duration>(time_or_duration.time_since_epoch());
@@ -31,16 +37,11 @@ Scalar to_sec(const TimeOrDuration& time_or_duration) {
     }
 }
 
-template<class TimeOrDuration>
-inline double to_sec(const TimeOrDuration& time_or_duration) {
-    return to_sec<double, TimeOrDuration>(time_or_duration);
-}
-
 template<class Time, typename Scalar>
 Time to_time(const Scalar seconds) {
-    static_assert(std::is_arithmetic_v<Time> || is_time_point_v<Time>,
-            "Time must be of arithmetic Scalar or time_point type.");
-    if constexpr (std::is_arithmetic_v<Time>) {
+    static_assert(std::is_floating_point_v<Time> || is_time_point_v<Time>,
+            "Time must be of floating point Scalar or time_point type.");
+    if constexpr (std::is_floating_point_v<Time>) {
         return static_cast<Time>(seconds);
     } else if constexpr (is_time_point_v<Time>) {
         return Time(to_duration<typename Time::duration>(seconds));
