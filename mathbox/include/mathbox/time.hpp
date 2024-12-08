@@ -65,7 +65,7 @@ constexpr bool is_time_point_v = is_time_point<T>::value;
  * @return Scalar
  */
 template<typename Scalar = double, class Duration = Scalar>
-Scalar fraction(const Duration numerator, const Duration denominator);
+constexpr Scalar fraction(const Duration numerator, const Duration denominator);
 
 /**
  * @brief Convert seconds to duration.
@@ -76,7 +76,7 @@ Scalar fraction(const Duration numerator, const Duration denominator);
  * @return Duration
  */
 template<class Duration, typename Scalar = double>
-Duration to_duration(const Scalar seconds);
+constexpr Duration to_duration(const Scalar seconds);
 
 /**
  * @brief Convert time (since clock epoch) or duration to scalar seconds.
@@ -87,7 +87,7 @@ Duration to_duration(const Scalar seconds);
  * @return Scalar
  */
 template<typename Scalar = double, class TimeOrDuration = Scalar>
-Scalar to_sec(const TimeOrDuration& time_or_duration);
+constexpr Scalar to_sec(const TimeOrDuration& time_or_duration);
 
 /**
  * @brief Convert seconds to time (since clock epoch).
@@ -98,7 +98,7 @@ Scalar to_sec(const TimeOrDuration& time_or_duration);
  * @return Time
  */
 template<class Time, typename Scalar = double>
-Time to_time(const Scalar seconds);
+constexpr Time to_time(const Scalar seconds);
 
 }
 
