@@ -30,7 +30,7 @@ template<class Derived>
 class MathTypeTraits<Derived, typename std::enable_if_t<std::is_base_of_v<Eigen::MatrixBase<Derived>, Derived>>> {
 public:
     using MathType = Derived;
-    using Scalar = Derived::Scalar;
+    using Scalar = typename MathType::Scalar;
 
     /**
      * @brief Return zero for this type.
