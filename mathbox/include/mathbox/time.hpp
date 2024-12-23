@@ -149,6 +149,17 @@ constexpr Time to_time(const Scalar seconds);
 template<class Time, typename Scalar = double>
 std::vector<Time> to_times(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& seconds);
 
+/**
+ * @brief Overload of `to_times` for row vectors.
+ *
+ * @tparam Time
+ * @tparam Scalar
+ * @param seconds
+ * @return std::vector<Time>
+ */
+template<class Time, typename Scalar = double>
+std::vector<Time> to_times(const Eigen::Matrix<Scalar, 1, Eigen::Dynamic>& seconds);
+
 }
 
 #include "mathbox/impl/time.hpp"

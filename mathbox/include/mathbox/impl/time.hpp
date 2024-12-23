@@ -82,6 +82,16 @@ std::vector<Time> to_times(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& secon
     return times;
 }
 
+template<class Time, typename Scalar = double>
+std::vector<Time> to_times(const Eigen::Matrix<Scalar, 1, Eigen::Dynamic>& seconds) {
+    const std::size_t size = static_cast<std::size_t>(seconds.size());
+    std::vector<Time> times(size);
+    for (std::size_t i = 0; i < size; ++i) {
+        times[i] = to_time<Time, Scalar>(seconds[i]);
+    }
+    return times;
+}
+
 }
 
 #endif
