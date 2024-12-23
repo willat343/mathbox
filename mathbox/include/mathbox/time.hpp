@@ -128,6 +128,17 @@ template<typename Scalar = double, class TimeOrDuration = Scalar>
 constexpr Scalar to_sec(const TimeOrDuration& time_or_duration);
 
 /**
+ * @brief Convert times (since clock epoch) or durations to scalar seconds.
+ *
+ * @tparam Scalar
+ * @tparam TimeOrDuration
+ * @param times_or_durations
+ * @return std::vector<Scalar>
+ */
+template<typename Scalar = double, class TimeOrDuration = Scalar>
+std::vector<Scalar> to_secs(const std::vector<TimeOrDuration>& times_or_durations);
+
+/**
  * @brief Convert seconds to time (since clock epoch).
  *
  * @tparam Time type satisfying `std::is_arithemetic_v` or `is_time_point_v`
