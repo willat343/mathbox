@@ -16,12 +16,10 @@ namespace math {
  * @tparam MathType arithmetic type, supporting addition and multiplication with scalar values
  * @tparam IndependentVariableType type of the independent variable (e.g. time)
  */
-template<typename MathType,
-        typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
 using IntegrandFunction = std::function<MathType(const IndependentVariableType)>;
 
-template<typename MathType_,
-        typename IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
+template<typename MathType_, typename IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
 class Integrator {
 public:
     using MathType = MathType_;
@@ -32,8 +30,7 @@ public:
             "IndependentVariableType must be floating point scalar or std::chrono::time_point<Clock, Duration>.");
 
     MathType integrate(const IndependentVariableType start, const IndependentVariableType end,
-            const int num_subintervals,
-            const IntegrandFunction<MathType, IndependentVariableType>& integrand) const;
+            const int num_subintervals, const IntegrandFunction<MathType, IndependentVariableType>& integrand) const;
 
     virtual MathType integrate(const IndependentVariableType start, const IndependentVariableType end,
             const IntegrandFunction<MathType, IndependentVariableType>& integrand) const = 0;
@@ -45,8 +42,7 @@ protected:
 
 namespace newton_cotes {
 
-template<int N_, typename MathType_,
-        typename IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
+template<int N_, typename MathType_, typename IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
 class Integrator : public math::Integrator<MathType_, IndependentVariableType_> {
 public:
     using Base = math::Integrator<MathType_, IndependentVariableType_>;
@@ -70,8 +66,7 @@ public:
 
 namespace closed {
 
-template<int N_, typename MathType_,
-        typename IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
+template<int N_, typename MathType_, typename IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
 class Integrator : public math::newton_cotes::Integrator<N_, MathType_, IndependentVariableType_> {
 public:
     using Base = math::newton_cotes::Integrator<N_, MathType_, IndependentVariableType_>;
@@ -140,8 +135,7 @@ public:
 
 namespace open {
 
-template<int N_, typename MathType_,
-        typename IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
+template<int N_, typename MathType_, typename IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
 class Integrator : public math::newton_cotes::Integrator<N_, MathType_, IndependentVariableType_> {
 public:
     using Base = math::newton_cotes::Integrator<N_, MathType_, IndependentVariableType_>;

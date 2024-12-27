@@ -31,8 +31,8 @@ inline auto Integrator<MathType, IndependentVariableType>::integrate(const Indep
 }
 
 template<typename MathType, typename IndependentVariableType>
-inline auto Integrator<MathType, IndependentVariableType>::difference_as_scalar(
-        const IndependentVariableType start, const IndependentVariableType end) const -> ArithmeticTypeScalar {
+inline auto Integrator<MathType, IndependentVariableType>::difference_as_scalar(const IndependentVariableType start,
+        const IndependentVariableType end) const -> ArithmeticTypeScalar {
     if constexpr (is_time_point_v<IndependentVariableType>) {
         // Convert step size to seconds as a ArithmeticTypeScalar, because integrands are assumed to be per second.
         return to_sec(end - start);
@@ -57,8 +57,7 @@ inline auto Integrator<N, MathType, IndependentVariableType>::integrate(const In
 namespace closed {
 
 template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::alpha(
-        const std::size_t i) const -> ArithmeticTypeScalar {
+inline auto Integrator<N, MathType, IndependentVariableType>::alpha(const std::size_t i) const -> ArithmeticTypeScalar {
     return static_cast<ArithmeticTypeScalar>(i) / static_cast<ArithmeticTypeScalar>(N);
 }
 
@@ -106,8 +105,7 @@ auto Weights<4, Scalar>::weight(const std::size_t i) -> Scalar {
 namespace open {
 
 template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::alpha(
-        const std::size_t i) const -> ArithmeticTypeScalar {
+inline auto Integrator<N, MathType, IndependentVariableType>::alpha(const std::size_t i) const -> ArithmeticTypeScalar {
     return static_cast<ArithmeticTypeScalar>(i + 1) / static_cast<ArithmeticTypeScalar>(N + 2);
 }
 

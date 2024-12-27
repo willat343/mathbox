@@ -6,8 +6,7 @@
 namespace math {
 
 template<typename Scalar>
-Eigen::Matrix<Scalar, Eigen::Dynamic, 1> lin_spaced(const Scalar step, const Scalar start,
-        const Scalar end) {
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1> lin_spaced(const Scalar step, const Scalar start, const Scalar end) {
     const Eigen::Index size = static_cast<Eigen::Index>((end - start) / step) + 1;
     return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::LinSpaced(size, start, end);
 }

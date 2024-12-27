@@ -138,12 +138,12 @@ Eigen::Matrix<Scalar, 6, 1> compute_constant_rates(const typename Eigen::Transfo
 
 /**
  * @brief Compute the general linear interpolation for an SE(3) pose/transform.
- * 
- * @tparam Scalar 
- * @param T_0 
- * @param T_1 
- * @param alpha 
- * @return Eigen::Transform<Scalar, 3, Eigen::Isometry> 
+ *
+ * @tparam Scalar
+ * @param T_0
+ * @param T_1
+ * @param alpha
+ * @return Eigen::Transform<Scalar, 3, Eigen::Isometry>
  */
 template<typename Scalar>
 Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_0,
