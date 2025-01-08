@@ -10,7 +10,7 @@ constexpr Derived cumulative_row_left_sum(const Eigen::DenseBase<Derived>& m) {
     if (m.cols() == 0) {
         return m.derived();
     }
-    Derived m_cumulative;
+    Derived m_cumulative(m.rows(), m.cols());
     m_cumulative.col(m_cumulative.cols() - 1) = m.col(m_cumulative.cols() - 1);
     for (int c = m_cumulative.cols() - 2; c >= 0; --c) {
         m_cumulative.col(c) = m_cumulative.col(c + 1) + m.col(c);
@@ -23,7 +23,7 @@ constexpr Derived cumulative_col_top_sum(const Eigen::DenseBase<Derived>& m) {
     if (m.rows() == 0) {
         return m.derived();
     }
-    Derived m_cumulative;
+    Derived m_cumulative(m.rows(), m.cols());
     m_cumulative.row(m_cumulative.rows() - 1) = m.row(m_cumulative.rows() - 1);
     for (int r = m_cumulative.rows() - 2; r >= 0; --r) {
         m_cumulative.row(r) = m_cumulative.row(r + 1) + m.row(r);
@@ -43,7 +43,7 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
     if (boundary >= size) {
         throw std::runtime_error("Reorder boundary outside of m matrix.");
     }
-    return (Derived() << m.block(boundary, boundary, size - boundary, size - boundary),
+    return (Derived(m.rows(), m.cols()) << m.block(boundary, boundary, size - boundary, size - boundary),
             m.block(boundary, 0, size - boundary, boundary), m.block(0, boundary, boundary, size - boundary),
             m.block(0, 0, boundary, boundary))
             .finished();
