@@ -70,6 +70,11 @@ inline Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_sigma(const Scalar sigma
 }
 
 template<typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> stiffness_from_sigma(const Scalar sigma, const int rows) {
+    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, 1, stiffness_from_sigma(sigma)).asDiagonal();
+}
+
+template<typename Scalar>
 inline Scalar stiffness_from_sigma(const Scalar sigma) {
     return static_cast<Scalar>(1) / sigma;
 }

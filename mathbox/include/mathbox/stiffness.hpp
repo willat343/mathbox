@@ -100,6 +100,17 @@ template<int Rows, typename Scalar = double>
 Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_sigma(const Scalar sigma);
 
 /**
+ * @brief Compute dynamic-sized stiffness matrix from a single sigma value.
+ *
+ * @tparam Scalar
+ * @param sigma
+ * @param rows
+ * @return Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+ */
+template<typename Scalar = double>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> stiffness_from_sigma(const Scalar sigma, const int rows);
+
+/**
  * @brief Compute stiffness from a single sigma value.
  *
  * @tparam Scalar
