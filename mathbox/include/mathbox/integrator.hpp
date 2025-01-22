@@ -74,8 +74,6 @@ public:
     using ArithmeticTypeScalar = Base::ArithmeticTypeScalar;
     using IndependentVariableType = Base::IndependentVariableType;
     static constexpr int N = Base::N;
-
-    // Type Requirements
     static_assert(N > 0, "N must be > 0.");
 
     ArithmeticTypeScalar alpha(const std::size_t i) const override;
@@ -90,10 +88,8 @@ template<int N_, typename Scalar_>
 class Weights {
 public:
     static constexpr int N = N_;
-    using Scalar = Scalar_;
-
-    // Type Requirements
     static_assert(N > 0, "N must be a positive integer.");
+    using Scalar = Scalar_;
     static_assert(std::is_floating_point_v<Scalar>, "Scalar must be floating point type.");
 
     static Scalar weight(const std::size_t i) = delete;
@@ -143,8 +139,6 @@ public:
     using ArithmeticTypeScalar = Base::ArithmeticTypeScalar;
     using IndependentVariableType = Base::IndependentVariableType;
     static constexpr int N = Base::N;
-
-    // Type Requirements
     static_assert(N >= 0, "N must be >= 0.");
 
     ArithmeticTypeScalar alpha(const std::size_t i) const override;
@@ -159,10 +153,8 @@ template<int N_, typename Scalar_>
 class Weights {
 public:
     static constexpr int N = N_;
-    using Scalar = Scalar_;
-
-    // Type Requirements
     static_assert(N >= 0, "N must be an integer >= 0.");
+    using Scalar = Scalar_;
     static_assert(std::is_floating_point_v<Scalar>, "Scalar must be floating point type.");
 
     static Scalar weight(const std::size_t i) = delete;

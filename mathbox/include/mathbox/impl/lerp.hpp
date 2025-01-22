@@ -36,7 +36,6 @@ inline MathType linear_function(const IndependentVariableType x, const Independe
     if constexpr (std::is_floating_point_v<IndependentVariableType>) {
         return lerp(y_0, y_1, (x - x_0) / (x_1 - x_0));
     } else if constexpr (is_time_point_v<IndependentVariableType>) {
-        // Cast is required to avoid integer division.
         return lerp(y_0, y_1, fraction(x - x_0, x_1 - x_0));
     }
 }
