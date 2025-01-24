@@ -26,18 +26,17 @@ public:
     static_assert(is_math_type_v<MathType>, "MathType must be a math type.");
     using ArithmeticTypeScalar = MathTypeTraits<MathType>::Scalar;
     using IndependentVariableType = IndependentVariableType_;
+    using IndependentVariableDifferenceType = decltype(IndependentVariableType() - IndependentVariableType());
     static_assert(std::is_floating_point_v<IndependentVariableType> || is_time_point_v<IndependentVariableType>,
             "IndependentVariableType must be floating point scalar or std::chrono::time_point<Clock, Duration>.");
 
     MathType integrate(const IndependentVariableType start, const IndependentVariableType end,
-            const int num_subintervals, const IntegrandFunction<MathType, IndependentVariableType>& integrand) const;
+            const IndependentVariableDifferenceType integration_step, const MathType& initial_value,
+            const IntegrandFunction<MathType, IndependentVariableType>& integrand) const;
 
     virtual MathType integrate(const IndependentVariableType start, const IndependentVariableType end,
+            const MathType& initial_value,
             const IntegrandFunction<MathType, IndependentVariableType>& integrand) const = 0;
-
-protected:
-    ArithmeticTypeScalar difference_as_scalar(const IndependentVariableType start,
-            const IndependentVariableType end) const;
 };
 
 namespace newton_cotes {
@@ -56,6 +55,7 @@ public:
     using Base::integrate;
 
     MathType integrate(const IndependentVariableType start, const IndependentVariableType end,
+            const MathType& initial_value,
             const IntegrandFunction<MathType, IndependentVariableType>& integrand) const override;
 
     virtual ArithmeticTypeScalar step_size(const IndependentVariableType start,
@@ -196,57 +196,57 @@ public:
 
 namespace rectangle {
 
-template<typename MathType, typename Scalar = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::open::Integrator<0, MathType, Scalar>;
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+using Integrator = newton_cotes::open::Integrator<0, MathType, IndependentVariableType>;
 
 }
 
 namespace open1 {
 
-template<typename MathType, typename Scalar = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::open::Integrator<1, MathType, Scalar>;
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+using Integrator = newton_cotes::open::Integrator<1, MathType, IndependentVariableType>;
 
 }
 
 namespace milnes {
 
-template<typename MathType, typename Scalar = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::open::Integrator<2, MathType, Scalar>;
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+using Integrator = newton_cotes::open::Integrator<2, MathType, IndependentVariableType>;
 
 }
 
 namespace open3 {
 
-template<typename MathType, typename Scalar = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::open::Integrator<3, MathType, Scalar>;
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+using Integrator = newton_cotes::open::Integrator<3, MathType, IndependentVariableType>;
 
 }
 
 namespace trapezoidal {
 
-template<typename MathType, typename Scalar = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::closed::Integrator<1, MathType, Scalar>;
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+using Integrator = newton_cotes::closed::Integrator<1, MathType, IndependentVariableType>;
 
 }
 
 namespace simpsons {
 
-template<typename MathType, typename Scalar = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::closed::Integrator<1, MathType, Scalar>;
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+using Integrator = newton_cotes::closed::Integrator<2, MathType, IndependentVariableType>;
 
 }
 
 namespace simpsons38 {
 
-template<typename MathType, typename Scalar = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::closed::Integrator<1, MathType, Scalar>;
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+using Integrator = newton_cotes::closed::Integrator<3, MathType, IndependentVariableType>;
 
 }
 
 namespace booles {
 
-template<typename MathType, typename Scalar = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::closed::Integrator<1, MathType, Scalar>;
+template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
+using Integrator = newton_cotes::closed::Integrator<4, MathType, IndependentVariableType>;
 
 }
 

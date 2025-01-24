@@ -12,46 +12,43 @@ namespace math {
 
 template<typename MathType, typename IndependentVariableType>
 inline auto Integrator<MathType, IndependentVariableType>::integrate(const IndependentVariableType start,
-        const IndependentVariableType end, const int num_subintervals,
+        const IndependentVariableType end, const IndependentVariableDifferenceType integration_step,
+        const MathType& initial_value,
         const IntegrandFunction<MathType, IndependentVariableType>& integrand) const -> MathType {
-    if (num_subintervals < 1) {
-        throw std::runtime_error("Must integrate with a positive number of subintervals, however " +
-                                 std::to_string(num_subintervals) + " was given.");
+    // Error handling and preprocessing
+    if (integration_step <= IndependentVariableDifferenceType(0)) {
+        throw std::runtime_error("Must integrate with a positive integration_step.");
     }
-    MathType integral = MathTypeTraits<MathType>::zero();
-    for (int i = 0; i < num_subintervals; ++i) {
-        integral += integrate(
-                lerp(start, end,
-                        static_cast<ArithmeticTypeScalar>(i) / static_cast<ArithmeticTypeScalar>(num_subintervals)),
-                lerp(start, end,
-                        static_cast<ArithmeticTypeScalar>(i + 1) / static_cast<ArithmeticTypeScalar>(num_subintervals)),
-                integrand);
+    const bool forwards = start <= end;
+    const IndependentVariableDifferenceType directed_integration_step = forwards ? integration_step : -integration_step;
+    // Interval integration bounds
+    IndependentVariableType current_start = start;
+    IndependentVariableType current_end = forwards ? std::min(current_start + directed_integration_step, end)
+                                                   : std::max(current_start + directed_integration_step, end);
+    MathType integral = initial_value;
+    while ((forwards && current_start < end) || (!forwards && current_start > end)) {
+        // Integrate over integration interval
+        integral = integrate(current_start, current_end, integral, integrand);
+        // Shift the integration interval
+        current_start = current_end;
+        current_end = forwards ? std::min(current_start + directed_integration_step, end)
+                               : std::max(current_start + directed_integration_step, end);
     }
     return integral;
-}
-
-template<typename MathType, typename IndependentVariableType>
-inline auto Integrator<MathType, IndependentVariableType>::difference_as_scalar(const IndependentVariableType start,
-        const IndependentVariableType end) const -> ArithmeticTypeScalar {
-    if constexpr (is_time_point_v<IndependentVariableType>) {
-        // Convert step size to seconds as a ArithmeticTypeScalar, because integrands are assumed to be per second.
-        return to_sec(end - start);
-    } else {
-        return end - start;
-    }
 }
 
 namespace newton_cotes {
 
 template<int N, typename MathType, typename IndependentVariableType>
 inline auto Integrator<N, MathType, IndependentVariableType>::integrate(const IndependentVariableType start,
-        const IndependentVariableType end,
+        const IndependentVariableType end, const MathType& initial_value,
         const IntegrandFunction<MathType, IndependentVariableType>& integrand) const -> MathType {
-    MathType integral = MathTypeTraits<MathType>::zero();
+    MathType integral = initial_value;
+    const ArithmeticTypeScalar step_size_ = step_size(start, end);
     for (std::size_t i = 0; i <= N; ++i) {
-        integral += weight(i) * integrand(lerp(start, end, alpha(i)));
+        integral += step_size_ * weight(i) * integrand(lerp(start, end, alpha(i)));
     }
-    return step_size(start, end) * integral;
+    return integral;
 }
 
 namespace closed {
@@ -64,7 +61,7 @@ inline auto Integrator<N, MathType, IndependentVariableType>::alpha(const std::s
 template<int N, typename MathType, typename IndependentVariableType>
 inline auto Integrator<N, MathType, IndependentVariableType>::step_size(const IndependentVariableType start,
         const IndependentVariableType end) const -> ArithmeticTypeScalar {
-    return this->difference_as_scalar(start, end) / static_cast<ArithmeticTypeScalar>(N);
+    return to_sec(end - start) / static_cast<ArithmeticTypeScalar>(N);
 }
 
 template<int N, typename MathType, typename IndependentVariableType>
@@ -112,7 +109,7 @@ inline auto Integrator<N, MathType, IndependentVariableType>::alpha(const std::s
 template<int N, typename MathType, typename IndependentVariableType>
 inline auto Integrator<N, MathType, IndependentVariableType>::step_size(const IndependentVariableType start,
         const IndependentVariableType end) const -> ArithmeticTypeScalar {
-    return this->difference_as_scalar(start, end) / static_cast<ArithmeticTypeScalar>(N + 2);
+    return to_sec(end - start) / static_cast<ArithmeticTypeScalar>(N + 2);
 }
 
 template<int N, typename MathType, typename IndependentVariableType>
