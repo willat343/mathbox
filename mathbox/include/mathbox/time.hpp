@@ -58,18 +58,6 @@ template<typename T>
 constexpr bool is_time_point_v = is_time_point<T>::value;
 
 /**
- * @brief Compute the fraction (ratio) between two durations as a Scalar value (avoiding possible integer division).
- *
- * @tparam Scalar
- * @tparam Duration
- * @param numerator
- * @param denominator
- * @return Scalar
- */
-template<typename Scalar = double, class Duration = Scalar>
-constexpr Scalar fraction(const Duration numerator, const Duration denominator);
-
-/**
  * @brief Generate a linearly spaced dynamically-sized matrix from an interpolation step. The number of points are
  * chosen such that the actual interpolation step is greater than or equal to `step`.
  *

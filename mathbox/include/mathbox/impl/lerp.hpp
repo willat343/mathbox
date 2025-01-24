@@ -33,11 +33,7 @@ inline MathType linear_function(const IndependentVariableType x, const Independe
     if (x_0 == x_1) {
         throw std::runtime_error("Divide by zero encountered in linear_function because x_0 == x_1.");
     }
-    if constexpr (std::is_floating_point_v<IndependentVariableType>) {
-        return lerp(y_0, y_1, (x - x_0) / (x_1 - x_0));
-    } else if constexpr (is_time_point_v<IndependentVariableType>) {
-        return lerp(y_0, y_1, fraction(x - x_0, x_1 - x_0));
-    }
+    return lerp(y_0, y_1, to_sec(x - x_0) / to_sec(x_1 - x_0));
 }
 
 }

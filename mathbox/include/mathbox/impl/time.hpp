@@ -8,11 +8,6 @@
 
 namespace math {
 
-template<typename Scalar, class Duration>
-constexpr inline Scalar fraction(const Duration numerator, const Duration denominator) {
-    return to_sec<Scalar>(numerator) / to_sec<Scalar>(denominator);
-}
-
 template<class Time, class Duration>
 std::vector<Time> lin_spaced(const Duration step, const Time start, const Time end) {
     Eigen::Matrix<double, Eigen::Dynamic, 1> lin_spaced_vector =
@@ -44,6 +39,8 @@ constexpr inline Duration to_duration(const Scalar seconds) {
         return static_cast<Duration>(seconds);
     } else if constexpr (is_duration_v<Duration>) {
         return std::chrono::duration_cast<Duration>(std::chrono::duration<Scalar>(seconds));
+    } else {
+        throw std::runtime_error("Duration type not handled");
     }
 }
 
@@ -58,6 +55,8 @@ constexpr inline Scalar to_sec(const TimeOrDuration& time_or_duration) {
         return to_sec<Scalar, typename TimeOrDuration::duration>(time_or_duration.time_since_epoch());
     } else if constexpr (is_duration_v<TimeOrDuration>) {
         return std::chrono::duration<Scalar>(time_or_duration).count();
+    } else {
+        throw std::runtime_error("TimeOrDuration type not handled");
     }
 }
 

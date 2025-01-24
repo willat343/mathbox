@@ -38,7 +38,13 @@ public:
      * @return MathType
      */
     static constexpr MathType zero() {
+        static_assert(MathType::SizeAtCompileTime != Eigen::Dynamic,
+                "MathTypeTraits::zero() cannot be called for dynamic-sized matrices.");
         return MathType::Zero();
+    }
+
+    static constexpr MathType zero(const int rows, const int cols) {
+        return MathType::Zero(rows, cols);
     }
 };
 
