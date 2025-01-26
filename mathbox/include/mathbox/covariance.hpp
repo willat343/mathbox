@@ -4,8 +4,6 @@
 #include <Eigen/Core>
 #include <type_traits>
 
-#include "mathbox/types.hpp"
-
 namespace math {
 
 /**
