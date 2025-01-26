@@ -11,12 +11,24 @@ bool has_positive_diagonals(const Eigen::MatrixBase<Derived>& m) {
 }
 
 template<typename Derived>
-bool is_positive_definite(const typename Eigen::EigenBase<Derived>& m) {
+bool is_positive_definite(const typename Eigen::MatrixBase<Derived>& m) {
     if (!is_symmetric(m)) {
         return false;
     }
     typename Eigen::LLT<Derived> llt(m);  // compute the Cholesky decomposition
     return llt.info() == Eigen::Success;
+}
+
+template<typename Derived>
+bool is_positive_semidefinite(const typename Eigen::MatrixBase<Derived>& m) {
+    if (!is_symmetric(m)) {
+        return false;
+    }
+    typename Eigen::SelfAdjointEigenSolver<Derived> solver(m);  // compute the Cholesky decomposition
+    if (solver.info() != Eigen::Success) {
+        return false;
+    }
+    return (solver.eigenvalues().array() >= static_cast<typename Derived::Scalar>(0)).all();
 }
 
 template<typename Derived>

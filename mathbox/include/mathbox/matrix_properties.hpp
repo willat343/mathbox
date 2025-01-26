@@ -27,7 +27,19 @@ bool has_positive_diagonals(const Eigen::MatrixBase<Derived>& m);
  * @return false
  */
 template<typename Derived>
-bool is_positive_definite(const Eigen::EigenBase<Derived>& m);
+bool is_positive_definite(const Eigen::MatrixBase<Derived>& m);
+
+/**
+ * @brief Check is matrix is positive-semidefinite. This funtion first checks if the matrix is symmetric, before
+ * checking for positive-semidefiniteness through the SelfAdjointEigenSolver.
+ *
+ * @tparam Derived
+ * @param m
+ * @return true
+ * @return false
+ */
+template<typename Derived>
+bool is_positive_semidefinite(const Eigen::MatrixBase<Derived>& m);
 
 /**
  * @brief Check if matrix is skew-symmetric.

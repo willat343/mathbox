@@ -38,6 +38,10 @@ target_include_directories(${PROJECT_NAME} INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 20
+)
+target_compile_options(${PROJECT_NAME} INTERFACE -fconcepts)
 
 # Configure package version and config files
 include(CMakePackageConfigHelpers)

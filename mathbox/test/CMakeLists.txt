@@ -3,6 +3,7 @@ enable_testing()
 
 # Build Example
 add_executable(${PROJECT_NAME}_tests
+    src/covariance.cpp
     src/decompose.cpp
     src/geometry.cpp
     src/integrator.cpp
@@ -15,6 +16,7 @@ add_executable(${PROJECT_NAME}_tests
 
 # Link Libraries
 target_link_libraries(${PROJECT_NAME}_tests PUBLIC
+    mathbox
     ${mathbox_SYSTEM_LIBRARIES}
     gtest_main
     gtest
