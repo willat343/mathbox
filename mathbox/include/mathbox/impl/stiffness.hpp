@@ -71,7 +71,10 @@ inline Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_sigma(const Scalar sigma
 
 template<typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> stiffness_from_sigma(const Scalar sigma, const int rows) {
-    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, 1, stiffness_from_sigma(sigma)).asDiagonal();
+    if (rows < 1) {
+        throw std::runtime_error("stiffness_from_sigma expected rows to be a positive integer");
+    }
+    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, stiffness_from_sigma(sigma)).asDiagonal();
 }
 
 template<typename Scalar>
@@ -102,6 +105,15 @@ template<int Rows, typename Scalar>
 inline Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_variance(const Scalar variance) {
     static_assert(Rows > 0, "number of compile-time rows must be > 0 when constructing from a single variance value");
     return Eigen::Matrix<Scalar, Rows, 1>::Constant(stiffness_from_variance(variance)).asDiagonal();
+}
+
+template<typename Scalar>
+inline Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> stiffness_from_variance(const Scalar variance,
+        const int rows) {
+    if (rows < 1) {
+        throw std::runtime_error("stiffness_from_variance expected rows to be a positive integer");
+    }
+    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, stiffness_from_variance(variance)).asDiagonal();
 }
 
 template<typename Scalar>

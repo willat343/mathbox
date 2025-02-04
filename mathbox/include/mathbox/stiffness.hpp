@@ -157,6 +157,18 @@ template<int Rows, typename Scalar = double>
 Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_variance(const Scalar variance);
 
 /**
+ * @brief Compute dynamic-sized stiffness matrix from a single variance value.
+ *
+ * @tparam Rows
+ * @tparam Scalar
+ * @param variance
+ * @param rows
+ * @return Eigen::Matrix<Scalar, Rows, Rows>
+ */
+template<typename Scalar = double>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> stiffness_from_variance(const Scalar variance, const int rows);
+
+/**
  * @brief Compute stiffness from a single variance value.
  *
  * @tparam Scalar
