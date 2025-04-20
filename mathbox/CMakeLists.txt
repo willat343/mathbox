@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(mathbox
     VERSION 0.3.4
     DESCRIPTION "Math Toolbox"
@@ -23,8 +23,25 @@ include(GNUInstallDirs)
 set(mathbox_SYSTEM_INCLUDE_DIRS "")
 set(mathbox_SYSTEM_LIBRARIES "")
 
+# Set version requirements based on CXX compiler version
+set(MIN_EIGEN_VERSION "3.3.7")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    message(STATUS "Detected GNU C++ compiler (g++) version ${CMAKE_CXX_COMPILER_VERSION}")
+    string(REPLACE "." ";" CMAKE_CXX_COMPILER_VERSION_LIST ${CMAKE_CXX_COMPILER_VERSION})
+    list(GET CMAKE_CXX_COMPILER_VERSION_LIST 0 CMAKE_CXX_COMPILER_VERSION_MAJOR)
+    list(GET CMAKE_CXX_COMPILER_VERSION_LIST 1 CMAKE_CXX_COMPILER_VERSION_MINOR)
+    if (CMAKE_CXX_COMPILER_VERSION_MAJOR GREATER_EQUAL 10)
+        # g++-10 with c++20 requires Eigen3 >=3.3.9. For further details see issues:
+        #  - https://gitlab.com/libeigen/eigen/-/issues/2012
+        #  - https://gitlab.com/libeigen/eigen/-/issues/1872
+        set(MIN_EIGEN_VERSION "3.3.9")
+    endif()
+endif()
+message(STATUS "Set minimum Eigen3 version to ${MIN_EIGEN_VERSION}")
+
 # Find Eigen3
-find_package(Eigen3 3.3 REQUIRED)
+find_package(Eigen3 ${MIN_EIGEN_VERSION} REQUIRED)
+message(STATUS "Found Eigen3 version to ${Eigen3_VERSION}")
 list(APPEND mathbox_SYSTEM_INCLUDE_DIRS
     ${EIGEN3_INCLUDE_DIRS}
 )

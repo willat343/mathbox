@@ -8,7 +8,26 @@ A general purpose math library based on Eigen. It is currently a header-only lib
 
 | **Dependency** | **Version** | **Description** |
 |----------------|-------------|-----------------|
-| Eigen3 | >= 3.3 | Linear Algebra Package |
+| Eigen3 | >= 3.3.7 (< g++-10) or >= 3.3.9 (>= g++-10) | Linear Algebra Package |
+
+#### Eigen3
+
+If using g++-9, the default Ubuntu 20.04 compiler at time of writing, then Eigen3 can be installed with:
+```bash
+sudo apt install libeigen-dev
+```
+
+If using a more modern g++ compiler, then Eigen3 should be installed from source locally with:
+```bash
+git clone git@gitlab.com:libeigen/eigen.git
+cd eigen
+git checkout 3.3.9
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local ..
+make install
+```
+
+In this case `-DCMAKE_PREFIX_PATH=$HOME/.local` or `-DEigen3_DIR=$HOME/.local/lib/cmake/Eigen3` must be added to the cmake arguments.
 
 ### Installation
 
@@ -17,7 +36,7 @@ It is recommended that you configure with `ccmake` (`sudo apt install cmake-curs
 ```bash
 cd mathbox
 mkdir build && cd build
-ccmake ..
+ccmake -DCMAKE_PREFIX_PATH=$HOME/.local ..
 make -j
 sudo make install
 ```
@@ -87,11 +106,16 @@ Prerequisites of core C++ library plus the following:
 Clone or symlink the repository to the workspace's `src` directory, for example:
 ```bash
 ln -s /path/to/mathbox /path/to/catkin_ws/src
+cd /path/to/catkin_ws
+```
+
+For catkin to search for locally installed packages (e.g. Eigen3) it must be configured:
+```bash
+catkin config --append-args --cmake-args -DCMAKE_INSTALL_PREFIX=$HOME/.local
 ```
 
 ```bash
-cd /path/to/catkin_ws
-catkin build mathbox
+catkin build --summary mathbox
 ```
 
 ### Uninstallation
