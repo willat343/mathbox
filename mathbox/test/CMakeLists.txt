@@ -40,6 +40,10 @@ target_compile_options(${PROJECT_NAME}_tests PRIVATE
     -Wall -Wextra -Wpedantic
 )
 
+# Change the variable tracking assigment limit for integrator.cpp to avoid warning and double-compilation. Note that
+# the default is 50000000 (g++-4.9), setting to 0 makes it unlimited, and -fno-var-tracking disables variable tracking.
+set_source_files_properties(src/integrator.cpp PROPERTIES COMPILE_OPTIONS "--param=max-vartrack-size=500000000")
+
 # Include Directories
 target_include_directories(${PROJECT_NAME}_tests PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
