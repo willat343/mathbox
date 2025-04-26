@@ -138,12 +138,12 @@ Importing the dependency is then exactly the same as it would be in a non-catkin
 
 Documentation must be turned on by setting the `-DBUILD_DOCUMENTATION=ON` cmake argument. This can be done in catkin with:
 ```bash
-catkin config --cmake-args -DBUILD_DOCUMENTATION=ON
+catkin config --append-args --cmake-args -DBUILD_DOCUMENTATION=ON
 ```
 
 ### Tests
 
 Tests must be turned on by setting the `-DBUILD_TESTS=ON` cmake argument. This can be done in catkin with:
 ```bash
-catkin config --cmake-args -DBUILD_TESTS=ON
+catkin config --append-args --cmake-args -DBUILD_TESTS=ON
 ```
