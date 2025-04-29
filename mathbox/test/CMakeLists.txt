@@ -14,15 +14,6 @@ add_executable(${PROJECT_NAME}_tests
     src/vector_operations.cpp
 )
 
-# Link Libraries
-target_link_libraries(${PROJECT_NAME}_tests PUBLIC
-    mathbox
-    ${mathbox_SYSTEM_LIBRARIES}
-    gtest_main
-    gtest
-    pthread
-)
-
 # Properties
 set_target_properties(${PROJECT_NAME}_tests PROPERTIES
     CXX_STANDARD 20
@@ -50,9 +41,13 @@ target_include_directories(${PROJECT_NAME}_tests PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
 )
 
-# System Include Directories
-target_include_directories(${PROJECT_NAME}_tests SYSTEM PUBLIC
-    ${mathbox_SYSTEM_INCLUDE_DIRS}
+# Link Libraries
+target_link_libraries(${PROJECT_NAME}_tests PUBLIC
+    Eigen3::Eigen
+    mathbox
+    gtest_main
+    gtest
+    pthread
 )
 
 # Add test
