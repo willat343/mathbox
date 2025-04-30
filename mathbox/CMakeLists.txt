@@ -19,37 +19,30 @@ option(BUILD_TESTS "Build Tests" OFF)
 # Installation directories
 include(GNUInstallDirs)
 
-# Variables
-set(mathbox_SYSTEM_INCLUDE_DIRS "")
-set(mathbox_SYSTEM_LIBRARIES "")
+# Get information about the CXX Compiler
+message(STATUS "Detected ${CMAKE_CXX_COMPILER_ID} CXX compiler version ${CMAKE_CXX_COMPILER_VERSION}")
 
-# Get the CXX Compiler Version
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    message(STATUS "Detected GNU C++ compiler (g++) version ${CMAKE_CXX_COMPILER_VERSION}")
-    string(REPLACE "." ";" CMAKE_CXX_COMPILER_VERSION_LIST ${CMAKE_CXX_COMPILER_VERSION})
-    list(GET CMAKE_CXX_COMPILER_VERSION_LIST 0 CMAKE_CXX_COMPILER_VERSION_MAJOR)
-    list(GET CMAKE_CXX_COMPILER_VERSION_LIST 1 CMAKE_CXX_COMPILER_VERSION_MINOR)
-else()
-    message(ERROR "Failed to find GNU C++ compiler (g++)")
-endif()
+# Get information about the CXX Compiler
+string(REPLACE "." ";" CMAKE_CXX_COMPILER_VERSION_LIST ${CMAKE_CXX_COMPILER_VERSION})
+list(GET CMAKE_CXX_COMPILER_VERSION_LIST 0 CMAKE_CXX_COMPILER_VERSION_MAJOR)
+list(GET CMAKE_CXX_COMPILER_VERSION_LIST 1 CMAKE_CXX_COMPILER_VERSION_MINOR)
 
 # Find Eigen3
 set(MIN_EIGEN_VERSION "3.3.7")
-if (CMAKE_CXX_COMPILER_VERSION_MAJOR GREATER_EQUAL 10)
-    # g++-10 with c++20 requires Eigen3 >=3.3.9. For further details see issues:
-    #  - https://gitlab.com/libeigen/eigen/-/issues/2012
-    #  - https://gitlab.com/libeigen/eigen/-/issues/1872
-    set(MIN_EIGEN_VERSION "3.3.9")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # Note: gcc/g++
+	if (CMAKE_CXX_COMPILER_VERSION_MAJOR GREATER_EQUAL 10)
+	    # g++-10 with c++20 requires Eigen3 >=3.3.9. For further details see issues:
+	    #  - https://gitlab.com/libeigen/eigen/-/issues/2012
+	    #  - https://gitlab.com/libeigen/eigen/-/issues/1872
+	    set(MIN_EIGEN_VERSION "3.3.9")
+	endif()
+else()
+	message(WARNING "Eigen3 minimum version not known for non-GNU CXX compiler")
 endif()
 message(STATUS "Set minimum Eigen3 version to ${MIN_EIGEN_VERSION}")
 find_package(Eigen3 ${MIN_EIGEN_VERSION} REQUIRED)
 message(STATUS "Found Eigen3 at ${Eigen3_DIR} with version ${Eigen3_VERSION}")
-list(APPEND mathbox_SYSTEM_INCLUDE_DIRS
-    ${EIGEN3_INCLUDE_DIRS}
-)
-list(APPEND mathbox_SYSTEM_LIBRARIES
-    Eigen3::Eigen
-)
+# Target=Eigen3::Eigen. Note Eigen3::Eigen sets INTERFACE_INCLUDE_DIRECTORIES.
 
 # Interface Library
 add_library(${PROJECT_NAME} INTERFACE)
@@ -61,6 +54,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 20
 )
 target_compile_options(${PROJECT_NAME} INTERFACE -fconcepts)
+target_link_libraries(${PROJECT_NAME} INTERFACE
+    Eigen3::Eigen
+)
 
 # Configure package version and config files
 include(CMakePackageConfigHelpers)
