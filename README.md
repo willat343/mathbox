@@ -9,7 +9,7 @@ A general purpose math library based on Eigen. It is currently a header-only lib
 | **Dependency** | **Version** | **Description** |
 |----------------|-------------|-----------------|
 | Eigen3 | >= 3.3.7 (< g++-10) or >= 3.3.9 (>= g++-10) | Linear Algebra Package |
-| cppbox | >= 0.0.1 | C++ Package |
+| [cppbox](https://github.com/willat343/cppbox) | >= 0.0.1 | C++ Package |
 
 #### Eigen3
 
