@@ -8,6 +8,21 @@
 
 namespace math {
 
+/**
+ * @brief Trait for checking the dimension D is 2D or 3D, i.e. the integer is 2 or 3.
+ *
+ * Example usage:
+ * ```
+ * template<int D>
+ *     requires is_2d_or_3d<D>
+ * void foo();
+ * ```
+ *
+ * @tparam D
+ */
+template<int D>
+constexpr bool is_2d_or_3d = (D == 2 || D == 3);
+
 template<class MathType, typename = void>
 class MathTypeTraits {};
 
