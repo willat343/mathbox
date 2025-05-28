@@ -12,6 +12,7 @@
 
     <build_export_depend>eigen</build_export_depend>
     <test_depend>eigen</test_depend>
+    <depend>cppbox</depend>
 
     <export>
         <build_type>cmake</build_type>

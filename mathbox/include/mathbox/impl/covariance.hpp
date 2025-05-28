@@ -6,9 +6,9 @@
 
 namespace math {
 
-template<typename Scalar, int Size>
+template<typename Scalar_, int Size_>
 template<typename Derived>
-PositiveSemiDefiniteMatrix<Scalar, Size>::PositiveSemiDefiniteMatrix(const Eigen::MatrixBase<Derived>& matrix,
+PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Eigen::MatrixBase<Derived>& matrix,
         const bool skip_checks)
     requires(SizeAtCompileTime == 1 || Derived::ColsAtCompileTime != 1)
     : Base(matrix) {
@@ -18,9 +18,9 @@ PositiveSemiDefiniteMatrix<Scalar, Size>::PositiveSemiDefiniteMatrix(const Eigen
     }
 }
 
-template<typename Scalar, int Size>
+template<typename Scalar_, int Size_>
 template<typename Derived>
-PositiveSemiDefiniteMatrix<Scalar, Size>::PositiveSemiDefiniteMatrix(const Eigen::MatrixBase<Derived>& diagonal,
+PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Eigen::MatrixBase<Derived>& diagonal,
         const bool skip_checks)
     requires(SizeAtCompileTime != 1 && Derived::ColsAtCompileTime == 1)
     : Base(Matrix(diagonal.asDiagonal())) {
@@ -29,8 +29,8 @@ PositiveSemiDefiniteMatrix<Scalar, Size>::PositiveSemiDefiniteMatrix(const Eigen
     }
 }
 
-template<typename Scalar, int Size>
-PositiveSemiDefiniteMatrix<Scalar, Size>::PositiveSemiDefiniteMatrix(const Scalar diagonal_element, const int size,
+template<typename Scalar_, int Size_>
+PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Scalar diagonal_element, const int size,
         const bool skip_checks)
     : Base(Matrix(Vector::Constant(size, diagonal_element).asDiagonal())) {
     if (!skip_checks) {
@@ -38,13 +38,13 @@ PositiveSemiDefiniteMatrix<Scalar, Size>::PositiveSemiDefiniteMatrix(const Scala
             throw std::runtime_error(
                     "Cannot initialise PositiveSemiDefiniteMatrix with negative single diagonal element.");
         }
-        if constexpr (Size == Eigen::Dynamic) {
+        if constexpr (SizeAtCompileTime == Eigen::Dynamic) {
             if (size == Eigen::Dynamic) {
                 throw std::runtime_error("Cannot initialise dynamic-size PositiveSemiDefiniteMatrix with single "
                                          "diagonal element without explicitly setting size (size was Eigen::Dynamic).");
             }
         } else {
-            if (size != Size) {
+            if (size != SizeAtCompileTime) {
                 throw std::runtime_error("Cannot initialise fixed-size PositiveSemiDefiniteMatrix with single diagonal "
                                          "element and a size that does not match the fixed size.");
             }
@@ -52,28 +52,28 @@ PositiveSemiDefiniteMatrix<Scalar, Size>::PositiveSemiDefiniteMatrix(const Scala
     }
 }
 
-template<typename Scalar, int Size>
-PositiveSemiDefiniteMatrix<Scalar, Size>::PositiveSemiDefiniteMatrix(const Scalar diagonal_element,
+template<typename Scalar_, int Size_>
+PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Scalar diagonal_element,
         const bool skip_checks)
-    : PositiveSemiDefiniteMatrix(diagonal_element, Size, skip_checks) {}
+    : PositiveSemiDefiniteMatrix(diagonal_element, SizeAtCompileTime, skip_checks) {}
 
-template<typename Scalar, int Size>
+template<typename Scalar_, int Size_>
 template<typename Derived>
-CovarianceDensity<Scalar, Size>::CovarianceDensity(
+CovarianceDensity<Scalar_, Size_>::CovarianceDensity(
         const Eigen::MatrixBase<Derived>& covariance_density_or_variances_density, const bool skip_checks)
     : Base(covariance_density_or_variances_density, skip_checks) {}
 
-template<typename Scalar, int Size>
-CovarianceDensity<Scalar, Size>::CovarianceDensity(const Scalar variance, const int size, const bool skip_checks)
+template<typename Scalar_, int Size_>
+CovarianceDensity<Scalar_, Size_>::CovarianceDensity(const Scalar variance, const int size, const bool skip_checks)
     : Base(variance, size, skip_checks) {}
 
-template<typename Scalar, int Size>
-CovarianceDensity<Scalar, Size>::CovarianceDensity(const Scalar variance, const bool skip_checks)
+template<typename Scalar_, int Size_>
+CovarianceDensity<Scalar_, Size_>::CovarianceDensity(const Scalar variance, const bool skip_checks)
     : Base(variance, skip_checks) {}
 
-template<typename Scalar, int Size>
-inline auto CovarianceDensity<Scalar, Size>::covariance(
-        const Scalar span) const -> Covariance<Scalar, SizeAtCompileTime> {
+template<typename Scalar_, int Size_>
+inline auto CovarianceDensity<Scalar_, Size_>::covariance(const Scalar span) const
+        -> Covariance<Scalar, SizeAtCompileTime> {
     return Covariance<Scalar, SizeAtCompileTime>(*this * span, true);
 }
 

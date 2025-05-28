@@ -43,8 +43,9 @@ target_include_directories(${PROJECT_NAME}_tests PUBLIC
 
 # Link Libraries
 target_link_libraries(${PROJECT_NAME}_tests PUBLIC
+    ${PROJECT_NAME}
     Eigen3::Eigen
-    mathbox
+    ${cppbox_LIBRARIES}
     gtest_main
     gtest
     pthread

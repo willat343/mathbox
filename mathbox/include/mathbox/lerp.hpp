@@ -1,6 +1,11 @@
 #ifndef MATHBOX_LERP_HPP
 #define MATHBOX_LERP_HPP
 
+#include <cppbox/time.hpp>
+#include <type_traits>
+
+#include "mathbox/traits.hpp"
+
 namespace math {
 
 /**
@@ -31,6 +36,7 @@ namespace math {
  * @return T interpolation or extrapolation result \f$\mathbf{y}\f$
  */
 template<typename T, typename Scalar>
+    requires(is_math_type_v<T> || cppbox::is_time_point_or_duration_v<T>)
 T lerp(const T& y_0, const T& y_1, const Scalar alpha);
 
 /**
@@ -50,7 +56,7 @@ T lerp(const T& y_0, const T& y_1, const Scalar alpha);
  * @param y_1
  * @return MathType
  */
-template<typename MathType, typename IndependentVariableType>
+template<IsMathType MathType, IsIndependentVariableType IndependentVariableType>
 inline MathType linear_function(const IndependentVariableType x, const IndependentVariableType x_0,
         const IndependentVariableType x_1, const MathType y_0, const MathType y_1);
 

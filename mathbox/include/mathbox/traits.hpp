@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <cppbox/time.hpp>
 #include <type_traits>
 
 namespace math {
@@ -75,6 +76,27 @@ struct is_math_type<T, std::enable_if_t<std::is_floating_point_v<T> || std::is_b
  */
 template<typename T>
 constexpr bool is_math_type_v = is_math_type<T>::value;
+
+/**
+ * @brief Math type concept.
+ *
+ * @tparam T
+ */
+template<typename T>
+concept IsMathType = is_math_type_v<T>;
+
+template<typename T, typename = void>
+struct is_independent_variable_type : std::false_type {};
+
+template<typename T>
+struct is_independent_variable_type<T, std::enable_if_t<std::is_floating_point_v<T> || cppbox::is_time_point_v<T>>>
+    : std::true_type {};
+
+template<typename T>
+constexpr bool is_independent_variable_type_v = is_independent_variable_type<T>::value;
+
+template<typename T>
+concept IsIndependentVariableType = is_independent_variable_type_v<T>;
 
 }
 

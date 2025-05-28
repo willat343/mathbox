@@ -10,11 +10,11 @@
 
 namespace math {
 
-template<typename MathType, typename IndependentVariableType>
-inline auto Integrator<MathType, IndependentVariableType>::integrate(const IndependentVariableType start,
+template<IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
+inline auto Integrator<MathType_, IndependentVariableType_>::integrate(const IndependentVariableType start,
         const IndependentVariableType end, const IndependentVariableDifferenceType integration_step,
-        const MathType& initial_value,
-        const IntegrandFunction<MathType, IndependentVariableType>& integrand) const -> MathType {
+        const MathType& initial_value, const IntegrandFunction<MathType, IndependentVariableType>& integrand) const
+        -> MathType {
     // Error handling and preprocessing
     if (integration_step <= IndependentVariableDifferenceType(0)) {
         throw std::runtime_error("Must integrate with a positive integration_step.");
@@ -39,8 +39,8 @@ inline auto Integrator<MathType, IndependentVariableType>::integrate(const Indep
 
 namespace newton_cotes {
 
-template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::integrate(const IndependentVariableType start,
+template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
+inline auto Integrator<N_, MathType_, IndependentVariableType_>::integrate(const IndependentVariableType start,
         const IndependentVariableType end, const MathType& initial_value,
         const IntegrandFunction<MathType, IndependentVariableType>& integrand) const -> MathType {
     MathType integral = initial_value;
@@ -53,45 +53,46 @@ inline auto Integrator<N, MathType, IndependentVariableType>::integrate(const In
 
 namespace closed {
 
-template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::alpha(const std::size_t i) const -> ArithmeticTypeScalar {
+template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
+inline auto Integrator<N_, MathType_, IndependentVariableType_>::alpha(const std::size_t i) const
+        -> ArithmeticTypeScalar {
     return static_cast<ArithmeticTypeScalar>(i) / static_cast<ArithmeticTypeScalar>(N);
 }
 
-template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::step_size(const IndependentVariableType start,
+template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
+inline auto Integrator<N_, MathType_, IndependentVariableType_>::step_size(const IndependentVariableType start,
         const IndependentVariableType end) const -> ArithmeticTypeScalar {
-    return to_sec(end - start) / static_cast<ArithmeticTypeScalar>(N);
+    return cppbox::to_sec(end - start) / static_cast<ArithmeticTypeScalar>(N);
 }
 
-template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::weight(
-        const std::size_t i) const -> ArithmeticTypeScalar {
+template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
+inline auto Integrator<N_, MathType_, IndependentVariableType_>::weight(const std::size_t i) const
+        -> ArithmeticTypeScalar {
     return Weights<N, ArithmeticTypeScalar>::weight(i);
 }
 
-template<typename Scalar>
-auto Weights<1, Scalar>::weight(const std::size_t i) -> Scalar {
+template<typename Scalar_>
+auto Weights<1, Scalar_>::weight(const std::size_t i) -> Scalar {
     static const std::array<Scalar, 2> weights{{static_cast<Scalar>(1.0 / 2.0), static_cast<Scalar>(1.0 / 2.0)}};
     return weights.at(i);
 }
 
-template<typename Scalar>
-auto Weights<2, Scalar>::weight(const std::size_t i) -> Scalar {
+template<typename Scalar_>
+auto Weights<2, Scalar_>::weight(const std::size_t i) -> Scalar {
     static const std::array<Scalar, 3> weights{
             {static_cast<Scalar>(1.0 / 3.0), static_cast<Scalar>(4.0 / 3.0), static_cast<Scalar>(1.0 / 3.0)}};
     return weights.at(i);
 }
 
-template<typename Scalar>
-auto Weights<3, Scalar>::weight(const std::size_t i) -> Scalar {
+template<typename Scalar_>
+auto Weights<3, Scalar_>::weight(const std::size_t i) -> Scalar {
     static const std::array<Scalar, 4> weights{{static_cast<Scalar>(3.0 / 8.0), static_cast<Scalar>(9.0 / 8.0),
             static_cast<Scalar>(9.0 / 8.0), static_cast<Scalar>(3.0 / 8.0)}};
     return weights.at(i);
 }
 
-template<typename Scalar>
-auto Weights<4, Scalar>::weight(const std::size_t i) -> Scalar {
+template<typename Scalar_>
+auto Weights<4, Scalar_>::weight(const std::size_t i) -> Scalar {
     static const std::array<Scalar, 5> weights{{static_cast<Scalar>(14.0 / 45.0), static_cast<Scalar>(64.0 / 45.0),
             static_cast<Scalar>(24.0 / 45.0), static_cast<Scalar>(64.0 / 45.0), static_cast<Scalar>(14.0 / 45.0)}};
     return weights.at(i);
@@ -101,44 +102,45 @@ auto Weights<4, Scalar>::weight(const std::size_t i) -> Scalar {
 
 namespace open {
 
-template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::alpha(const std::size_t i) const -> ArithmeticTypeScalar {
+template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
+inline auto Integrator<N_, MathType_, IndependentVariableType_>::alpha(const std::size_t i) const
+        -> ArithmeticTypeScalar {
     return static_cast<ArithmeticTypeScalar>(i + 1) / static_cast<ArithmeticTypeScalar>(N + 2);
 }
 
-template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::step_size(const IndependentVariableType start,
+template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
+inline auto Integrator<N_, MathType_, IndependentVariableType_>::step_size(const IndependentVariableType start,
         const IndependentVariableType end) const -> ArithmeticTypeScalar {
-    return to_sec(end - start) / static_cast<ArithmeticTypeScalar>(N + 2);
+    return cppbox::to_sec(end - start) / static_cast<ArithmeticTypeScalar>(N + 2);
 }
 
-template<int N, typename MathType, typename IndependentVariableType>
-inline auto Integrator<N, MathType, IndependentVariableType>::weight(
-        const std::size_t i) const -> ArithmeticTypeScalar {
+template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
+inline auto Integrator<N_, MathType_, IndependentVariableType_>::weight(const std::size_t i) const
+        -> ArithmeticTypeScalar {
     return Weights<N, ArithmeticTypeScalar>::weight(i);
 }
 
-template<typename Scalar>
-auto Weights<0, Scalar>::weight(const std::size_t i) -> Scalar {
+template<typename Scalar_>
+auto Weights<0, Scalar_>::weight(const std::size_t i) -> Scalar {
     static const std::array<Scalar, 1> weights{{static_cast<Scalar>(2.0)}};
     return weights.at(i);
 }
 
-template<typename Scalar>
-auto Weights<1, Scalar>::weight(const std::size_t i) -> Scalar {
+template<typename Scalar_>
+auto Weights<1, Scalar_>::weight(const std::size_t i) -> Scalar {
     static const std::array<Scalar, 2> weights{{static_cast<Scalar>(3.0 / 2.0), static_cast<Scalar>(3.0 / 2.0)}};
     return weights.at(i);
 }
 
-template<typename Scalar>
-auto Weights<2, Scalar>::weight(const std::size_t i) -> Scalar {
+template<typename Scalar_>
+auto Weights<2, Scalar_>::weight(const std::size_t i) -> Scalar {
     static const std::array<Scalar, 3> weights{
             {static_cast<Scalar>(8.0 / 3.0), static_cast<Scalar>(-4.0 / 3.0), static_cast<Scalar>(8.0 / 3.0)}};
     return weights.at(i);
 }
 
-template<typename Scalar>
-auto Weights<3, Scalar>::weight(const std::size_t i) -> Scalar {
+template<typename Scalar_>
+auto Weights<3, Scalar_>::weight(const std::size_t i) -> Scalar {
     static const std::array<Scalar, 4> weights{{static_cast<Scalar>(55.0 / 24.0), static_cast<Scalar>(5.0 / 24.0),
             static_cast<Scalar>(5.0 / 24.0), static_cast<Scalar>(55.0 / 24.0)}};
     return weights.at(i);

@@ -9,25 +9,25 @@
 
 namespace math {
 
-template<typename Scalar, int Size>
-GrvGenerator<Scalar, Size>::GrvGenerator(const Vector& mean, const Matrix& covariance,
+template<typename Scalar_, int Size_>
+GrvGenerator<Scalar_, Size_>::GrvGenerator(const Vector& mean, const Matrix& covariance,
         const LLTDecompositionMethod decomposition_method, const unsigned int seed)
     : generator(seed) {
     set_mean_covariance(mean, covariance, decomposition_method);
 }
 
-template<typename Scalar, int Size>
-auto GrvGenerator<Scalar, Size>::compute_covariance() const -> Matrix {
+template<typename Scalar_, int Size_>
+auto GrvGenerator<Scalar_, Size_>::compute_covariance() const -> Matrix {
     return transform() * transform().transpose();
 }
 
-template<typename Scalar, int Size>
-auto GrvGenerator<Scalar, Size>::mean() const -> const Vector& {
+template<typename Scalar_, int Size_>
+auto GrvGenerator<Scalar_, Size_>::mean() const -> const Vector& {
     return mean_;
 }
 
-template<typename Scalar, int Size>
-auto GrvGenerator<Scalar, Size>::operator()() -> Vector {
+template<typename Scalar_, int Size_>
+auto GrvGenerator<Scalar_, Size_>::operator()() -> Vector {
     // Note that passing the size to the vector is redundant in the fixed-size case.
     return mean() +
            transform() * Vector(mean_.size())
@@ -35,8 +35,8 @@ auto GrvGenerator<Scalar, Size>::operator()() -> Vector {
                                                     auto) { return normal_distribution(generator); });
 }
 
-template<typename Scalar, int Size>
-inline void GrvGenerator<Scalar, Size>::set_covariance(const Matrix& covariance,
+template<typename Scalar_, int Size_>
+inline void GrvGenerator<Scalar_, Size_>::set_covariance(const Matrix& covariance,
         const LLTDecompositionMethod decomposition_method) {
     // Check sizes in the dynamic case.
     if constexpr (Size == Eigen::Dynamic) {
@@ -55,8 +55,8 @@ inline void GrvGenerator<Scalar, Size>::set_covariance(const Matrix& covariance,
     set_covariance_impl(covariance, decomposition_method);
 }
 
-template<typename Scalar, int Size>
-inline void GrvGenerator<Scalar, Size>::set_mean(const Vector& mean) {
+template<typename Scalar_, int Size_>
+inline void GrvGenerator<Scalar_, Size_>::set_mean(const Vector& mean) {
     // Check sizes in the dynamic case.
     if constexpr (Size == Eigen::Dynamic) {
         const int mean_size = mean.size();
@@ -70,8 +70,8 @@ inline void GrvGenerator<Scalar, Size>::set_mean(const Vector& mean) {
     set_mean_impl(mean);
 }
 
-template<typename Scalar, int Size>
-inline void GrvGenerator<Scalar, Size>::set_mean_covariance(const Vector& mean, const Matrix& covariance,
+template<typename Scalar_, int Size_>
+inline void GrvGenerator<Scalar_, Size_>::set_mean_covariance(const Vector& mean, const Matrix& covariance,
         const LLTDecompositionMethod decomposition_method) {
     // Check sizes in the dynamic case.
     if constexpr (Size == Eigen::Dynamic) {
@@ -91,23 +91,23 @@ inline void GrvGenerator<Scalar, Size>::set_mean_covariance(const Vector& mean, 
     set_covariance_impl(covariance, decomposition_method);
 }
 
-template<typename Scalar, int Size>
-void GrvGenerator<Scalar, Size>::set_seed(const unsigned int seed) {
+template<typename Scalar_, int Size_>
+void GrvGenerator<Scalar_, Size_>::set_seed(const unsigned int seed) {
     generator = std::mt19937(seed);
 }
 
-template<typename Scalar, int Size>
-auto GrvGenerator<Scalar, Size>::transform() const -> const Matrix& {
+template<typename Scalar_, int Size_>
+auto GrvGenerator<Scalar_, Size_>::transform() const -> const Matrix& {
     return transform_;
 }
 
-template<typename Scalar, int Size>
-inline void GrvGenerator<Scalar, Size>::set_mean_impl(const Vector& mean) {
+template<typename Scalar_, int Size_>
+inline void GrvGenerator<Scalar_, Size_>::set_mean_impl(const Vector& mean) {
     mean_ = mean;
 }
 
-template<typename Scalar, int Size>
-inline void GrvGenerator<Scalar, Size>::set_covariance_impl(const Matrix& covariance,
+template<typename Scalar_, int Size_>
+inline void GrvGenerator<Scalar_, Size_>::set_covariance_impl(const Matrix& covariance,
         const LLTDecompositionMethod decomposition_method) {
     transform_ = LLT(covariance, decomposition_method);
 }

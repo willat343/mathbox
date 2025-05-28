@@ -40,8 +40,8 @@ TEST(nsphere, coordinates_2D_1) {
     EXPECT_TRUE(unit_cartesian_coordinates.isApprox(math::spherical_angles_to_unit_cartesian<2>(
             math::cartesian_to_spherical_angles(unit_cartesian_coordinates))));
     EXPECT_TRUE(math::cartesian_to_spherical(cartesian_coordinates)
-                        .tail<1>()
-                        .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
+                    .tail<1>()
+                    .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
 }
 
 TEST(nsphere, coordinates_2D_2) {
@@ -52,8 +52,8 @@ TEST(nsphere, coordinates_2D_2) {
     EXPECT_TRUE(unit_cartesian_coordinates.isApprox(math::spherical_angles_to_unit_cartesian<2>(
             math::cartesian_to_spherical_angles(unit_cartesian_coordinates))));
     EXPECT_TRUE(math::cartesian_to_spherical(cartesian_coordinates)
-                        .tail<1>()
-                        .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
+                    .tail<1>()
+                    .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
 }
 
 TEST(nsphere, coordinates_2D_3) {
@@ -64,8 +64,8 @@ TEST(nsphere, coordinates_2D_3) {
     EXPECT_TRUE(unit_cartesian_coordinates.isApprox(math::spherical_angles_to_unit_cartesian<2>(
             math::cartesian_to_spherical_angles(unit_cartesian_coordinates))));
     EXPECT_TRUE(math::cartesian_to_spherical(cartesian_coordinates)
-                        .tail<1>()
-                        .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
+                    .tail<1>()
+                    .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
 }
 
 TEST(nsphere, coordinates_3D_0) {
@@ -82,8 +82,8 @@ TEST(nsphere, coordinates_3D_1) {
     EXPECT_TRUE(unit_cartesian_coordinates.isApprox(math::spherical_angles_to_unit_cartesian<3>(
             math::cartesian_to_spherical_angles(unit_cartesian_coordinates))));
     EXPECT_TRUE(math::cartesian_to_spherical(cartesian_coordinates)
-                        .tail<2>()
-                        .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
+                    .tail<2>()
+                    .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
 }
 
 TEST(nsphere, coordinates_3D_2) {
@@ -94,8 +94,8 @@ TEST(nsphere, coordinates_3D_2) {
     EXPECT_TRUE(unit_cartesian_coordinates.isApprox(math::spherical_angles_to_unit_cartesian<3>(
             math::cartesian_to_spherical_angles(unit_cartesian_coordinates))));
     EXPECT_TRUE(math::cartesian_to_spherical(cartesian_coordinates)
-                        .tail<2>()
-                        .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
+                    .tail<2>()
+                    .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
 }
 
 TEST(nsphere, coordinates_3D_3) {
@@ -106,6 +106,6 @@ TEST(nsphere, coordinates_3D_3) {
     EXPECT_TRUE(unit_cartesian_coordinates.isApprox(math::spherical_angles_to_unit_cartesian<3>(
             math::cartesian_to_spherical_angles(unit_cartesian_coordinates))));
     EXPECT_TRUE(math::cartesian_to_spherical(cartesian_coordinates)
-                        .tail<2>()
-                        .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
+                    .tail<2>()
+                    .isApprox(math::cartesian_to_spherical_angles(unit_cartesian_coordinates)));
 }

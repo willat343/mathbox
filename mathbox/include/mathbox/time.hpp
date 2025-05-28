@@ -3,59 +3,10 @@
 
 #include <Eigen/Core>
 #include <chrono>
+#include <cppbox/time.hpp>
 #include <vector>
 
 namespace math {
-
-/**
- * @brief False version of type trait to check if type is a `std::chrono::Duration<Rep, Period>`.
- *
- * @tparam T type
- */
-template<typename T>
-struct is_duration : std::false_type {};
-
-/**
- * @brief True version of type trait to check if type is a `std::chrono::Duration<Rep, Period>`.
- *
- * @tparam Rep
- * @tparam Period
- */
-template<class Rep, class Period>
-struct is_duration<std::chrono::duration<Rep, Period>> : std::true_type {};
-
-/**
- * @brief Value for type trait to check if type is a `std::chrono::Duration<Rep, Period>`.
- *
- * @tparam T type
- */
-template<typename T>
-constexpr bool is_duration_v = is_duration<T>::value;
-
-/**
- * @brief False version of type trait to check if type is a `std::chrono::time_point<Clock, Duration>`.
- *
- * @tparam T type
- */
-template<typename T>
-struct is_time_point : std::false_type {};
-
-/**
- * @brief True version of type trait to check if type is a `std::chrono::time_point<Clock, Duration>`.
- *
- * @tparam Clock
- * @tparam Duration
- */
-template<class Clock, class Duration>
-struct is_time_point<std::chrono::time_point<Clock, Duration>> : std::true_type {};
-
-/**
- * @brief Value for type trait to check if type is a `std::chrono::time_point<Clock, Duration>`.
- *
- * @tparam T type
- */
-template<typename T>
-constexpr bool is_time_point_v = is_time_point<T>::value;
 
 /**
  * @brief Generate a linearly spaced dynamically-sized matrix from an interpolation step. The number of points are
@@ -92,50 +43,6 @@ std::vector<Time> lin_spaced(const Duration step, const Time start, const Time e
  */
 template<class Time, class Duration>
 std::vector<Time> range(const Duration step, const Time start, const Time end);
-
-/**
- * @brief Convert seconds to duration.
- *
- * @tparam Duration type satisfying `std::is_arithemetic_v` or `is_duration_v`
- * @tparam Scalar
- * @param seconds
- * @return Duration
- */
-template<class Duration, typename Scalar = double>
-constexpr Duration to_duration(const Scalar seconds);
-
-/**
- * @brief Convert time (since clock epoch) or duration to scalar seconds.
- *
- * @tparam Scalar default double allows use of function without specifying template parameters
- * @tparam TimeOrDuration type satisfying `std::is_arithemetic_v`, `is_time_point_v` or `is_duration_v`
- * @param time_or_duration
- * @return Scalar
- */
-template<typename Scalar = double, class TimeOrDuration = Scalar>
-constexpr Scalar to_sec(const TimeOrDuration& time_or_duration);
-
-/**
- * @brief Convert times (since clock epoch) or durations to scalar seconds.
- *
- * @tparam Scalar
- * @tparam TimeOrDuration
- * @param times_or_durations
- * @return std::vector<Scalar>
- */
-template<typename Scalar = double, class TimeOrDuration = Scalar>
-std::vector<Scalar> to_secs(const std::vector<TimeOrDuration>& times_or_durations);
-
-/**
- * @brief Convert seconds to time (since clock epoch).
- *
- * @tparam Time type satisfying `std::is_arithemetic_v` or `is_time_point_v`
- * @tparam Scalar
- * @param seconds
- * @return Time
- */
-template<class Time, typename Scalar = double>
-constexpr Time to_time(const Scalar seconds);
 
 /**
  * @brief Convert vector of seconds to vector of times (since clock epoch).

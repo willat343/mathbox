@@ -44,6 +44,10 @@ find_package(Eigen3 ${MIN_EIGEN_VERSION} REQUIRED)
 message(STATUS "Found Eigen3 at ${Eigen3_DIR} with version ${Eigen3_VERSION}")
 # Target=Eigen3::Eigen. Note Eigen3::Eigen sets INTERFACE_INCLUDE_DIRECTORIES.
 
+# Find cppbox
+set(MIN_CPPBOX_VERSION "0.0.1")
+find_package(cppbox ${MIN_CPPBOX_VERSION} REQUIRED)
+
 # Interface Library
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE
@@ -52,10 +56,15 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
 )
-target_compile_options(${PROJECT_NAME} INTERFACE -fconcepts)
+if (CMAKE_CXX_COMPILER_VERSION_MAJOR EQUAL 9)
+    # Add experimental concepts flag
+    target_compile_options(${PROJECT_NAME} INTERFACE -fconcepts)
+endif()
 target_link_libraries(${PROJECT_NAME} INTERFACE
     Eigen3::Eigen
+    ${cppbox_LIBRARIES}
 )
 
 # Configure package version and config files

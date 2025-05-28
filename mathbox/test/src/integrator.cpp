@@ -4,9 +4,8 @@
 
 #include <chrono>
 
-template<typename MathType>
+template<math::IsMathType MathType>
 MathType zero_instance() {
-    static_assert(math::is_math_type_v<MathType>, "MathType was not a math type.");
     if constexpr (std::is_base_of_v<Eigen::MatrixBase<MathType>, MathType>) {
         // Set any dynamic-sized dimensions to 1
         return math::MathTypeTraits<MathType>::zero(
@@ -28,7 +27,7 @@ void test_integrate_constant(const typename Integrator::IndependentVariableType&
     using ArithmeticTypeScalar = Integrator::ArithmeticTypeScalar;
     Integrator integrator;
     MathType expected_value = constant;
-    const ArithmeticTypeScalar duration = math::to_sec(end - start);
+    const ArithmeticTypeScalar duration = cppbox::to_sec(end - start);
     expected_value *= duration;
     expected_value += initial_value;
     const MathType value = integrator.integrate(start, end, integration_step, initial_value,
@@ -57,7 +56,7 @@ void test_integrate_linear(const typename Integrator::IndependentVariableType& s
     Integrator integrator;
     const MathType mean_height = (start_height + end_height) / ArithmeticTypeScalar(2.0);
     MathType expected_value = mean_height;
-    const ArithmeticTypeScalar duration = math::to_sec(end - start);
+    const ArithmeticTypeScalar duration = cppbox::to_sec(end - start);
     expected_value *= duration;
     expected_value += initial_value;
     const MathType value1 = integrator.integrate(start, end, integration_step, initial_value,
@@ -109,12 +108,12 @@ void test_integrate_linear(const typename Integrator::IndependentVariableType& s
                                                                                                                        \
     TEST(name##_integration, integrate_constant_double_double_##test_postfix) {                                        \
         test_integrate_constant<math::newton_cotes::name::Integrator<double, double>>(start, end, constant,            \
-                math::to_duration<double>(integration_step), zero_instance<double>(), precision_per_unit_area);        \
+                cppbox::to_duration<double>(integration_step), zero_instance<double>(), precision_per_unit_area);      \
     }                                                                                                                  \
                                                                                                                        \
     TEST(name##_integration, integrate_constant_fixedmatrix_double_##test_postfix) {                                   \
         test_integrate_constant<math::newton_cotes::name::Integrator<Eigen::Matrix<double, 1, 1>, double>>(start, end, \
-                Eigen::Matrix<double, 1, 1>::Constant(constant), math::to_duration<double>(integration_step),          \
+                Eigen::Matrix<double, 1, 1>::Constant(constant), cppbox::to_duration<double>(integration_step),        \
                 zero_instance<Eigen::Matrix<double, 1, 1>>(), precision_per_unit_area);                                \
     }                                                                                                                  \
                                                                                                                        \
@@ -122,7 +121,7 @@ void test_integrate_linear(const typename Integrator::IndependentVariableType& s
         test_integrate_constant<                                                                                       \
                 math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, 1>, double>>(start, end,    \
                 Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, constant),                                       \
-                math::to_duration<double>(integration_step),                                                           \
+                cppbox::to_duration<double>(integration_step),                                                         \
                 zero_instance<Eigen::Matrix<double, Eigen::Dynamic, 1>>(), precision_per_unit_area);                   \
     }                                                                                                                  \
                                                                                                                        \
@@ -130,51 +129,51 @@ void test_integrate_linear(const typename Integrator::IndependentVariableType& s
         test_integrate_constant<                                                                                       \
                 math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>, double>>(  \
                 start, end, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, constant),           \
-                math::to_duration<double>(integration_step),                                                           \
+                cppbox::to_duration<double>(integration_step),                                                         \
                 zero_instance<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>>(), precision_per_unit_area);      \
     }
 
-#define GENERATE_INTEGRATION_TEST_CONSTANT_TIME(name, test_postfix, start, end, constant, integration_step,        \
-        precision_per_unit_area)                                                                                   \
-                                                                                                                   \
-    TEST(name##_integration, integrate_constant_double_time_##test_postfix) {                                      \
-        test_integrate_constant<                                                                                   \
-                math::newton_cotes::name::Integrator<double, std::chrono::time_point<std::chrono::steady_clock>>>( \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end), constant,                  \
-                math::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
-                zero_instance<double>(), precision_per_unit_area);                                                 \
-    }                                                                                                              \
-                                                                                                                   \
-    TEST(name##_integration, integrate_constant_fixedmatrix_time_##test_postfix) {                                 \
-        test_integrate_constant<math::newton_cotes::name::Integrator<Eigen::Matrix<double, 1, 1>,                  \
-                std::chrono::time_point<std::chrono::steady_clock>>>(                                              \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
-                Eigen::Matrix<double, 1, 1>::Constant(constant),                                                   \
-                math::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
-                zero_instance<Eigen::Matrix<double, 1, 1>>(), precision_per_unit_area);                            \
-    }                                                                                                              \
-                                                                                                                   \
-    TEST(name##_integration, integrate_constant_dynamicvector_time_##test_postfix) {                               \
-        test_integrate_constant<math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, 1>,     \
-                std::chrono::time_point<std::chrono::steady_clock>>>(                                              \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
-                Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, constant),                                   \
-                math::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
-                zero_instance<Eigen::Matrix<double, Eigen::Dynamic, 1>>(), precision_per_unit_area);               \
-    }                                                                                                              \
-                                                                                                                   \
-    TEST(name##_integration, integrate_constant_dynamicmatrix_time_##test_postfix) {                               \
-        test_integrate_constant<                                                                                   \
-                math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>,        \
-                        std::chrono::time_point<std::chrono::steady_clock>>>(                                      \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
-                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, constant),                   \
-                math::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
-                zero_instance<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>>(), precision_per_unit_area);  \
+#define GENERATE_INTEGRATION_TEST_CONSTANT_TIME(name, test_postfix, start, end, constant, integration_step,          \
+        precision_per_unit_area)                                                                                     \
+                                                                                                                     \
+    TEST(name##_integration, integrate_constant_double_time_##test_postfix) {                                        \
+        test_integrate_constant<                                                                                     \
+                math::newton_cotes::name::Integrator<double, std::chrono::time_point<std::chrono::steady_clock>>>(   \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end), constant,                  \
+                cppbox::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
+                zero_instance<double>(), precision_per_unit_area);                                                   \
+    }                                                                                                                \
+                                                                                                                     \
+    TEST(name##_integration, integrate_constant_fixedmatrix_time_##test_postfix) {                                   \
+        test_integrate_constant<math::newton_cotes::name::Integrator<Eigen::Matrix<double, 1, 1>,                    \
+                std::chrono::time_point<std::chrono::steady_clock>>>(                                                \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
+                Eigen::Matrix<double, 1, 1>::Constant(constant),                                                     \
+                cppbox::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
+                zero_instance<Eigen::Matrix<double, 1, 1>>(), precision_per_unit_area);                              \
+    }                                                                                                                \
+                                                                                                                     \
+    TEST(name##_integration, integrate_constant_dynamicvector_time_##test_postfix) {                                 \
+        test_integrate_constant<math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, 1>,       \
+                std::chrono::time_point<std::chrono::steady_clock>>>(                                                \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
+                Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, constant),                                     \
+                cppbox::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
+                zero_instance<Eigen::Matrix<double, Eigen::Dynamic, 1>>(), precision_per_unit_area);                 \
+    }                                                                                                                \
+                                                                                                                     \
+    TEST(name##_integration, integrate_constant_dynamicmatrix_time_##test_postfix) {                                 \
+        test_integrate_constant<                                                                                     \
+                math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>,          \
+                        std::chrono::time_point<std::chrono::steady_clock>>>(                                        \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
+                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, constant),                     \
+                cppbox::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
+                zero_instance<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>>(), precision_per_unit_area);    \
     }
 
 #define GENERATE_INTEGRATION_TEST_LINEAR_DOUBLE(name, test_postfix, start, end, start_height, end_height,              \
@@ -182,14 +181,14 @@ void test_integrate_linear(const typename Integrator::IndependentVariableType& s
                                                                                                                        \
     TEST(name##_integration, integrate_linear_double_double_##test_postfix) {                                          \
         test_integrate_linear<math::newton_cotes::name::Integrator<double, double>>(start, end, start_height,          \
-                end_height, math::to_duration<double>(integration_step), zero_instance<double>(),                      \
+                end_height, cppbox::to_duration<double>(integration_step), zero_instance<double>(),                    \
                 precision_per_unit_area);                                                                              \
     }                                                                                                                  \
                                                                                                                        \
     TEST(name##_integration, integrate_linear_fixedmatrix_double_##test_postfix) {                                     \
         test_integrate_linear<math::newton_cotes::name::Integrator<Eigen::Matrix<double, 1, 1>, double>>(start, end,   \
                 Eigen::Matrix<double, 1, 1>::Constant(start_height),                                                   \
-                Eigen::Matrix<double, 1, 1>::Constant(end_height), math::to_duration<double>(integration_step),        \
+                Eigen::Matrix<double, 1, 1>::Constant(end_height), cppbox::to_duration<double>(integration_step),      \
                 zero_instance<Eigen::Matrix<double, 1, 1>>(), precision_per_unit_area);                                \
     }                                                                                                                  \
                                                                                                                        \
@@ -197,7 +196,7 @@ void test_integrate_linear(const typename Integrator::IndependentVariableType& s
         test_integrate_linear<math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, 1>, double>>( \
                 start, end, Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, start_height),                       \
                 Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, end_height),                                     \
-                math::to_duration<double>(integration_step),                                                           \
+                cppbox::to_duration<double>(integration_step),                                                         \
                 zero_instance<Eigen::Matrix<double, Eigen::Dynamic, 1>>(), precision_per_unit_area);                   \
     }                                                                                                                  \
                                                                                                                        \
@@ -206,54 +205,54 @@ void test_integrate_linear(const typename Integrator::IndependentVariableType& s
                 math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>, double>>(  \
                 start, end, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, start_height),       \
                 Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, end_height),                     \
-                math::to_duration<double>(integration_step),                                                           \
+                cppbox::to_duration<double>(integration_step),                                                         \
                 zero_instance<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>>(), precision_per_unit_area);      \
     }
 
-#define GENERATE_INTEGRATION_TEST_LINEAR_TIME(name, test_postfix, start, end, start_height, end_height,            \
-        integration_step, precision_per_unit_area)                                                                 \
-                                                                                                                   \
-    TEST(name##_integration, integrate_linear_double_time_##test_postfix) {                                        \
-        test_integrate_linear<                                                                                     \
-                math::newton_cotes::name::Integrator<double, std::chrono::time_point<std::chrono::steady_clock>>>( \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end), start_height, end_height,  \
-                math::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
-                zero_instance<double>(), precision_per_unit_area);                                                 \
-    }                                                                                                              \
-                                                                                                                   \
-    TEST(name##_integration, integrate_linear_fixedmatrix_time_##test_postfix) {                                   \
-        test_integrate_linear<math::newton_cotes::name::Integrator<Eigen::Matrix<double, 1, 1>,                    \
-                std::chrono::time_point<std::chrono::steady_clock>>>(                                              \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
-                Eigen::Matrix<double, 1, 1>::Constant(start_height),                                               \
-                Eigen::Matrix<double, 1, 1>::Constant(end_height),                                                 \
-                math::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
-                zero_instance<Eigen::Matrix<double, 1, 1>>(), precision_per_unit_area);                            \
-    }                                                                                                              \
-                                                                                                                   \
-    TEST(name##_integration, integrate_linear_dynamicvector_time_##test_postfix) {                                 \
-        test_integrate_linear<math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, 1>,       \
-                std::chrono::time_point<std::chrono::steady_clock>>>(                                              \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
-                Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, start_height),                               \
-                Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, end_height),                                 \
-                math::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
-                zero_instance<Eigen::Matrix<double, Eigen::Dynamic, 1>>(), precision_per_unit_area);               \
-    }                                                                                                              \
-                                                                                                                   \
-    TEST(name##_integration, integrate_linear_dynamicmatrix_time_##test_postfix) {                                 \
-        test_integrate_linear<                                                                                     \
-                math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>,        \
-                        std::chrono::time_point<std::chrono::steady_clock>>>(                                      \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
-                math::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
-                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, start_height),               \
-                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, end_height),                 \
-                math::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
-                zero_instance<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>>(), precision_per_unit_area);  \
+#define GENERATE_INTEGRATION_TEST_LINEAR_TIME(name, test_postfix, start, end, start_height, end_height,              \
+        integration_step, precision_per_unit_area)                                                                   \
+                                                                                                                     \
+    TEST(name##_integration, integrate_linear_double_time_##test_postfix) {                                          \
+        test_integrate_linear<                                                                                       \
+                math::newton_cotes::name::Integrator<double, std::chrono::time_point<std::chrono::steady_clock>>>(   \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end), start_height, end_height,  \
+                cppbox::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
+                zero_instance<double>(), precision_per_unit_area);                                                   \
+    }                                                                                                                \
+                                                                                                                     \
+    TEST(name##_integration, integrate_linear_fixedmatrix_time_##test_postfix) {                                     \
+        test_integrate_linear<math::newton_cotes::name::Integrator<Eigen::Matrix<double, 1, 1>,                      \
+                std::chrono::time_point<std::chrono::steady_clock>>>(                                                \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
+                Eigen::Matrix<double, 1, 1>::Constant(start_height),                                                 \
+                Eigen::Matrix<double, 1, 1>::Constant(end_height),                                                   \
+                cppbox::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
+                zero_instance<Eigen::Matrix<double, 1, 1>>(), precision_per_unit_area);                              \
+    }                                                                                                                \
+                                                                                                                     \
+    TEST(name##_integration, integrate_linear_dynamicvector_time_##test_postfix) {                                   \
+        test_integrate_linear<math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, 1>,         \
+                std::chrono::time_point<std::chrono::steady_clock>>>(                                                \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
+                Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, start_height),                                 \
+                Eigen::Matrix<double, Eigen::Dynamic, 1>::Constant(1, end_height),                                   \
+                cppbox::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
+                zero_instance<Eigen::Matrix<double, Eigen::Dynamic, 1>>(), precision_per_unit_area);                 \
+    }                                                                                                                \
+                                                                                                                     \
+    TEST(name##_integration, integrate_linear_dynamicmatrix_time_##test_postfix) {                                   \
+        test_integrate_linear<                                                                                       \
+                math::newton_cotes::name::Integrator<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>,          \
+                        std::chrono::time_point<std::chrono::steady_clock>>>(                                        \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(start),                          \
+                cppbox::to_time<std::chrono::time_point<std::chrono::steady_clock>>(end),                            \
+                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, start_height),                 \
+                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Constant(1, 1, end_height),                   \
+                cppbox::to_duration<std::chrono::time_point<std::chrono::steady_clock>::duration>(integration_step), \
+                zero_instance<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>>(), precision_per_unit_area);    \
     }
 
 #define GENERATE_INTEGRATION_TEST_CONSTANT_STEP(name, step_name, test_postfix, start, end, constant, step,  \
