@@ -45,7 +45,7 @@ message(STATUS "Found Eigen3 at ${Eigen3_DIR} with version ${Eigen3_VERSION}")
 # Target=Eigen3::Eigen. Note Eigen3::Eigen sets INTERFACE_INCLUDE_DIRECTORIES.
 
 # Find cppbox
-set(MIN_CPPBOX_VERSION "0.0.1")
+set(MIN_CPPBOX_VERSION "0.0.2")
 find_package(cppbox ${MIN_CPPBOX_VERSION} REQUIRED)
 
 # Interface Library
