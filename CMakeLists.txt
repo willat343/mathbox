@@ -5,6 +5,9 @@ project(mathbox
     LANGUAGES CXX
 )
 
+# Installation directories
+include(GNUInstallDirs)
+
 # CMake Build Type
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose build type" FORCE)
@@ -15,9 +18,8 @@ message(STATUS "Build type set to ${CMAKE_BUILD_TYPE}")
 # General Options
 option(BUILD_DOCUMENTATION "Build Doxygen Documentation" OFF)
 option(BUILD_TESTS "Build Tests" OFF)
-
-# Installation directories
-include(GNUInstallDirs)
+option(DEVELOPER_MODE "Use local versions of cppbox" OFF)
+option(USE_SYSTEM_Eigen3 "Use system install of Eigen3" ON)
 
 # Get information about the CXX Compiler
 message(STATUS "Detected ${CMAKE_CXX_COMPILER_ID} CXX compiler version ${CMAKE_CXX_COMPILER_VERSION}")
@@ -27,44 +29,74 @@ string(REPLACE "." ";" CMAKE_CXX_COMPILER_VERSION_LIST ${CMAKE_CXX_COMPILER_VERS
 list(GET CMAKE_CXX_COMPILER_VERSION_LIST 0 CMAKE_CXX_COMPILER_VERSION_MAJOR)
 list(GET CMAKE_CXX_COMPILER_VERSION_LIST 1 CMAKE_CXX_COMPILER_VERSION_MINOR)
 
-# Find Eigen3
-set(MIN_EIGEN_VERSION "3.3.7")
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # Note: gcc/g++
-	if (CMAKE_CXX_COMPILER_VERSION_MAJOR GREATER_EQUAL 10)
-	    # g++-10 with c++20 requires Eigen3 >=3.3.9. For further details see issues:
-	    #  - https://gitlab.com/libeigen/eigen/-/issues/2012
-	    #  - https://gitlab.com/libeigen/eigen/-/issues/1872
-	    set(MIN_EIGEN_VERSION "3.3.9")
-	endif()
-else()
-	message(WARNING "Eigen3 minimum version not known for non-GNU CXX compiler")
+# Dependency: Eigen3 (Target: Eigen3::Eigen, Note: Eigen3::Eigen sets INTERFACE_INCLUDE_DIRECTORIES)
+if (NOT TARGET Eigen3::Eigen)
+    set(EIGEN3_VERSION "3.3.7")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # Note: gcc/g++
+        if (CMAKE_CXX_COMPILER_VERSION_MAJOR GREATER_EQUAL 10)
+            # g++-10 with c++20 requires Eigen3 >=3.3.9. For further details see issues:
+            #  - https://gitlab.com/libeigen/eigen/-/issues/2012
+            #  - https://gitlab.com/libeigen/eigen/-/issues/1872
+            set(EIGEN3_VERSION "3.3.9")
+        endif()
+    endif()
+    if (${USE_SYSTEM_Eigen3})
+        find_package(Eigen3 ${EIGEN3_VERSION} REQUIRED)
+        message(STATUS "Found Eigen3 at ${Eigen3_DIR} with version ${Eigen3_VERSION}")
+    else()
+        FetchContent_Declare(
+            eigen
+            GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+            GIT_TAG ${EIGEN3_VERSION}
+        )
+        FetchContent_MakeAvailable(eigen)
+        message(STATUS "Fetched eigen to ${eigen_SOURCE_DIR} with version ${EIGEN3_VERSION}")
+    endif()
 endif()
-message(STATUS "Set minimum Eigen3 version to ${MIN_EIGEN_VERSION}")
-find_package(Eigen3 ${MIN_EIGEN_VERSION} REQUIRED)
-message(STATUS "Found Eigen3 at ${Eigen3_DIR} with version ${Eigen3_VERSION}")
-# Target=Eigen3::Eigen. Note Eigen3::Eigen sets INTERFACE_INCLUDE_DIRECTORIES.
 
-# Find cppbox
-set(MIN_CPPBOX_VERSION "0.0.2")
-find_package(cppbox ${MIN_CPPBOX_VERSION} REQUIRED)
+# Dependency: cppbox (Target: cppbox::cppbox)
+if (NOT TARGET cppbox::cppbox)
+    set(CPPBOX_VERSION "0.0.4")
+    FetchContent_Declare(
+        cppbox
+        GIT_REPOSITORY git@github.com:willat343/cppbox.git
+        GIT_TAG v${CPPBOX_VERSION}
+    )
+    FetchContent_MakeAvailable(cppbox)
+    if (${DEVELOPER_MODE})
+        message(STATUS "Found cppbox at ${cppbox_SOURCE_DIR} (DEVELOPER_MODE = ON)")
+    else()
+        message(STATUS "Fetched cppbox to ${cppbox_SOURCE_DIR} with version ${CPPBOX_VERSION}")
+    endif()
+endif()
 
 # Interface Library
-add_library(${PROJECT_NAME} INTERFACE)
-target_include_directories(${PROJECT_NAME} INTERFACE
+set(LIBRARY_NAME ${PROJECT_NAME})
+add_library(${LIBRARY_NAME} INTERFACE)
+add_library(${PROJECT_NAME}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
+
+# Include Directories
+target_include_directories(${LIBRARY_NAME} INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-set_target_properties(${PROJECT_NAME} PROPERTIES
+
+# Properties
+set_target_properties(${LIBRARY_NAME} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 )
+
+# Compile Options
 if (CMAKE_CXX_COMPILER_VERSION_MAJOR EQUAL 9)
     # Add experimental concepts flag
-    target_compile_options(${PROJECT_NAME} INTERFACE -fconcepts)
+    target_compile_options(${LIBRARY_NAME} INTERFACE -fconcepts)
 endif()
-target_link_libraries(${PROJECT_NAME} INTERFACE
+
+# Link Libraries
+target_link_libraries(${LIBRARY_NAME} INTERFACE
     Eigen3::Eigen
-    ${cppbox_LIBRARIES}
+    cppbox::cppbox
 )
 
 # Configure package version and config files
@@ -81,7 +113,7 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake.in
 
 # Installation
 install(
-    TARGETS ${PROJECT_NAME}
+    TARGETS ${LIBRARY_NAME}
     EXPORT ${PROJECT_NAME}
     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
