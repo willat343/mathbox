@@ -4,63 +4,139 @@ A general purpose math library based on Eigen. It is currently a header-only lib
 
 ## Core C++ Library
 
-### Prerequisites
-
 | **Dependency** | **Version** | **Description** |
 |----------------|-------------|-----------------|
-| Eigen3 | >= 3.3.7 (< g++-10) or >= 3.3.9 (>= g++-10) | Linear Algebra Package |
-| [cppbox](https://github.com/willat343/cppbox) | >= 0.0.2 | C++ Package |
+| CMake | >= 3.21 | CMake Build Tool |
+| [cmakebox](https://github.com/willat343/cppbox) | >= 0.0.1 | CMake Functions and Utilities |
+| [cppbox](https://github.com/willat343/cppbox) | >= 0.1.0 | C++ Package |
+| Eigen3 | >= 3.4.0 | Linear Algebra Package |
 
-#### Eigen3
+There are several ways to include `cppbox` within your project:
+- [Preferred] Via `FetchContent` allowing `cppbox` to be built as a submodule.
+- Via `find_package`, requiring `cppbox` to be installed to the system, locally, or to a catkin workspace.
 
-If using g++-9, the default Ubuntu 20.04 compiler at time of writing, then Eigen3 can be installed with:
-```bash
-sudo apt install libeigen-dev
+## Include via FetchContent
+
+It is recommended to leverage the functionality of [cmakebox](https://github.com/willat343/cppbox) by including the following lines in the `CMakeLists.txt` (replace `X.Y.Z` with version):
+```CMake
+set(CMAKEBOX_VERSION "0.0.1")
+FetchContent_Declare(
+    cmakebox
+    GIT_REPOSITORY git@github.com:willat343/cmakebox.git
+    GIT_TAG v${CMAKEBOX_VERSION}
+)
+FetchContent_MakeAvailable(cmakebox)
+list(APPEND CMAKE_MODULE_PATH "${cmakebox_SOURCE_DIR}/cmake")
+include(CMakeBox)
+
+set(MATHBOX_VERSION "X.Y.Z")
+import_dependency(
+    mathbox
+    TARGET mathbox::mathbox
+    VERSION ${MATHBOX_VERSION}
+    USE_SYSTEM_REQUIRED_VERSION ${MATHBOX_VERSION}
+    GIT_REPOSITORY git@github.com:willat343/mathbox
+    GIT_TAG v${MATHBOX_VERSION}
+)
 ```
 
-If using a more modern g++ compiler, then Eigen3 should be installed from source locally with:
-```bash
-git clone git@gitlab.com:libeigen/eigen.git
-cd eigen
-git checkout 3.3.9
-mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local ..
-make install
+Without relying on [cmakebox](https://github.com/willat343/cppbox), this can be achieved with (replace `X.Y.Z` with version):
+```CMake
+set(MATHBOX_VERSION "X.Y.Z")
+FetchContent_Declare(
+    mathbox
+    GIT_REPOSITORY git@github.com:willat343/mathbox
+    GIT_TAG        v${MATHBOX_VERSION}
+)
+FetchContent_MakeAvailable(mathbox)
 ```
 
-In this case `-DCMAKE_PREFIX_PATH=$HOME/.local` or `-DEigen3_DIR=$HOME/.local/lib/cmake/Eigen3` must be added to the cmake arguments.
+## Include via Install
 
-### Installation
-
-It is recommended that you configure with `ccmake` (`sudo apt install cmake-curses-gui`) to see the various options. Otherwise use `cmake` instead of `ccmake` and set flags manually.
+### Clone
 
 ```bash
+git clone git@github.com:willat343/mathbox.git
 cd mathbox
-mkdir build && cd build
-ccmake -DCMAKE_PREFIX_PATH=$HOME/.local ..
-make -j
-sudo make install
 ```
 
-### Uninstallation
+### Configure
+
+For system install:
+```bash
+cmake -S . -B build
+```
+
+For local install:
+```bash
+cmake -S . -B build -DCMAKE_INSTALL_DIR=$HOME/.local
+```
+
+### Build
 
 ```bash
-cd build
-sudo make uninstall
+cmake --build build -j
 ```
 
-### Usage
+### Install
 
-Import the package into your project and add the dependency to your target `<target>` with:
-```cmake
+```bash
+sudo cmake --build build --target install
+```
+
+### Include
+
+Include with the following lines in the `CMakeLists.txt`:
+```CMake
 find_package(mathbox REQUIRED)
-target_link_libraries(<target> <PUBLIC|INTERFACE|PRIVATE> ${mathbox_LIBRARIES})
-target_include_directories(<target> SYSTEM <PUBLIC|INTERFACE|PRIVATE> ${mathbox_INCLUDE_DIRS})
+target_link_libraries(<target> PUBLIC mathbox::mathbox)
 ```
 
-For more information, see [mathbox/README.md](mathbox/README.md) and documentation.
+### Uninstall
 
-### Documentation
+```bash
+sudo cmake --build build --target uninstall
+```
+
+## Include in Catkin Workspace
+
+A `package.xml` is supplied to facilitate an isolated installation within a catkin workspace (e.g. for ROS applications).
+
+### Clone
+
+```bash
+cd /path/to/catkin_ws/src
+git clone git@github.com:willat343/mathbox.git
+```
+
+### Build
+
+```bash
+cd /path/to/catkin_ws
+catkin build mathbox
+```
+
+### Include
+
+To use the package in a downstream project, one should add to their `package.xml`:
+```xml
+<depend>mathbox</depend>
+```
+
+One can then include `mathbox` package by includeing in the `CMakeLists.txt`:
+```CMake
+find_package(mathbox REQUIRED)
+target_link_libraries(<target> PUBLIC mathbox::mathbox)
+```
+
+### Clean
+
+```bash
+cd /path/to/catkin_ws
+catkin clean mathbox
+```
+
+## Documentation
 
 Documentation must be turned on by setting the `-DBUILD_DOCUMENTATION=ON` cmake argument.
 
@@ -73,15 +149,9 @@ make
 ```
 Then open the file `refman.pdf`.
 
-### Tests
+## Tests
 
 Tests must be turned on by setting the `-DBUILD_TESTS=ON` cmake argument.
-
-```bash
-cd build
-cmake -DBUILD_TESTS=ON ..
-make -j
-```
 
 They can then be run with `ctest`:
 ```bash
@@ -89,62 +159,3 @@ ctest --test-dir test
 ```
 
 For more explicit output, the test executables can be run directly from the build directory.
-
-## Catkin Support
-
-A `package.xml` is supplied to facilitate an isolated installation within a catkin workspace (e.g. for ROS applications).
-
-### Prerequisites
-
-Prerequisites of core C++ library plus the following:
-
-| **Dependency** | **Version** | **Description** |
-|----------------|-------------|-----------------|
-| catkin | - | catkin build system |
-
-### Installation
-
-Clone or symlink the repository to the workspace's `src` directory, for example:
-```bash
-ln -s /path/to/mathbox /path/to/catkin_ws/src
-cd /path/to/catkin_ws
-```
-
-For catkin to search for locally installed packages (e.g. Eigen3) it must be configured:
-```bash
-catkin config --append-args --cmake-args -DCMAKE_INSTALL_PREFIX=$HOME/.local
-```
-
-```bash
-catkin build --summary mathbox
-```
-
-### Uninstallation
-
-```bash
-cd /path/to/catkin_ws
-catkin clean mathbox
-```
-
-### Usage
-
-To use the package in a downstream project, one should add to their `package.xml`:
-```xml
-<depend>mathbox</depend>
-```
-One can then either use the workspace's isolated installation or use the system installation otherwise.
-Importing the dependency is then exactly the same as it would be in a non-catkin package as described above (do NOT rely on the `catkin` variables like `catkin_LIBRARIES` and `catkin_INCLUDE_DIRS`).
-
-### Documentation
-
-Documentation must be turned on by setting the `-DBUILD_DOCUMENTATION=ON` cmake argument. This can be done in catkin with:
-```bash
-catkin config --append-args --cmake-args -DBUILD_DOCUMENTATION=ON
-```
-
-### Tests
-
-Tests must be turned on by setting the `-DBUILD_TESTS=ON` cmake argument. This can be done in catkin with:
-```bash
-catkin config --append-args --cmake-args -DBUILD_TESTS=ON
-```
