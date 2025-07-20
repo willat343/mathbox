@@ -7,7 +7,7 @@ A general purpose math library based on Eigen. It is currently a header-only lib
 | **Dependency** | **Version** | **Description** |
 |----------------|-------------|-----------------|
 | CMake | >= 3.21 | CMake Build Tool |
-| [cmakebox](https://github.com/willat343/cppbox) | >= 0.0.1 | CMake Functions and Utilities |
+| [cmakebox](https://github.com/willat343/cmakebox) | >= 0.0.1 | CMake Functions and Utilities |
 | [cppbox](https://github.com/willat343/cppbox) | >= 0.1.0 | C++ Package |
 | Eigen3 | >= 3.4.0 | Linear Algebra Package |
 
@@ -17,7 +17,7 @@ There are several ways to include `cppbox` within your project:
 
 ## Include via FetchContent
 
-It is recommended to leverage the functionality of [cmakebox](https://github.com/willat343/cppbox) by including the following lines in the `CMakeLists.txt` (replace `X.Y.Z` with version):
+It is recommended to leverage the functionality of [cmakebox](https://github.com/willat343/cmakebox) by including the following lines in the `CMakeLists.txt` (replace `X.Y.Z` with version):
 ```CMake
 set(CMAKEBOX_VERSION "0.0.1")
 FetchContent_Declare(
@@ -40,7 +40,7 @@ import_dependency(
 )
 ```
 
-Without relying on [cmakebox](https://github.com/willat343/cppbox), this can be achieved with (replace `X.Y.Z` with version):
+Without relying on [cmakebox](https://github.com/willat343/cmakebox), this can be achieved with (replace `X.Y.Z` with version):
 ```CMake
 set(MATHBOX_VERSION "X.Y.Z")
 FetchContent_Declare(
