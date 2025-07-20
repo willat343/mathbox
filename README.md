@@ -12,8 +12,8 @@ A general purpose math library based on Eigen. It is currently a header-only lib
 | Eigen3 | >= 3.4.0 | Linear Algebra Package |
 
 There are several ways to include `mathbox` within your project:
-- [Preferred] Via `FetchContent` allowing `cppbox` to be built as a submodule.
-- Via `find_package`, requiring `cppbox` to be installed to the system, locally, or to a catkin workspace.
+- [Preferred] Via `FetchContent` allowing package to be built as a submodule.
+- Via `find_package`, requiring package to be installed to the system, locally, or to a catkin workspace.
 
 ## Include via FetchContent
 
