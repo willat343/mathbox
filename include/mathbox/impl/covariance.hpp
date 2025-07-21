@@ -59,6 +59,14 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Sca
 
 template<typename Scalar_, int Size_>
 template<typename Derived>
+PositiveSemiDefiniteMatrix<Scalar_, Size_>& PositiveSemiDefiniteMatrix<Scalar_, Size_>::operator=(
+        const Eigen::MatrixBase<Derived>& rhs) {
+    *this = PositiveSemiDefiniteMatrix{rhs, false};
+    return *this;
+}
+
+template<typename Scalar_, int Size_>
+template<typename Derived>
 CovarianceDensity<Scalar_, Size_>::CovarianceDensity(
         const Eigen::MatrixBase<Derived>& covariance_density_or_variances_density, const bool skip_checks)
     : Base(covariance_density_or_variances_density, skip_checks) {}
@@ -75,6 +83,13 @@ template<typename Scalar_, int Size_>
 inline auto CovarianceDensity<Scalar_, Size_>::covariance(const Scalar span) const
         -> Covariance<Scalar, SizeAtCompileTime> {
     return Covariance<Scalar, SizeAtCompileTime>(*this * span, true);
+}
+
+template<typename Scalar_, int Size_>
+template<typename Derived>
+CovarianceDensity<Scalar_, Size_>& CovarianceDensity<Scalar_, Size_>::operator=(const Eigen::MatrixBase<Derived>& rhs) {
+    *this = CovarianceDensity{rhs, false};
+    return *this;
 }
 
 }

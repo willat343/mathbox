@@ -71,6 +71,14 @@ public:
      * @param skip_checks
      */
     explicit PositiveSemiDefiniteMatrix(const Scalar diagonal_element, const bool skip_checks = false);
+
+    /**
+     * @brief Assign from a positive semi-definite matrix or a diagonal (column) vector.
+     *
+     * @tparam Derived
+     */
+    template<typename Derived>
+    PositiveSemiDefiniteMatrix& operator=(const Eigen::MatrixBase<Derived>& rhs);
 };
 
 template<typename Scalar, int Size>
@@ -146,6 +154,14 @@ public:
      * @return Covariance<Scalar, SizeAtCompileTime>
      */
     Covariance<Scalar, SizeAtCompileTime> covariance(const Scalar span) const;
+
+    /**
+     * @brief Assign from a covariance matrix or variances vector.
+     *
+     * @tparam Derived
+     */
+    template<typename Derived>
+    CovarianceDensity& operator=(const Eigen::MatrixBase<Derived>& rhs);
 };
 
 using CovarianceDensityXd = CovarianceDensity<double, Eigen::Dynamic>;
