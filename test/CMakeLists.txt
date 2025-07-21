@@ -45,7 +45,7 @@ target_include_directories(${PROJECT_NAME}_tests PUBLIC
 target_link_libraries(${PROJECT_NAME}_tests PUBLIC
     ${PROJECT_NAME}
     Eigen3::Eigen
-    ${cppbox_LIBRARIES}
+    cppbox::cppbox
     gtest_main
     gtest
     pthread
