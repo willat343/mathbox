@@ -34,7 +34,7 @@ import_dependency(
     mathbox
     TARGET mathbox::mathbox
     VERSION ${MATHBOX_VERSION}
-    USE_SYSTEM_REQUIRED_VERSION ${MATHBOX_VERSION}
+    USE_FIND_PACKAGE_REQUIRED_VERSION ${MATHBOX_VERSION}
     GIT_REPOSITORY git@github.com:willat343/mathbox
     GIT_TAG v${MATHBOX_VERSION}
 )
