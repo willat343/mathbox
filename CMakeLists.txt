@@ -44,8 +44,9 @@ setup_build_type()
 get_cxx_compiler_info()
 
 # Dependency: Eigen3 (Target: Eigen3::Eigen)
+set(EIGEN3_VERSION "3.4.0")
 import_Eigen3(
-    VERSION "3.4.0"
+    VERSION ${EIGEN3_VERSION}
 )
 
 # Dependency: cppbox (Target: cppbox::cppbox)
