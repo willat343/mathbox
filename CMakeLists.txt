@@ -17,7 +17,7 @@ include(CMakePackageConfigHelpers)
 
 # General Options
 option(BUILD_DOCUMENTATION "Build Doxygen Documentation" OFF)
-option(DEVELOPER_MODE "Use local versions of cppbox" OFF)
+option(DEVELOPER_MODE "Use local versions of cmakebox, cppbox" OFF)
 
 # Configure FetchContent source directories for DEVELOPER_MODE
 if (DEVELOPER_MODE)
@@ -26,7 +26,7 @@ if (DEVELOPER_MODE)
 endif()
 
 # Dependency: cmakebox
-set(CMAKEBOX_VERSION "0.0.3")
+set(CMAKEBOX_VERSION "0.0.5")
 FetchContent_Declare(
     cmakebox
     GIT_REPOSITORY git@github.com:willat343/cmakebox.git
@@ -53,9 +53,8 @@ set(CPPBOX_VERSION "0.1.0")
 import_dependency(
     cppbox
     TARGET cppbox::cppbox
-    VERSION ${CPPBOX_VERSION}
-    ${CMAKEBOX_OPTIONS}
-    USE_FIND_PACKAGE_REQUIRED_VERSION ${CPPBOX_VERSION}
+    METHOD FETCH_GIT
+    FIND_PACKAGE_VERSION ${CPPBOX_VERSION}
     GIT_REPOSITORY git@github.com:willat343/cppbox.git
     GIT_TAG v${CPPBOX_VERSION}
 )
