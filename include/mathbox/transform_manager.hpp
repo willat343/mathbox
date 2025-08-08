@@ -63,6 +63,13 @@ public:
     void add_transform(const std::string& parent_frame, const std::string& child_frame, const Pose<D>& transform);
 
     /**
+     * @brief Convenience overload.
+     *
+     * @param transform
+     */
+    void add_transform(const Transform<D>& transform);
+
+    /**
      * @brief Check if frame exists as a child frame in a transform tree (i.e. not a root FrameNode).
      *
      * @param frame

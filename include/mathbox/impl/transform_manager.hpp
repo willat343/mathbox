@@ -13,7 +13,7 @@ Transform<D_>::Transform(const std::string& parent_frame_, const std::string& ch
     : parent_frame_(parent_frame_),
       child_frame_(child_frame_),
       transform_(transform_) {
-    if (parent_frame_ == child_frame_ && !transform_.isIdentity()) {
+    if (parent_frame_ == child_frame_ && !transform_.matrix().isIdentity()) {
         throw std::runtime_error("Transform has parent_frame == child_frame but is not identity.");
     }
 }
@@ -75,6 +75,12 @@ void TransformManager<D_>::add_transform(const std::string& parent_frame, const 
             break;
         }
     }
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline void TransformManager<D_>::add_transform(const Transform<D>& transform) {
+    return add_transform(transform.parent_frame(), transform.child_frame(), transform.transform());
 }
 
 template<int D_>

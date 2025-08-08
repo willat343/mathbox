@@ -6,7 +6,7 @@
 
 #include "mathbox/statistics.hpp"
 
-namespace mathbox {
+namespace math {
 
 template<std::floating_point Scalar_>
 Statistics<Scalar_>::Statistics()

@@ -4,7 +4,7 @@
 #include <concepts>
 #include <cstdint>
 
-namespace mathbox {
+namespace math {
 
 template<std::floating_point Scalar_>
 class Statistics {
