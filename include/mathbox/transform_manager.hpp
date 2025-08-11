@@ -381,6 +381,14 @@ private:
     FrameNode& create_root(const std::string& frame_name);
 
     /**
+     * @brief Get a frame.
+     *
+     * @param frame_name
+     * @return const FrameNode&
+     */
+    const FrameNode& get_frame(const std::string& frame_name) const;
+
+    /**
      * @brief Get the root FrameNode that contains frame.
      *
      * @param frame_name

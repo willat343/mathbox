@@ -48,8 +48,9 @@ void TransformManager<D_>::add_transform(const std::string& parent_frame, const 
     // Throw error if child_frame exists and is not a root node
     if (has_child_frame(child_frame)) {
         throw std::runtime_error("TransformManager cannot add " + parent_frame + "->" + child_frame +
-                                 " transform because " + child_frame +
-                                 " already exists. Child frames may only have one parent.");
+                                 " transform because " + child_frame + " already exists with parent " +
+                                 get_frame(child_frame).parent_transform()->parent_frame().name() +
+                                 ". Child frames may only have one parent.");
     }
     // Get or create parent_frame with book-keeping for the new child_frame
     FrameNode& frame = get_or_create_frame_for_child_frame(parent_frame, child_frame);
@@ -362,6 +363,22 @@ template<int D_>
     requires(math::is_2d_or_3d<D_>)
 inline typename TransformManager<D_>::FrameNode& TransformManager<D_>::create_root(const std::string& frame_name) {
     return roots_.emplace_back(frame_name, nullptr);
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline const TransformManager<D_>::FrameNode& TransformManager<D_>::get_frame(const std::string& frame_name) const {
+    // Check if frame exists
+    if (has_frame(frame_name)) {
+        // Find existing parent FrameNode
+        const FrameNode* current_frame = &get_root_for_frame(frame_name);
+        while (current_frame->name() != frame_name) {
+            current_frame = &current_frame->transform(current_frame->next_child_frame_name(frame_name)).child_frame();
+        }
+        return *current_frame;
+    } else {
+        throw std::runtime_error("TransformManager does not have Frame " + frame_name + ".");
+    }
 }
 
 template<int D_>
