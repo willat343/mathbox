@@ -1,6 +1,8 @@
 #ifndef MATHBOX_IMPL_GEOMETRY_HPP
 #define MATHBOX_IMPL_GEOMETRY_HPP
 
+#include <cppbox/exceptions.hpp>
+
 #include "mathbox/geometry.hpp"
 #include "mathbox/lerp.hpp"
 #include "mathbox/matrix_operations.hpp"
@@ -55,9 +57,7 @@ inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covaria
 template<typename Scalar>
 Eigen::Matrix<Scalar, 6, 1> compute_constant_rates(const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& pose_1,
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& pose_2, const Scalar dt) {
-    if (dt <= 0.0) {
-        throw std::runtime_error("dt must be > 0.0");
-    }
+    throw_if(dt <= 0.0, "dt must be > 0.0");
     const typename Eigen::Transform<Scalar, 3, Eigen::Isometry> transform = relative_transform(pose_1, pose_2);
     const typename Eigen::AngleAxis<Scalar> rotation{transform.rotation()};
     return (typename Eigen::Matrix<Scalar, 6, 1>() << rotation.axis() * rotation.angle() / dt,

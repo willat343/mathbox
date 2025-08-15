@@ -1,6 +1,8 @@
 #ifndef MATHBOX_IMPL_COVARIANCE_HPP
 #define MATHBOX_IMPL_COVARIANCE_HPP
 
+#include <cppbox/exceptions.hpp>
+
 #include "mathbox/covariance.hpp"
 #include "mathbox/matrix_properties.hpp"
 
@@ -12,10 +14,8 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Eig
         const bool skip_checks)
     requires(SizeAtCompileTime == 1 || Derived::ColsAtCompileTime != 1)
     : Base(matrix) {
-    if (!skip_checks && !math::is_positive_semidefinite(matrix.eval())) {
-        throw std::runtime_error(
-                "Cannnot initialise PositiveSemiDefiniteMatrix with matrix that isn't positive semi-definite.");
-    }
+    throw_if(!skip_checks && !math::is_positive_semidefinite(matrix.eval()),
+            "Cannnot initialise PositiveSemiDefiniteMatrix with matrix that isn't positive semi-definite.");
 }
 
 template<typename Scalar_, int Size_>
@@ -24,9 +24,8 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Eig
         const bool skip_checks)
     requires(SizeAtCompileTime != 1 && Derived::ColsAtCompileTime == 1)
     : Base(Matrix(diagonal.asDiagonal())) {
-    if (!skip_checks && diagonal.minCoeff() < static_cast<Scalar>(0)) {
-        throw std::runtime_error("Cannot initialise PositiveSemiDefiniteMatrix with any negative diagonal elements.");
-    }
+    throw_if(!skip_checks && diagonal.minCoeff() < static_cast<Scalar>(0),
+            "Cannot initialise PositiveSemiDefiniteMatrix with any negative diagonal elements.");
 }
 
 template<typename Scalar_, int Size_>
@@ -34,20 +33,16 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Sca
         const bool skip_checks)
     : Base(Matrix(Vector::Constant(size, diagonal_element).asDiagonal())) {
     if (!skip_checks) {
-        if (diagonal_element < static_cast<Scalar>(0)) {
-            throw std::runtime_error(
-                    "Cannot initialise PositiveSemiDefiniteMatrix with negative single diagonal element.");
-        }
+        throw_if(diagonal_element < static_cast<Scalar>(0),
+                "Cannot initialise PositiveSemiDefiniteMatrix with negative single diagonal element.");
         if constexpr (SizeAtCompileTime == Eigen::Dynamic) {
-            if (size == Eigen::Dynamic) {
-                throw std::runtime_error("Cannot initialise dynamic-size PositiveSemiDefiniteMatrix with single "
-                                         "diagonal element without explicitly setting size (size was Eigen::Dynamic).");
-            }
+            throw_if(size == Eigen::Dynamic,
+                    "Cannot initialise dynamic-size PositiveSemiDefiniteMatrix with single diagonal element without "
+                    "explicitly setting size (size was Eigen::Dynamic).");
         } else {
-            if (size != SizeAtCompileTime) {
-                throw std::runtime_error("Cannot initialise fixed-size PositiveSemiDefiniteMatrix with single diagonal "
-                                         "element and a size that does not match the fixed size.");
-            }
+            throw_if(size != SizeAtCompileTime,
+                    "Cannot initialise fixed-size PositiveSemiDefiniteMatrix with single diagonal "
+                    "element and a size that does not match the fixed size.");
         }
     }
 }
@@ -91,7 +86,6 @@ CovarianceDensity<Scalar_, Size_>& CovarianceDensity<Scalar_, Size_>::operator=(
     *this = CovarianceDensity{rhs, false};
     return *this;
 }
-
 }
 
 #endif

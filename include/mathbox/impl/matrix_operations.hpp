@@ -1,6 +1,8 @@
 #ifndef MATHBOX_IMPL_MATRIX_OPERATIONS_HPP
 #define MATHBOX_IMPL_MATRIX_OPERATIONS_HPP
 
+#include <cppbox/exceptions.hpp>
+
 #include "mathbox/matrix_operations.hpp"
 
 namespace math {
@@ -33,16 +35,10 @@ constexpr Derived cumulative_col_top_sum(const Eigen::DenseBase<Derived>& m) {
 
 template<typename Derived>
 Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eigen::Index boundary) {
-    if (boundary == 0) {
-        throw std::runtime_error("Reorder boundary cannot be 0.");
-    }
+    throw_if(boundary == 0, "Reorder boundary cannot be 0.");
     const Eigen::Index size = m.rows();
-    if (size != m.cols()) {
-        throw std::runtime_error("Matrix must be square.");
-    }
-    if (boundary >= size) {
-        throw std::runtime_error("Reorder boundary outside of m matrix.");
-    }
+    throw_if(size != m.cols(), "Matrix must be square.");
+    throw_if(boundary >= size, "Reorder boundary outside of m matrix.");
     return (Derived(m.rows(), m.cols()) << m.block(boundary, boundary, size - boundary, size - boundary),
             m.block(boundary, 0, size - boundary, boundary), m.block(0, boundary, boundary, size - boundary),
             m.block(0, 0, boundary, boundary))

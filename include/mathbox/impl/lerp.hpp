@@ -2,6 +2,7 @@
 #define MATHBOX_IMPL_LERP_HPP
 
 #include <chrono>
+#include <cppbox/exceptions.hpp>
 #include <stdexcept>
 
 #include "mathbox/lerp.hpp"
@@ -23,9 +24,7 @@ inline T lerp(const T& y_0, const T& y_1, const Scalar alpha) {
 template<IsMathType MathType, IsIndependentVariableType IndependentVariableType>
 inline MathType linear_function(const IndependentVariableType x, const IndependentVariableType x_0,
         const IndependentVariableType x_1, const MathType y_0, const MathType y_1) {
-    if (x_0 == x_1) {
-        throw std::runtime_error("Divide by zero encountered in linear_function because x_0 == x_1.");
-    }
+    throw_if(x_0 == x_1, "Divide by zero encountered in linear_function because x_0 == x_1.");
     return lerp(y_0, y_1, cppbox::to_sec(x - x_0) / cppbox::to_sec(x_1 - x_0));
 }
 

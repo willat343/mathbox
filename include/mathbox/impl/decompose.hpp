@@ -3,6 +3,7 @@
 
 #include <Eigen/Cholesky>
 #include <Eigen/Eigenvalues>
+#include <cppbox/exceptions.hpp>
 
 #include "mathbox/decompose.hpp"
 
@@ -10,15 +11,13 @@ namespace math {
 
 inline void check_llt_computation_info(const Eigen::ComputationInfo info) {
     if (info != Eigen::ComputationInfo::Success) {
-        if (info == Eigen::ComputationInfo::NumericalIssue) {
-            throw std::runtime_error("NumericalIssue encountered while performing LL^* decomposition of matrix.");
-        } else if (info == Eigen::ComputationInfo::NoConvergence) {
-            throw std::runtime_error("NoConvergence encountered while performing LL^* decomposition of matrix.");
-        } else if (info == Eigen::InvalidInput) {
-            throw std::runtime_error("InvalidInput encountered while performing LL^* decomposition of matrix.");
-        } else {
-            throw std::runtime_error("Unknown error encountered while performing LL^* decomposition of matrix.");
-        }
+        throw_if(info == Eigen::ComputationInfo::NumericalIssue,
+                "NumericalIssue encountered while performing LL^* decomposition of matrix.");
+        throw_if(info == Eigen::ComputationInfo::NoConvergence,
+                "NoConvergence encountered while performing LL^* decomposition of matrix.");
+        throw_if(info == Eigen::InvalidInput,
+                "InvalidInput encountered while performing LL^* decomposition of matrix.");
+        throw_here("Unknown error encountered while performing LL^* decomposition of matrix.");
     }
 }
 
@@ -43,7 +42,7 @@ Derived LLT(const Eigen::MatrixBase<Derived>& matrix, const LLTDecompositionMeth
         L = decomposer.matrixL() * L;
         L = decomposer.transpositionsP().transpose() * L;
     } else {
-        throw std::runtime_error("DecompositionMethod " + std::to_string(method) + " not recognised.");
+        throw_here("DecompositionMethod " + std::to_string(method) + " not recognised.");
     }
     return L;
 }

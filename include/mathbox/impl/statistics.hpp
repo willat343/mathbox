@@ -2,6 +2,7 @@
 #define MATHBOX_IMPL_STATISTICS_HPP
 
 #include <cmath>
+#include <cppbox/exceptions.hpp>
 #include <stdexcept>
 
 #include "mathbox/statistics.hpp"
@@ -96,22 +97,17 @@ RunningStatistics<Scalar_>::RunningStatistics(const Scalar mean_, const Scalar p
       sum_of_square_differences_(num_samples_ == 0 ? static_cast<Scalar>(0)
                                                    : static_cast<Scalar>(num_samples_ - 1) * population_variance_),
       sum_(static_cast<Scalar>(num_samples_) * mean_) {
-    if (num_samples_ == 0 && (mean_ != static_cast<Scalar>(0) || population_variance_ != static_cast<Scalar>(0))) {
-        throw std::runtime_error(
-                "Cannot construct RunningStatistics with zero samples but non-zero mean or non-zero variance");
-    } else if (num_samples_ == 1) {
-        if (mean_ != minimum_ || mean_ != maximum_) {
-            throw std::runtime_error(
-                    "Cannot construct RunningStatistics with one sample where minimum or maximum != mean");
-        } else if (population_variance_ != static_cast<Scalar>(0)) {
-            throw std::runtime_error("Cannot construct RunningStatistics with one sample but non-zero variance");
-        }
-    } else if (minimum_ > maximum_) {
-        throw std::runtime_error("Cannot construct RunningStatistics with minimum > maximum");
-    } else if (maximum_ > sum()) {
-        throw std::runtime_error(
-                "Cannot construct RunningStatistics with maximum > sum (where sum = num_samples * mean)");
+    throw_if(num_samples_ == 0 && (mean_ != static_cast<Scalar>(0) || population_variance_ != static_cast<Scalar>(0)),
+            "Cannot construct RunningStatistics with zero samples but non-zero mean or non-zero variance");
+    if (num_samples_ == 1) [[unlikely]] {
+        throw_if(mean_ != minimum_ || mean_ != maximum_,
+                "Cannot construct RunningStatistics with one sample where minimum or maximum != mean");
+        _if(population_variance_ != static_cast<Scalar>(0),
+                "Cannot construct RunningStatistics with one sample but non-zero variance");
     }
+    throw_if(minimum_ > maximum_, "Cannot construct RunningStatistics with minimum > maximum");
+    throw_if(maximum_ > sum(),
+            "Cannot construct RunningStatistics with maximum > sum (where sum = num_samples * mean)");
 }
 
 template<std::floating_point Scalar_>

@@ -49,7 +49,7 @@ import_Eigen3(
 )
 
 # Dependency: cppbox (Target: cppbox::cppbox)
-set(CPPBOX_VERSION "0.1.0")
+set(CPPBOX_VERSION "0.1.2")
 import_dependency(
     cppbox
     TARGET cppbox::cppbox

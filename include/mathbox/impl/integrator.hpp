@@ -3,6 +3,7 @@
 
 #include <array>
 #include <chrono>
+#include <cppbox/exceptions.hpp>
 #include <numeric>
 
 #include "mathbox/integrator.hpp"
@@ -16,9 +17,8 @@ inline auto Integrator<MathType_, IndependentVariableType_>::integrate(const Ind
         const MathType& initial_value, const IntegrandFunction<MathType, IndependentVariableType>& integrand) const
         -> MathType {
     // Error handling and preprocessing
-    if (integration_step <= IndependentVariableDifferenceType(0)) {
-        throw std::runtime_error("Must integrate with a positive integration_step.");
-    }
+    throw_if(integration_step <= IndependentVariableDifferenceType(0),
+            "Must integrate with a positive integration_step.");
     const bool forwards = start <= end;
     const IndependentVariableDifferenceType directed_integration_step = forwards ? integration_step : -integration_step;
     // Interval integration bounds
