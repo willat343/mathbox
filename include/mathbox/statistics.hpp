@@ -151,8 +151,8 @@ public:
      * @param maximum_
      * @param num_samples_
      */
-    explicit RunningStatistics(const Scalar mean_, const Scalar population_variance_,
-            const Scalar minimum_, const Scalar maximum_, const std::size_t num_samples_);
+    explicit RunningStatistics(const Scalar mean_, const Scalar population_variance_, const Scalar minimum_,
+            const Scalar maximum_, const std::size_t num_samples_);
 
     using Statistics<Scalar>::mean;
 
@@ -181,8 +181,8 @@ public:
 
     /**
      * @brief Get the sum of samples. A running sum is maintained, more numerically stable than num_samples() * mean().
-     * 
-     * @return Scalar 
+     *
+     * @return Scalar
      */
     Scalar sum() const;
 
