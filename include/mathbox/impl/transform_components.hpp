@@ -1,6 +1,9 @@
 #ifndef MATHBOX_IMPL_TRANSFORM_COMPONENTS_HPP
 #define MATHBOX_IMPL_TRANSFORM_COMPONENTS_HPP
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 #include "mathbox/transform_components.hpp"
 
 namespace math {
@@ -66,5 +69,13 @@ inline const Scalar TransformComponents<Scalar>::cosa() const {
 }
 
 }
+
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template class TransformComponents<double>;
+
+}
+#endif
 
 #endif

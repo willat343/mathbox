@@ -2,6 +2,7 @@
 #define MATHBOX_LERP_HPP
 
 #include <cppbox/time.hpp>
+#include <concepts>
 #include <type_traits>
 
 #include "mathbox/traits.hpp"
@@ -35,7 +36,7 @@ namespace math {
  * @param alpha interpolation or extrapolation factor \f$\alpha\f$
  * @return T interpolation or extrapolation result \f$\mathbf{y}\f$
  */
-template<typename T, typename Scalar>
+template<typename T, std::floating_point Scalar>
     requires(is_math_type_v<T> || cppbox::is_time_point_or_duration_v<T>)
 T lerp(const T& y_0, const T& y_1, const Scalar alpha);
 

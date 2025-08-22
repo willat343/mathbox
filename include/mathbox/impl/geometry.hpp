@@ -32,23 +32,28 @@ inline Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame(const typename Eig
 
 template<typename Scalar>
 inline Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame(const typename Eigen::Matrix<Scalar, 6, 6>& covariance_A,
-        const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& transform_B_A) {
-    return change_tf_covariance_frame(covariance_A, transform_adjoint(transform_B_A));
+        const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& transform_B_A,
+        const bool translation_before_rotation) {
+    return change_tf_covariance_frame(covariance_A, transform_adjoint(transform_B_A, translation_before_rotation));
 }
 
 template<typename Scalar>
 inline Eigen::Matrix<Scalar, 6, 1> change_twist_reference_frame(
-        const Eigen::Transform<Scalar, 3, Eigen::Isometry>& transform, const Eigen::Matrix<Scalar, 6, 1>& twist) {
-    return transform_adjoint(transform) * twist;
+        const Eigen::Transform<Scalar, 3, Eigen::Isometry>& transform, const Eigen::Matrix<Scalar, 6, 1>& twist,
+        const bool translation_before_rotation) {
+    return transform_adjoint(transform, translation_before_rotation) * twist;
 }
 
 template<typename Scalar, int D>
+    requires(math::is_2d_or_3d<D>)
 inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance(
         const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& previous_covariance,
         const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_covariance,
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& relative_transform,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance) {
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj = transform_adjoint(relative_transform.inverse());
+        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance,
+        const bool translation_before_rotation) {
+    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj =
+            transform_adjoint(relative_transform.inverse(), translation_before_rotation);
     const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj_transpose = adj.transpose();
     return adj * previous_covariance * adj_transpose + relative_covariance + relative_cross_covariance * adj_transpose +
            adj * relative_cross_covariance.transpose();
@@ -75,10 +80,11 @@ inline Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform
     return t_lerp * q_lerp;
 }
 
-template<typename Scalar, int Dim>
-inline Eigen::Transform<Scalar, Dim, Eigen::Isometry> relative_transform(
-        const typename Eigen::Transform<Scalar, Dim, Eigen::Isometry>& pose_A_B,
-        const typename Eigen::Transform<Scalar, Dim, Eigen::Isometry>& pose_A_C) {
+template<typename Scalar, int D>
+    requires(math::is_2d_or_3d<D>)
+inline Eigen::Transform<Scalar, D, Eigen::Isometry> relative_transform(
+        const typename Eigen::Transform<Scalar, D, Eigen::Isometry>& pose_A_B,
+        const typename Eigen::Transform<Scalar, D, Eigen::Isometry>& pose_A_C) {
     return pose_A_B.inverse() * pose_A_C;
 }
 
@@ -95,14 +101,83 @@ inline Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
     return rotate_point_covariance(covariance, rotation.toRotationMatrix());
 }
 
-template<typename Scalar>
-inline Eigen::Matrix<Scalar, 6, 6> transform_adjoint(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& transform) {
-    const Eigen::Matrix<Scalar, 3, 1> t = transform.translation();
-    const Eigen::Matrix<Scalar, 3, 3> R = transform.rotation();
-    return (Eigen::Matrix<Scalar, 6, 6>() << R, Eigen::Matrix<Scalar, 3, 3>::Zero(), skew_symmetric_cross(t) * R, R)
-            .finished();
+template<typename Scalar, int D>
+    requires(math::is_2d_or_3d<D>)
+inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> transform_adjoint(
+        const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform, const bool translation_before_rotation) {
+    const Eigen::Matrix<Scalar, D, 1> t = transform.translation();
+    const Eigen::Matrix<Scalar, D, D> R = transform.rotation();
+    if constexpr (D == 2) {
+        if (translation_before_rotation) {
+            return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, 1>(t[1], -t[0]),
+                    Eigen::Matrix<Scalar, 1, D>::Zero(), 1)
+                    .finished();
+        } else {
+            return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, 1>::Zero(),
+                    Eigen::Matrix<Scalar, 1, D>(t[1], -t[0]), 1)
+                    .finished();
+        }
+    } else {
+        if (translation_before_rotation) {
+            return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, skew_symmetric_cross(t) * R,
+                    Eigen::Matrix<Scalar, D, D>::Zero(), R)
+                    .finished();
+        } else {
+            return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, D>::Zero(),
+                    skew_symmetric_cross(t) * R, R)
+                    .finished();
+        }
+    }
 }
 
 }
+
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template Eigen::Isometry3d change_relative_transform_frame<double>(const Eigen::Isometry3d&,
+        const Eigen::Isometry3d&);
+
+extern template Eigen::Isometry3d change_relative_transform_frame<double>(const Eigen::Isometry3d&,
+        const Eigen::Isometry3d&, const Eigen::Isometry3d&);
+
+extern template Eigen::Matrix<double, 6, 6> change_tf_covariance_frame<double>(const Eigen::Matrix<double, 6, 6>&,
+        const Eigen::Isometry3d&, const bool);
+
+extern template Eigen::Matrix<double, 6, 1> change_twist_reference_frame<double>(const Eigen::Isometry3d&,
+        const Eigen::Matrix<double, 6, 1>&, const bool);
+
+extern template Eigen::Matrix<double, 3, 3> compose_transform_covariance<double, 2>(
+        const Eigen::Matrix<double, 3, 3>& previous_covariance, const Eigen::Matrix<double, 3, 3>& relative_covariance,
+        const Eigen::Isometry2d& relative_transform, const Eigen::Matrix<double, 3, 3>& relative_cross_covariance,
+        const bool);
+extern template Eigen::Matrix<double, 6, 6> compose_transform_covariance<double, 3>(
+        const Eigen::Matrix<double, 6, 6>& previous_covariance, const Eigen::Matrix<double, 6, 6>& relative_covariance,
+        const Eigen::Isometry3d& relative_transform, const Eigen::Matrix<double, 6, 6>& relative_cross_covariance,
+        const bool);
+
+extern template Eigen::Matrix<double, 6, 1> compute_constant_rates<double>(const typename Eigen::Isometry3d& pose_1,
+        const typename Eigen::Isometry3d& pose_2, const double dt);
+
+extern template Eigen::Isometry3d glerp<double>(const Eigen::Isometry3d& T_0, const Eigen::Isometry3d& T_1,
+        const double alpha);
+
+extern template Eigen::Isometry2d relative_transform<double, 2>(const typename Eigen::Isometry2d& pose_A_B,
+        const typename Eigen::Isometry2d& pose_A_C);
+extern template Eigen::Isometry3d relative_transform<double, 3>(const typename Eigen::Isometry3d& pose_A_B,
+        const typename Eigen::Isometry3d& pose_A_C);
+
+extern template Eigen::Matrix2d rotate_point_covariance<Eigen::Matrix2d>(
+        const Eigen::MatrixBase<Eigen::Matrix2d>& covariance, const Eigen::MatrixBase<Eigen::Matrix2d>& rotation);
+extern template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(
+        const Eigen::MatrixBase<Eigen::Matrix3d>& covariance, const Eigen::MatrixBase<Eigen::Matrix3d>& rotation);
+
+extern template Eigen::Matrix<double, 3, 3> transform_adjoint<double, 2>(const Eigen::Isometry2d& transform,
+        const bool);
+extern template Eigen::Matrix<double, 6, 6> transform_adjoint<double, 3>(const Eigen::Isometry3d& transform,
+        const bool);
+
+}
+#endif
 
 #endif

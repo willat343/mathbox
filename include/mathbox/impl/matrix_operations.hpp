@@ -54,4 +54,12 @@ inline Eigen::Matrix<Scalar, 3, 3> skew_symmetric_cross(const Eigen::Matrix<Scal
 
 }
 
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template Eigen::Matrix3d skew_symmetric_cross(const Eigen::Vector3d& v);
+
+}
+#endif
+
 #endif

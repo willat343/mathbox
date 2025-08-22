@@ -17,7 +17,9 @@ include(CMakePackageConfigHelpers)
 
 # General Options
 option(BUILD_DOCUMENTATION "Build Doxygen Documentation" OFF)
+option(BUILD_SHARED_LIBS "Build shared library (if MATHBOX_HEADER_ONLY=OFF)" OFF)
 option(DEVELOPER_MODE "Use local versions of cmakebox, cppbox" OFF)
+option(MATHBOX_HEADER_ONLY "Build library as header-only" OFF)
 
 # Configure FetchContent source directories for DEVELOPER_MODE
 if (DEVELOPER_MODE)
@@ -49,7 +51,7 @@ import_Eigen3(
 )
 
 # Dependency: cppbox (Target: cppbox::cppbox)
-set(CPPBOX_VERSION "0.1.2")
+set(CPPBOX_VERSION "0.1.4")
 import_dependency(
     cppbox
     TARGET cppbox::cppbox
@@ -60,27 +62,63 @@ import_dependency(
 )
 
 ## Build Library
-# Interface Library
 set(LIBRARY_NAME ${PROJECT_NAME})
-add_library(${LIBRARY_NAME} INTERFACE)
+if (MATHBOX_HEADER_ONLY)
+    # Interface Library
+    add_library(${LIBRARY_NAME} INTERFACE)
+    set(PUBLIC_OR_INTERFACE INTERFACE)
+else()
+    # Shared/Static Library (determined by BUILD_SHARED_LIBS)
+    add_library(${LIBRARY_NAME}
+        src/covariance.cpp
+        src/decompose.cpp
+        src/geometry.cpp
+        src/lerp.cpp
+        src/matrix_operations.cpp
+        src/normal.cpp
+        src/nsphere.cpp
+        src/statistics.cpp
+        src/stiffness.cpp
+        src/time.cpp
+        src/transform_components.cpp
+        src/transform_manager.cpp
+        src/vector_operations.cpp
+    )
+    set(PUBLIC_OR_INTERFACE PUBLIC)
+
+    # Private Compile Options
+    target_compile_options(${LIBRARY_NAME} PRIVATE
+        -Wall -Wextra -Wpedantic
+    )
+endif()
 add_library(${PROJECT_NAME}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
+
 # Include Directories
-target_include_directories(${LIBRARY_NAME} INTERFACE
+target_include_directories(${LIBRARY_NAME} ${PUBLIC_OR_INTERFACE}
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
 # Properties
 set_target_properties(${LIBRARY_NAME} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
+    POSITION_INDEPENDENT_CODE ON
 )
+
+# Compile Definitions
+target_compile_definitions(${LIBRARY_NAME} ${PUBLIC_OR_INTERFACE}
+    MATHBOX_HEADER_ONLY=$<IF:$<BOOL:${MATHBOX_HEADER_ONLY}>,1,0>
+)
+
 # Compile Options
 if (CMAKE_CXX_COMPILER_VERSION_MAJOR EQUAL 9)
     # Add experimental concepts flag
-    target_compile_options(${LIBRARY_NAME} INTERFACE -fconcepts)
+    target_compile_options(${LIBRARY_NAME} ${PUBLIC_OR_INTERFACE} -fconcepts)
 endif()
+
 # Link Libraries
-target_link_libraries(${LIBRARY_NAME} INTERFACE
+target_link_libraries(${LIBRARY_NAME} ${PUBLIC_OR_INTERFACE}
     Eigen3::Eigen
     cppbox::cppbox
 )
@@ -136,11 +174,6 @@ export(PACKAGE ${PROJECT_NAME})
 # Uninstallation
 create_uninstall_target()
 
-# Build Tests
-if(BUILD_TESTS)
-    add_subdirectory(test)
-endif()
-
 # Build Documentation
 if (BUILD_DOCUMENTATION)
     find_package(Doxygen REQUIRED)
@@ -152,4 +185,9 @@ if (BUILD_DOCUMENTATION)
         COMMENT "Generating documentation with doxygen."
         VERBATIM
     )
+endif()
+
+# Build Tests
+if(BUILD_TESTS)
+    add_subdirectory(test)
 endif()

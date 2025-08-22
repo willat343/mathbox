@@ -1,7 +1,7 @@
 #ifndef MATHBOX_IMPL_TRANSFORM_MANAGER_HPP
 #define MATHBOX_IMPL_TRANSFORM_MANAGER_HPP
 
-#include <stdexcept>
+#include <cppbox/exceptions.hpp>
 
 #include "mathbox/transform_manager.hpp"
 
@@ -426,5 +426,14 @@ inline std::deque<typename TransformManager<D_>::FrameNode>& TransformManager<D_
 }
 
 }
+
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template class TransformManager<2>;
+extern template class TransformManager<3>;
+
+}
+#endif
 
 #endif

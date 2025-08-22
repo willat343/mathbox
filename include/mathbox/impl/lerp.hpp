@@ -9,7 +9,7 @@
 
 namespace math {
 
-template<typename T, typename Scalar>
+template<typename T, std::floating_point Scalar>
     requires(is_math_type_v<T> || cppbox::is_time_point_or_duration_v<T>)
 inline T lerp(const T& y_0, const T& y_1, const Scalar alpha) {
     if constexpr (is_math_type_v<T>) {
@@ -29,5 +29,34 @@ inline MathType linear_function(const IndependentVariableType x, const Independe
 }
 
 }
+
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template double lerp<double, double>(const double&, const double&, const double);
+extern template std::chrono::time_point<std::chrono::steady_clock>
+lerp<std::chrono::time_point<std::chrono::steady_clock>, double>(
+        const std::chrono::time_point<std::chrono::steady_clock>&,
+        const std::chrono::time_point<std::chrono::steady_clock>&, const double);
+extern template std::chrono::time_point<std::chrono::system_clock>
+lerp<std::chrono::time_point<std::chrono::system_clock>, double>(
+        const std::chrono::time_point<std::chrono::system_clock>&,
+        const std::chrono::time_point<std::chrono::system_clock>&, const double);
+extern template std::chrono::nanoseconds lerp<std::chrono::nanoseconds, double>(const std::chrono::nanoseconds&,
+        const std::chrono::nanoseconds&, const double);
+
+extern template double linear_function<double, double>(const double, const double, const double, const double,
+        const double);
+extern template double linear_function<double, std::chrono::time_point<std::chrono::steady_clock>>(
+        const std::chrono::time_point<std::chrono::steady_clock>,
+        const std::chrono::time_point<std::chrono::steady_clock>,
+        const std::chrono::time_point<std::chrono::steady_clock>, const double, const double);
+extern template double linear_function<double, std::chrono::time_point<std::chrono::system_clock>>(
+        const std::chrono::time_point<std::chrono::system_clock>,
+        const std::chrono::time_point<std::chrono::system_clock>,
+        const std::chrono::time_point<std::chrono::system_clock>, const double, const double);
+
+}
+#endif
 
 #endif

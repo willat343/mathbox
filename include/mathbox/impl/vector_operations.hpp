@@ -18,4 +18,14 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> range(const Scalar step, const Scalar s
 
 }
 
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template Eigen::Matrix<double, Eigen::Dynamic, 1> lin_spaced<double>(const double, const double, const double);
+
+extern template Eigen::Matrix<double, Eigen::Dynamic, 1> range<double>(const double, const double, const double);
+
+}
+#endif
+
 #endif

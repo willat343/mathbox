@@ -102,7 +102,7 @@ RunningStatistics<Scalar_>::RunningStatistics(const Scalar mean_, const Scalar p
     if (num_samples_ == 1) [[unlikely]] {
         throw_if(mean_ != minimum_ || mean_ != maximum_,
                 "Cannot construct RunningStatistics with one sample where minimum or maximum != mean");
-        _if(population_variance_ != static_cast<Scalar>(0),
+        throw_if(population_variance_ != static_cast<Scalar>(0),
                 "Cannot construct RunningStatistics with one sample but non-zero variance");
     }
     throw_if(minimum_ > maximum_, "Cannot construct RunningStatistics with minimum > maximum");
@@ -150,5 +150,14 @@ void RunningStatistics<Scalar_>::update(const Scalar sample) {
 }
 
 }
+
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template class Statistics<double>;
+extern template class RunningStatistics<double>;
+
+}
+#endif
 
 #endif

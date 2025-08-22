@@ -112,4 +112,15 @@ inline void GrvGenerator<Scalar_, Size_>::set_covariance_impl(const Matrix& cova
 
 }
 
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template class GrvGenerator<double, Eigen::Dynamic>;
+extern template class GrvGenerator<double, 1>;
+extern template class GrvGenerator<double, 2>;
+extern template class GrvGenerator<double, 3>;
+
+}
+#endif
+
 #endif

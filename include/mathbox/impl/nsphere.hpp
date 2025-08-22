@@ -82,4 +82,28 @@ inline Eigen::Matrix<Scalar, D, 1> spherical_angles_to_unit_cartesian(
 
 }
 
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template Eigen::Matrix<double, 1, 1> cartesian_to_spherical<1, double>(const Eigen::Matrix<double, 1, 1>&);
+extern template Eigen::Matrix<double, 2, 1> cartesian_to_spherical<2, double>(const Eigen::Matrix<double, 2, 1>&);
+extern template Eigen::Matrix<double, 3, 1> cartesian_to_spherical<3, double>(const Eigen::Matrix<double, 3, 1>&);
+
+extern template Eigen::Matrix<double, 1, 1> cartesian_to_spherical_angles<2, double>(
+        const Eigen::Matrix<double, 2, 1>&);
+extern template Eigen::Matrix<double, 2, 1> cartesian_to_spherical_angles<3, double>(
+        const Eigen::Matrix<double, 3, 1>&);
+
+extern template Eigen::Matrix<double, 2, 1> spherical_angles_to_unit_cartesian<2, double>(
+        const Eigen::Matrix<double, 1, 1>&);
+extern template Eigen::Matrix<double, 3, 1> spherical_angles_to_unit_cartesian<3, double>(
+        const Eigen::Matrix<double, 2, 1>&);
+
+extern template Eigen::Matrix<double, 1, 1> spherical_to_cartesian<1, double>(const Eigen::Matrix<double, 1, 1>&);
+extern template Eigen::Matrix<double, 2, 1> spherical_to_cartesian<2, double>(const Eigen::Matrix<double, 2, 1>&);
+extern template Eigen::Matrix<double, 3, 1> spherical_to_cartesian<3, double>(const Eigen::Matrix<double, 3, 1>&);
+
+}
+#endif
+
 #endif

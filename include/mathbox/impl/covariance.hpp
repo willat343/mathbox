@@ -86,6 +86,35 @@ CovarianceDensity<Scalar_, Size_>& CovarianceDensity<Scalar_, Size_>::operator=(
     *this = CovarianceDensity{rhs, false};
     return *this;
 }
+
 }
+
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template class PositiveSemiDefiniteMatrix<double, Eigen::Dynamic>;
+extern template class PositiveSemiDefiniteMatrix<double, 1>;
+extern template class PositiveSemiDefiniteMatrix<double, 2>;
+extern template class PositiveSemiDefiniteMatrix<double, 3>;
+extern template class PositiveSemiDefiniteMatrix<double, 4>;
+extern template class PositiveSemiDefiniteMatrix<double, 5>;
+extern template class PositiveSemiDefiniteMatrix<double, 6>;
+extern template class PositiveSemiDefiniteMatrix<double, 7>;
+extern template class PositiveSemiDefiniteMatrix<double, 8>;
+extern template class PositiveSemiDefiniteMatrix<double, 9>;
+
+extern template class CovarianceDensity<double, Eigen::Dynamic>;
+extern template class CovarianceDensity<double, 1>;
+extern template class CovarianceDensity<double, 2>;
+extern template class CovarianceDensity<double, 3>;
+extern template class CovarianceDensity<double, 4>;
+extern template class CovarianceDensity<double, 5>;
+extern template class CovarianceDensity<double, 6>;
+extern template class CovarianceDensity<double, 7>;
+extern template class CovarianceDensity<double, 8>;
+extern template class CovarianceDensity<double, 9>;
+
+}
+#endif
 
 #endif

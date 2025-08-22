@@ -112,4 +112,22 @@ inline Scalar stiffness_from_variance(const Scalar variance) {
 
 }
 
+#if !MATHBOX_HEADER_ONLY
+namespace math {
+
+extern template Eigen::MatrixXd stiffness_from_sigmas<Eigen::VectorXd>(const Eigen::MatrixBase<Eigen::VectorXd>&);
+
+extern template Eigen::MatrixXd stiffness_from_sigmas<Eigen::Dynamic>(const Eigen::Ref<const Eigen::VectorXd>&);
+
+extern template double stiffness_from_sigma<double>(const double);
+
+extern template Eigen::MatrixXd stiffness_from_variances<Eigen::VectorXd>(const Eigen::MatrixBase<Eigen::VectorXd>&);
+
+extern template Eigen::MatrixXd stiffness_from_variances<Eigen::Dynamic>(const Eigen::Ref<const Eigen::VectorXd>&);
+
+extern template double stiffness_from_variance<double>(const double);
+
+}
+#endif
+
 #endif
