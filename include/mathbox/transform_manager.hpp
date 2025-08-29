@@ -157,12 +157,14 @@ private:
         void add_next_child_frame_for_frame(const std::string& frame_name, const std::string& child_frame_name);
 
         /**
-         * @brief Add a transform from this frame to the child_frame.
+         * @brief Add a transform from this frame to the child_frame. Does not update book-keeping, but returns new
+         * child frame for convenient usage of `update_next_child_frame_for_frame()`.
          *
          * @param child_frame_name
          * @param transform
+         * @return FrameNode& new child frame
          */
-        void add_transform(const std::string& child_frame_name, const Pose<D>& transform);
+        FrameNode& add_transform(const std::string& child_frame_name, const Pose<D>& transform);
 
         /**
          * @brief Append all child transforms recursively to the container.
@@ -218,6 +220,14 @@ private:
         bool has_frame(const std::string& query_frame_name) const;
 
         /**
+         * @brief Check if frame is a leaf frame, i.e. has no child transforms.
+         *
+         * @return true
+         * @return false
+         */
+        bool is_leaf_frame() const;
+
+        /**
          * @brief Get the next child frame name that would be needed to get to query_frame_name during tree traversal.
          *
          * @param query_frame_name
@@ -262,6 +272,42 @@ private:
          * @return TransformEdge&
          */
         TransformEdge& transform(const std::string& child_frame_name);
+
+        /**
+         * @brief Update the `next_child_frame_for_frame` book-keeping of all parent frames of this FrameNode (updates
+         * up the tree until root node is reached). This is appropriate when a new FrameNode is created or when a tree
+         * is moved to become a subtree of another tree.
+         *
+         */
+        void update_parents_next_child_frame_for_frame();
+
+        /**
+         * @brief Same as `update_parents_next_child_frame_for_frame()` except instead of starting from
+         * `parent_transform()`, this function starts updating from `first_transform_for_update`.
+         *
+         * This can be useful to avoid updating parts of a tree that are already up-to-date.
+         *
+         * @param first_transform_for_update the first transform to start recursively updating
+         */
+        void update_parents_next_child_frame_for_frame(TransformEdge* first_transform_for_update);
+
+        /**
+         * @brief Calls `update_parents_next_child_frame_for_frame()` on every leaf child of this FrameNode and
+         * `update_parents_next_child_frame_for_frame_of_children_recursively()` on every non-leaf child.
+         *
+         */
+        void update_parents_next_child_frame_for_frame_of_children_recursively();
+
+        /**
+         * @brief Same as `update_parents_next_child_frame_for_frame()` except instead of starting from
+         * `parent_transform()`, this function starts updating from `first_transform_for_update`.
+         *
+         * This can be useful to avoid updating parts of a tree that are already up-to-date.
+         *
+         * @param first_transform_for_update the first transform to start recursively updating
+         */
+        void update_parents_next_child_frame_for_frame_of_children_recursively(
+                TransformEdge* first_transform_for_update);
 
     private:
         /**
@@ -389,6 +435,14 @@ private:
     const FrameNode& get_frame(const std::string& frame_name) const;
 
     /**
+     * @brief Get a frame.
+     *
+     * @param frame_name
+     * @return FrameNode&
+     */
+    FrameNode& get_frame(const std::string& frame_name);
+
+    /**
      * @brief Get the root FrameNode that contains frame.
      *
      * @param frame_name
@@ -403,16 +457,6 @@ private:
      * @return FrameNode&
      */
     FrameNode& get_root_for_frame(const std::string& frame_name);
-
-    /**
-     * @brief Get or create frame object for a new transform to child_frame, recursively adding to next_child_for_frame
-     * mappings (if necessary). The new transform is not created.
-     *
-     * @param frame
-     * @return FrameNode&
-     */
-    FrameNode& get_or_create_frame_for_child_frame(const std::string& frame_name,
-            const std::string& new_child_frame_name);
 
     /**
      * @brief Get the root Frames.

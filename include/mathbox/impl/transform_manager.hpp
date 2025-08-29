@@ -2,6 +2,7 @@
 #define MATHBOX_IMPL_TRANSFORM_MANAGER_HPP
 
 #include <cppbox/exceptions.hpp>
+#include <sstream>
 
 #include "mathbox/transform_manager.hpp"
 
@@ -42,29 +43,31 @@ void TransformManager<D_>::add_transform(const std::string& parent_frame, const 
     // Throw error if the parent_frame and child_frame are the same:
     throw_if(parent_frame == child_frame, "TransformManager cannot add transform where parent frame (" + parent_frame +
                                                   ") and child frame (" + child_frame + ") are the same.");
+
     // Throw error if child_frame exists and is not a root node
     throw_if(has_child_frame(child_frame),
             "TransformManager cannot add " + parent_frame + "->" + child_frame + " transform because " + child_frame +
                     " already exists with parent " + get_frame(child_frame).parent_transform()->parent_frame().name() +
                     ". Child frames may only have one parent.");
-    // Get or create parent_frame with book-keeping for the new child_frame
-    FrameNode& frame = get_or_create_frame_for_child_frame(parent_frame, child_frame);
+
+    // Get or create parent frame object.
+    FrameNode& parent_frame_node = has_frame(parent_frame) ? get_frame(parent_frame) : create_root(parent_frame);
+
     // Add the transform to the parent FrameNode
-    frame.add_transform(child_frame, transform);
+    FrameNode& child_frame_node = parent_frame_node.add_transform(child_frame, transform);
+    child_frame_node.update_parents_next_child_frame_for_frame();
+
     // Move existing tree (with root frame == child_frame) under the new child FrameNode
     for (auto it = roots().begin(); it != roots().end(); ++it) {
         if (it->name() == child_frame) {
             // Move root FrameNode to child FrameNode (pointers and references remain valid)
-            frame.transform(child_frame).child_frame() = std::move(*it);
+            child_frame_node = std::move(*it);
             // Set parent TransformEdge of child FrameNode
-            frame.transform(child_frame).child_frame().parent_transform() = &frame.transform(child_frame);
-            // Update book-keeping for each FrameNode above frame
-            TransformEdge* current_transform = frame.parent_transform();
-            while (current_transform != nullptr) {
-                current_transform->parent_frame().add_next_child_frame_for_frame(child_frame,
-                        current_transform->child_frame().name());
-                current_transform = current_transform->parent_frame().parent_transform();
-            }
+            child_frame_node.parent_transform() = &parent_frame_node.transform(child_frame);
+            // Update book-keeping in tree for each new frame node in sub-tree. Since every name of every sub-tree frame
+            // node needs added to the book-keeping, the update must be called on every sub-tree frame node.
+            child_frame_node.update_parents_next_child_frame_for_frame_of_children_recursively(
+                    child_frame_node.parent_transform());
             // Delete moved root FrameNode (invalidating iterators)
             roots().erase(it);
             // Terminate loop as can only be one root FrameNode to move (and iterator is invalidated by erase call)
@@ -204,16 +207,18 @@ inline void TransformManager<D_>::FrameNode::add_next_child_frame_for_frame(cons
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-inline void TransformManager<D_>::FrameNode::add_transform(const std::string& child_frame_name,
-        const Pose<D>& transform) {
-    add_next_child_frame_for_frame(child_frame_name, child_frame_name);
+inline auto TransformManager<D_>::FrameNode::add_transform(const std::string& child_frame_name,
+        const Pose<D>& transform) -> FrameNode& {
     // By using dynamic memory, the pointer remains valid after emplacing into the map
-    child_transforms_.emplace(child_frame_name, std::make_unique<TransformEdge>(*this, child_frame_name, transform));
+    auto emplace_result = child_transforms_.emplace(child_frame_name,
+            std::make_unique<TransformEdge>(*this, child_frame_name, transform));
+    assert(emplace_result.second);
+    return emplace_result.first->second->child_frame();
 }
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-void TransformManager<D_>::FrameNode::append_transforms(std::deque<Transform<D>>& transforms_) const {
+inline void TransformManager<D_>::FrameNode::append_transforms(std::deque<Transform<D>>& transforms_) const {
     for (const auto& [child_frame_name, child_transform] : child_transforms()) {
         transforms_.emplace_back(name(), child_frame_name, child_transform->transform());
         child_transform->child_frame().append_transforms(transforms_);
@@ -264,6 +269,12 @@ inline bool TransformManager<D_>::FrameNode::has_child_frame(const std::string& 
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
+inline bool TransformManager<D_>::FrameNode::is_leaf_frame() const {
+    return child_transforms().empty();
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
 inline const std::string& TransformManager<D_>::FrameNode::next_child_frame_name(
         const std::string& query_frame_name) const {
     return next_child_frame_for_frame.at(query_frame_name);
@@ -301,6 +312,44 @@ template<int D_>
 inline typename TransformManager<D_>::TransformEdge& TransformManager<D_>::FrameNode::transform(
         const std::string& child_frame_name) {
     return const_cast<TransformEdge&>(std::as_const(*this).transform(child_frame_name));
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline void TransformManager<D_>::FrameNode::update_parents_next_child_frame_for_frame() {
+    update_parents_next_child_frame_for_frame(parent_transform());
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline void TransformManager<D_>::FrameNode::update_parents_next_child_frame_for_frame(
+        TransformEdge* first_transform_for_update) {
+    TransformEdge* current_transform = first_transform_for_update;
+    while (current_transform != nullptr) {
+        current_transform->parent_frame().add_next_child_frame_for_frame(name(),
+                current_transform->child_frame().name());
+        current_transform = current_transform->parent_frame().parent_transform();
+    }
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline void TransformManager<D_>::FrameNode::update_parents_next_child_frame_for_frame_of_children_recursively() {
+    return update_parents_next_child_frame_for_frame_of_children_recursively(parent_transform());
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline void TransformManager<D_>::FrameNode::update_parents_next_child_frame_for_frame_of_children_recursively(
+        TransformEdge* first_transform_for_update) {
+    for (auto it = child_transforms().begin(); it != child_transforms().end(); ++it) {
+        FrameNode& child_frame = it->second->child_frame();
+        if (child_frame.is_leaf_frame()) {
+            child_frame.update_parents_next_child_frame_for_frame(first_transform_for_update);
+        } else {
+            child_frame.update_parents_next_child_frame_for_frame_of_children_recursively(first_transform_for_update);
+        }
+    }
 }
 
 template<int D_>
@@ -343,7 +392,7 @@ inline auto TransformManager<D_>::TransformEdge::transform() const -> const Pose
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-auto TransformManager<D_>::TransformEdge::transform_to(const std::string& child_frame_name) const -> Pose<D> {
+inline auto TransformManager<D_>::TransformEdge::transform_to(const std::string& child_frame_name) const -> Pose<D> {
     const TransformEdge* current_transform = this;
     Pose<D> transform_to_child = current_transform->transform();
     while (current_transform->child_frame().name() != child_frame_name) {
@@ -355,13 +404,13 @@ auto TransformManager<D_>::TransformEdge::transform_to(const std::string& child_
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-inline typename TransformManager<D_>::FrameNode& TransformManager<D_>::create_root(const std::string& frame_name) {
+inline auto TransformManager<D_>::create_root(const std::string& frame_name) -> FrameNode& {
     return roots_.emplace_back(frame_name, nullptr);
 }
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-inline const TransformManager<D_>::FrameNode& TransformManager<D_>::get_frame(const std::string& frame_name) const {
+inline auto TransformManager<D_>::get_frame(const std::string& frame_name) const -> const FrameNode& {
     // Check if frame exists
     throw_if(!has_frame(frame_name), "TransformManager does not have Frame " + frame_name + ".");
     // Find existing parent FrameNode
@@ -374,12 +423,16 @@ inline const TransformManager<D_>::FrameNode& TransformManager<D_>::get_frame(co
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-const typename TransformManager<D_>::FrameNode& TransformManager<D_>::get_root_for_frame(
-        const std::string& frame_name) const {
-    const std::size_t num_roots_ = num_roots();
-    for (std::size_t i = 0; i < num_roots_; ++i) {
-        if (roots()[i].has_frame(frame_name)) {
-            return roots()[i];
+inline auto TransformManager<D_>::get_frame(const std::string& frame_name) -> FrameNode& {
+    return const_cast<FrameNode&>(std::as_const(*this).get_frame(frame_name));
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline auto TransformManager<D_>::get_root_for_frame(const std::string& frame_name) const -> const FrameNode& {
+    for (const FrameNode& root : roots()) {
+        if (root.has_frame(frame_name)) {
+            return root;
         }
     }
     throw_here("TransformManager does not have Frame " + frame_name + ".");
@@ -387,41 +440,19 @@ const typename TransformManager<D_>::FrameNode& TransformManager<D_>::get_root_f
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-inline typename TransformManager<D_>::FrameNode& TransformManager<D_>::get_root_for_frame(
-        const std::string& frame_name) {
+inline auto TransformManager<D_>::get_root_for_frame(const std::string& frame_name) -> FrameNode& {
     return const_cast<FrameNode&>(std::as_const(*this).get_root_for_frame(frame_name));
 }
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-typename TransformManager<D_>::FrameNode& TransformManager<D_>::get_or_create_frame_for_child_frame(
-        const std::string& frame_name, const std::string& new_child_frame_name) {
-    // Check if frame exists
-    if (has_frame(frame_name)) {
-        // Find existing parent FrameNode
-        FrameNode* current_frame = &get_root_for_frame(frame_name);
-        while (current_frame->name() != frame_name) {
-            const std::string& next_child_frame = current_frame->next_child_frame_name(frame_name);
-            // Add new_child_frame_name to each FrameNode's next_child_frame_for_frame map
-            current_frame->add_next_child_frame_for_frame(new_child_frame_name, next_child_frame);
-            current_frame = &current_frame->transform(next_child_frame).child_frame();
-        }
-        return *current_frame;
-    } else {
-        // Create new tree with transform
-        return create_root(frame_name);
-    }
-}
-
-template<int D_>
-    requires(math::is_2d_or_3d<D_>)
-inline const std::deque<typename TransformManager<D_>::FrameNode>& TransformManager<D_>::roots() const {
+inline auto TransformManager<D_>::roots() const -> const std::deque<FrameNode>& {
     return roots_;
 }
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
-inline std::deque<typename TransformManager<D_>::FrameNode>& TransformManager<D_>::roots() {
+inline auto TransformManager<D_>::roots() -> std::deque<FrameNode>& {
     return const_cast<std::deque<typename TransformManager<D_>::FrameNode>&>(std::as_const(*this).roots());
 }
 
