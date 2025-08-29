@@ -5,6 +5,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <type_traits>
 
@@ -128,6 +129,32 @@ public:
      * @return std::deque<Transform<D>>
      */
     std::deque<Transform<D>> transforms() const;
+
+    /**
+     * @brief Create a string of all the transform trees (i.e. the transform forest).
+     *
+     * @return std::string
+     */
+    std::string to_string() const;
+
+    /**
+     * @brief Create a string of the transform tree rooted at frame (which does not need to be a root frame).
+     *
+     * @param frame
+     * @return std::string
+     */
+    std::string to_string(const std::string& frame) const;
+
+    /**
+     * @brief Adds the result of `to_string()` to stream.
+     *
+     * @tparam D
+     * @param os
+     * @param transform_manager
+     * @return std::ostream&
+     */
+    template<int D>
+    friend std::ostream& operator<<(std::ostream& os, const TransformManager<D>& transform_manager);
 
 private:
     // Forward declaration
@@ -471,6 +498,15 @@ private:
      * @return std::deque<FrameNode>&
      */
     std::deque<FrameNode>& roots();
+
+    /**
+     * @brief Helper function to convert transform manager to string.
+     *
+     * @param frame
+     * @param indent
+     * @return std::string
+     */
+    std::string to_string(const FrameNode& frame, std::size_t indent) const;
 
     /**
      * @brief Root nodes of the transform frame tree.

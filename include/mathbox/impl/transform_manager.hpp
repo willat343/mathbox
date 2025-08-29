@@ -194,6 +194,29 @@ inline auto TransformManager<D_>::transforms() const -> std::deque<Transform<D>>
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
+inline std::string TransformManager<D_>::to_string() const {
+    std::stringstream ss;
+    for (auto it = roots().cbegin(); it != roots().cend(); ++it) {
+        ss << to_string(*it, 0) << (it + 1 == roots().cend() ? "" : "\n");
+    }
+    return ss.str();
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline std::string TransformManager<D_>::to_string(const std::string& frame) const {
+    return to_string(get_frame(frame), 0);
+}
+
+template<int D>
+    requires(math::is_2d_or_3d<D>)
+std::ostream& operator<<(std::ostream& os, const TransformManager<D>& transform_manager) {
+    os << transform_manager.to_string();
+    return os;
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
 TransformManager<D_>::FrameNode::FrameNode(const std::string& frame_name_, TransformEdge* parent_transform_)
     : frame_name_(frame_name_),
       parent_transform_(parent_transform_) {}
@@ -454,6 +477,23 @@ template<int D_>
     requires(math::is_2d_or_3d<D_>)
 inline auto TransformManager<D_>::roots() -> std::deque<FrameNode>& {
     return const_cast<std::deque<typename TransformManager<D_>::FrameNode>&>(std::as_const(*this).roots());
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline std::string TransformManager<D_>::to_string(const FrameNode& frame, std::size_t indent) const {
+    const std::string arrow{" -> "};
+    std::stringstream ss;
+    ss << frame.name();
+    indent += frame.name().size() + (indent == 0 ? 0 : arrow.size());
+    for (auto it = frame.child_transforms().cbegin(); it != frame.child_transforms().cend(); ++it) {
+        if (it != frame.child_transforms().cbegin()) {
+            ss << "\n";
+            std::fill_n(std::ostream_iterator<std::string>(ss), indent, " ");
+        }
+        ss << arrow << to_string(it->second->child_frame(), indent);
+    }
+    return ss.str();
 }
 
 }
