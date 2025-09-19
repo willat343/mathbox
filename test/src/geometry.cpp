@@ -76,7 +76,8 @@ TEST(change_tf_covariance_frame, identity) {
             0.13, 0.04, 0.08, 0.11, 0.4, 0.14, 0.15, 0.05, 0.09, 0.12, 0.14, 0.5, 0.16, 0.06, 0.10, 0.13, 0.15, 0.16,
             0.6;
     const Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-    EXPECT_TRUE(covariance.isApprox(math::change_tf_covariance_frame(covariance, transform)));
+    EXPECT_TRUE(covariance.isApprox(math::change_tf_covariance_frame(covariance, transform, true)));
+    EXPECT_TRUE(covariance.isApprox(math::change_tf_covariance_frame(covariance, transform, false)));
 }
 
 TEST(compute_constant_rates, compute_constant_rates_0) {
@@ -218,19 +219,19 @@ TEST(rotate_point_covariance, yaw_45_x_covariance) {
 
 TEST(transform_adjoint, rotation_only) {
     const Eigen::Isometry3d transform{Eigen::Quaterniond(0.17, 0.68, 0.55, 0.14).normalized()};
-    Eigen::Matrix<double, 6, 6> transform_adjoint = math::transform_adjoint(transform);
+    Eigen::Matrix<double, 6, 6> transform_adjoint = math::transform_adjoint(transform, false);
     check_transform_adjoint_blocks(transform_adjoint, transform);
 }
 
 TEST(transform_adjoint, translation_only) {
     const Eigen::Isometry3d transform{Eigen::Translation<double, 3>{1.0, 2.0, 3.0}};
-    const Eigen::Matrix<double, 6, 6> transform_adjoint = math::transform_adjoint(transform);
+    const Eigen::Matrix<double, 6, 6> transform_adjoint = math::transform_adjoint(transform, false);
     check_transform_adjoint_blocks(transform_adjoint, transform);
 }
 
 TEST(transform_adjoint, transform) {
     const Eigen::Isometry3d transform =
             Eigen::Translation<double, 3>{1.0, 2.0, 3.0} * Eigen::Quaterniond(0.17, 0.68, 0.55, 0.14).normalized();
-    const Eigen::Matrix<double, 6, 6> transform_adjoint = math::transform_adjoint(transform);
+    const Eigen::Matrix<double, 6, 6> transform_adjoint = math::transform_adjoint(transform, false);
     check_transform_adjoint_blocks(transform_adjoint, transform);
 }
