@@ -6,7 +6,7 @@
 namespace math {
 
 template<typename Derived>
-bool has_positive_diagonals(const Eigen::MatrixBase<Derived>& m) {
+inline bool has_positive_diagonals(const Eigen::MatrixBase<Derived>& m) {
     return m.diagonal().minCoeff() > 0.0;
 }
 

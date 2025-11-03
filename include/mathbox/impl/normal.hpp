@@ -18,17 +18,17 @@ GrvGenerator<Scalar_, Size_>::GrvGenerator(const Vector& mean, const Matrix& cov
 }
 
 template<typename Scalar_, int Size_>
-auto GrvGenerator<Scalar_, Size_>::compute_covariance() const -> Matrix {
+inline auto GrvGenerator<Scalar_, Size_>::compute_covariance() const -> Matrix {
     return transform() * transform().transpose();
 }
 
 template<typename Scalar_, int Size_>
-auto GrvGenerator<Scalar_, Size_>::mean() const -> const Vector& {
+inline auto GrvGenerator<Scalar_, Size_>::mean() const -> const Vector& {
     return mean_;
 }
 
 template<typename Scalar_, int Size_>
-auto GrvGenerator<Scalar_, Size_>::operator()() -> Vector {
+inline auto GrvGenerator<Scalar_, Size_>::operator()() -> Vector {
     // Note that passing the size to the vector is redundant in the fixed-size case.
     return mean() +
            transform() * Vector(mean_.size())
@@ -90,12 +90,12 @@ inline void GrvGenerator<Scalar_, Size_>::set_mean_covariance(const Vector& mean
 }
 
 template<typename Scalar_, int Size_>
-void GrvGenerator<Scalar_, Size_>::set_seed(const unsigned int seed) {
+inline void GrvGenerator<Scalar_, Size_>::set_seed(const unsigned int seed) {
     generator = std::mt19937(seed);
 }
 
 template<typename Scalar_, int Size_>
-auto GrvGenerator<Scalar_, Size_>::transform() const -> const Matrix& {
+inline auto GrvGenerator<Scalar_, Size_>::transform() const -> const Matrix& {
     return transform_;
 }
 
