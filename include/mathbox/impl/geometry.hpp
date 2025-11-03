@@ -101,6 +101,14 @@ inline Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
     return rotate_point_covariance(covariance, rotation.toRotationMatrix());
 }
 
+inline Pose<2> to_pose_2D(const Pose<3>& pose, const Eigen::Vector3d& axis) {
+    const Eigen::AngleAxisd orientation{pose.rotation()};
+    throw_if(!axis.isZero() && orientation.axis().isApprox(axis),
+            "Orientation must be purely a rotation about a normalized axis argument (e.g. UnitZ) to be convertible to "
+            "Eigen::Rotation2D, or this check can be disabled by passing the default value for axis (zero).");
+    return Eigen::Translation2d{pose.translation()[0], pose.translation()[1]} * Eigen::Rotation2Dd{orientation.angle()};
+}
+
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
 inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> transform_adjoint(

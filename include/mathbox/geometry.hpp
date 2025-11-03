@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <mathbox/traits.hpp>
+#include <mathbox/types.hpp>
 
 namespace math {
 
@@ -197,6 +198,16 @@ template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
         const Eigen::Matrix<typename Derived::Scalar, 3, 3>& covariance,
         const Eigen::RotationBase<Derived, 3>& rotation);
+
+/**
+ * @brief Convert pose from 3D to 2D.
+ *
+ * @param pose 3D pose to convert
+ * @param axis If an axis is zero, it is unused. If it is specified (e.g. Eigen::Vector3d::UnitZ()), then a check is
+ * performed that it is equal to the axis of the pose's orientation.
+ * @return Eigen::Isometry2d
+ */
+Pose<2> to_pose_2D(const Pose<3>& pose, const Eigen::Vector3d& axis = Eigen::Vector3d::Zero());
 
 /**
  * @brief Compute the adjoint matrix of a transform T (R, t) in SE(D). It can be used to change the reference frame of
