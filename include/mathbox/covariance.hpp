@@ -81,6 +81,40 @@ public:
     PositiveSemiDefiniteMatrix& operator=(const Eigen::MatrixBase<Derived>& rhs);
 };
 
+template<typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime> covariance_from_sigmas(
+        const Eigen::MatrixBase<Derived>& sigmas);
+
+template<int Rows, typename Scalar = double>
+Eigen::Matrix<Scalar, Rows, Rows> covariance_from_sigmas(
+        const Eigen::Ref<const Eigen::Matrix<Scalar, Rows, 1>>& sigmas);
+
+template<int Rows, typename Scalar = double>
+Eigen::Matrix<Scalar, Rows, Rows> covariance_from_sigma(const Scalar sigma);
+
+template<typename Scalar = double>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> covariance_from_sigma(const Scalar sigma, const int rows);
+
+template<typename Scalar = double>
+Scalar covariance_from_sigma(const Scalar sigma);
+
+template<typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime>
+covariance_from_variances(const Eigen::MatrixBase<Derived>& variances);
+
+template<int Rows, typename Scalar = double>
+Eigen::Matrix<Scalar, Rows, Rows> covariance_from_variances(
+        const Eigen::Ref<const Eigen::Matrix<Scalar, Rows, 1>>& variances);
+
+template<int Rows, typename Scalar = double>
+Eigen::Matrix<Scalar, Rows, Rows> covariance_from_variance(const Scalar variance);
+
+template<typename Scalar = double>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> covariance_from_variance(const Scalar variance, const int rows);
+
+template<typename Scalar = double>
+Scalar covariance_from_variance(const Scalar variance);
+
 template<typename Scalar, int Size>
 using Covariance = PositiveSemiDefiniteMatrix<Scalar, Size>;
 using CovarianceXd = Covariance<double, Eigen::Dynamic>;

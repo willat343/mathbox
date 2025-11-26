@@ -60,6 +60,75 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>& PositiveSemiDefiniteMatrix<Scalar_, 
     return *this;
 }
 
+template<typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime> covariance_from_sigmas(
+        const Eigen::MatrixBase<Derived>& sigmas) {
+    if constexpr (Derived::ColsAtCompileTime == Eigen::Dynamic) {
+        throw_if(sigmas.cols() != 1, "Sigmas was not a column vector.");
+    } else {
+        static_assert(Derived::ColsAtCompileTime == 1, "Sigmas was not a column vector.");
+    }
+    return covariance_from_sigmas<Derived::RowsAtCompileTime, typename Derived::Scalar>(sigmas);
+}
+
+template<int Rows, typename Scalar>
+inline Eigen::Matrix<Scalar, Rows, Rows> covariance_from_sigmas(
+        const Eigen::Ref<const Eigen::Matrix<Scalar, Rows, 1>>& sigmas) {
+    return covariance_from_variances<Rows, Scalar>(sigmas.cwiseProduct(sigmas));
+}
+
+template<int Rows, typename Scalar>
+inline Eigen::Matrix<Scalar, Rows, Rows> covariance_from_sigma(const Scalar sigma) {
+    static_assert(Rows > 0, "number of compile-time rows must be > 0 when constructing from a single sigma value");
+    return Eigen::Matrix<Scalar, Rows, 1>::Constant(covariance_from_sigma(sigma)).asDiagonal();
+}
+
+template<typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> covariance_from_sigma(const Scalar sigma, const int rows) {
+    throw_if(rows < 1, "covariance_from_sigma expected rows to be a positive integer");
+    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, covariance_from_sigma(sigma)).asDiagonal();
+}
+
+template<typename Scalar>
+inline Scalar covariance_from_sigma(const Scalar sigma) {
+    return sigma * sigma;
+}
+
+template<typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime>
+covariance_from_variances(const Eigen::MatrixBase<Derived>& variances) {
+    if constexpr (Derived::ColsAtCompileTime == Eigen::Dynamic) {
+        throw_if(variances.cols() != 1, "Variances was not a column vector.");
+    } else {
+        static_assert(Derived::ColsAtCompileTime == 1, "Variances was not a column vector.");
+    }
+    return covariance_from_variances<Derived::RowsAtCompileTime, typename Derived::Scalar>(variances);
+}
+
+template<int Rows, typename Scalar>
+inline Eigen::Matrix<Scalar, Rows, Rows> covariance_from_variances(
+        const Eigen::Ref<const Eigen::Matrix<Scalar, Rows, 1>>& variances) {
+    return variances.asDiagonal();
+}
+
+template<int Rows, typename Scalar>
+inline Eigen::Matrix<Scalar, Rows, Rows> covariance_from_variance(const Scalar variance) {
+    static_assert(Rows > 0, "number of compile-time rows must be > 0 when constructing from a single variance value");
+    return Eigen::Matrix<Scalar, Rows, 1>::Constant(covariance_from_variance(variance)).asDiagonal();
+}
+
+template<typename Scalar>
+inline Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> covariance_from_variance(const Scalar variance,
+        const int rows) {
+    throw_if(rows < 1, "covariance_from_variance expected rows to be a positive integer");
+    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, covariance_from_variance(variance)).asDiagonal();
+}
+
+template<typename Scalar>
+inline Scalar covariance_from_variance(const Scalar variance) {
+    return variance;
+}
+
 template<typename Scalar_, int Size_>
 template<typename Derived>
 CovarianceDensity<Scalar_, Size_>::CovarianceDensity(
