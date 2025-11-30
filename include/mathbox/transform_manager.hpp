@@ -54,23 +54,6 @@ public:
     static constexpr int D = D_;
 
     /**
-     * @brief Add a transform from parent_frame to child_frame, T_P_C, i.e. the pose of the child frame in the parent
-     * frame.
-     *
-     * @param parent_frame
-     * @param child_frame
-     * @param transform
-     */
-    void add_transform(const std::string& parent_frame, const std::string& child_frame, const Pose<D>& transform);
-
-    /**
-     * @brief Convenience overload.
-     *
-     * @param transform
-     */
-    void add_transform(const Transform<D>& transform);
-
-    /**
      * @brief Check if frame exists as a child frame in a transform tree (i.e. not a root FrameNode).
      *
      * @param frame
@@ -112,6 +95,23 @@ public:
      * @return std::deque<std::string>
      */
     std::deque<std::string> root_frames() const;
+
+    /**
+     * @brief Set the transform from parent_frame to child_frame, T_P_C, i.e. the pose of the child frame in the parent
+     * frame. If a transform between these frames already exists, update it. Otherwise add it.
+     *
+     * @param parent_frame
+     * @param child_frame
+     * @param transform
+     */
+    void set_transform(const std::string& parent_frame, const std::string& child_frame, const Pose<D>& transform);
+
+    /**
+     * @brief Convenience overload.
+     *
+     * @param transform
+     */
+    void set_transform(const Transform<D>& transform);
 
     /**
      * @brief Get the transform from parent_frame to child_frame, T_P_C, i.e. the pose of the child frame in the parent
@@ -229,13 +229,22 @@ private:
         const std::string& name() const;
 
         /**
-         * @brief Check if query_frame_name is a child frame.
+         * @brief Check if query_frame_name is a child frame (may not be a direct child).
          *
          * @param query_frame_name
          * @return true
          * @return false
          */
         bool has_child_frame(const std::string& query_frame_name) const;
+
+        /**
+         * @brief Check if query_frame_name is a direct child frame.
+         *
+         * @param query_frame_name
+         * @return true
+         * @return false
+         */
+        bool has_direct_child_frame(const std::string& query_frame_name) const;
 
         /**
          * @brief Check if query_frame_name is this frame or a child frame.
@@ -415,6 +424,13 @@ private:
          * @return const Pose<D>&
          */
         const Pose<D>& transform() const;
+
+        /**
+         * @brief Get the transform.
+         *
+         * @return Pose<D>&
+         */
+        Pose<D>& transform();
 
         /**
          * @brief Compute the transform from this transform (i.e. including this transform from the parent FrameNode) to
