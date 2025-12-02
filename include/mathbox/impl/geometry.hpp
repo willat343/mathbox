@@ -101,6 +101,53 @@ inline Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
     return rotate_point_covariance(covariance, rotation.toRotationMatrix());
 }
 
+template<typename DerivedOmega, typename DerivedV>
+    requires(DerivedOmega::RowsAtCompileTime == 1 && DerivedOmega::ColsAtCompileTime == 1 &&
+             DerivedV::RowsAtCompileTime == 2 && DerivedV::ColsAtCompileTime == 1 &&
+             std::is_same_v<typename DerivedOmega::Scalar, typename DerivedV::Scalar>)
+constexpr Eigen::Vector<typename DerivedOmega::Scalar, 2> so_cross(const Eigen::MatrixBase<DerivedOmega>& w,
+        const Eigen::MatrixBase<DerivedV>& v) {
+    return w[0] * Eigen::Vector<typename DerivedOmega::Scalar, 2>{-v[1], v[0]};
+}
+
+template<typename DerivedOmega, typename DerivedV>
+    requires(DerivedOmega::RowsAtCompileTime == 3 && DerivedOmega::ColsAtCompileTime == 1 &&
+             DerivedV::RowsAtCompileTime == 3 && DerivedV::ColsAtCompileTime == 1 &&
+             std::is_same_v<typename DerivedOmega::Scalar, typename DerivedV::Scalar>)
+constexpr Eigen::Vector<typename DerivedOmega::Scalar, 3> so_cross(const Eigen::MatrixBase<DerivedOmega>& w,
+        const Eigen::MatrixBase<DerivedV>& v) {
+    return w.cross(v);
+}
+
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 2 && Derived::ColsAtCompileTime == 2)
+constexpr inline Eigen::Vector<typename Derived::Scalar, 1> so_from_skew(const Eigen::MatrixBase<Derived>& skew) {
+    return Eigen::Vector<typename Derived::Scalar, 1>{m(1, 1)};
+}
+
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 3)
+constexpr inline Eigen::Vector<typename Derived::Scalar, 3> so_from_skew(const Eigen::MatrixBase<Derived>& skew) {
+    return Eigen::Vector<typename Derived::Scalar, 3>{m(2, 1), m(0, 2), m(1, 0)};
+}
+
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 1 && Derived::ColsAtCompileTime == 1)
+constexpr inline Eigen::Matrix<typename Derived::Scalar, 2, 2> so_skew(const Eigen::MatrixBase<Derived>& v) {
+    return (Eigen::Matrix<typename Derived::Scalar, 2, 2>() << static_cast<typename Derived::Scalar>(0), -v.value(),
+            static_cast<typename Derived::Scalar>(0), v.value())
+            .finished();
+}
+
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1)
+constexpr inline Eigen::Matrix<typename Derived::Scalar, 3, 3> so_skew(const Eigen::MatrixBase<Derived>& v) {
+    return (Eigen::Matrix<typename Derived::Scalar, 3, 3>() << static_cast<typename Derived::Scalar>(0), -v[2], v[1],
+            v[2], static_cast<typename Derived::Scalar>(0), -v[0], -v[1], v[0],
+            static_cast<typename Derived::Scalar>(0))
+            .finished();
+}
+
 inline Pose<2> to_pose_2D(const Pose<3>& pose, const Eigen::Vector3d& axis) {
     const Eigen::AngleAxisd orientation{pose.rotation()};
     throw_if(!axis.isZero() && orientation.axis().isApprox(axis),
@@ -179,6 +226,17 @@ extern template Eigen::Matrix2d rotate_point_covariance<Eigen::Matrix2d>(
         const Eigen::MatrixBase<Eigen::Matrix2d>& covariance, const Eigen::MatrixBase<Eigen::Matrix2d>& rotation);
 extern template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(
         const Eigen::MatrixBase<Eigen::Matrix3d>& covariance, const Eigen::MatrixBase<Eigen::Matrix3d>& rotation);
+
+extern template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(
+        const Eigen::MatrixBase<Eigen::Vector<double, 1>>&, const Eigen::MatrixBase<Eigen::Vector2d>&);
+extern template Eigen::Vector3d so_cross<Eigen::Vector3d, Eigen::Vector3d>(const Eigen::MatrixBase<Eigen::Vector3d>&,
+        const Eigen::MatrixBase<Eigen::Vector3d>&);
+
+extern template Eigen::Vector<double, 1> so_from_skew<Eigen::Matrix2d>(const Eigen::MatrixBase<Eigen::Matrix2d>&);
+extern template Eigen::Vector3d so_from_skew<Eigen::Matrix3d>(const Eigen::MatrixBase<Eigen::Matrix3d>&);
+
+extern template Eigen::Matrix2d so_skew<Eigen::Vector<double, 1>>(const Eigen::MatrixBase<Eigen::Vector<double, 1>>&);
+extern template Eigen::Matrix3d so_skew<Eigen::Vector3d>(const Eigen::MatrixBase<Eigen::Vector3d>&);
 
 extern template Eigen::Matrix<double, 3, 3> transform_adjoint<double, 2>(const Eigen::Isometry2d& transform,
         const bool);

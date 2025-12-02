@@ -33,6 +33,17 @@ template Eigen::Matrix2d rotate_point_covariance<Eigen::Matrix2d>(const Eigen::M
 template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(const Eigen::MatrixBase<Eigen::Matrix3d>&,
         const Eigen::MatrixBase<Eigen::Matrix3d>&);
 
+template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(
+        const Eigen::MatrixBase<Eigen::Vector<double, 1>>&, const Eigen::MatrixBase<Eigen::Vector2d>&);
+template Eigen::Vector3d so_cross<Eigen::Vector3d, Eigen::Vector3d>(const Eigen::MatrixBase<Eigen::Vector3d>&,
+        const Eigen::MatrixBase<Eigen::Vector3d>&);
+
+template Eigen::Vector<double, 1> so_from_skew<Eigen::Matrix2d>(const Eigen::MatrixBase<Eigen::Matrix2d>&);
+template Eigen::Vector3d so_from_skew<Eigen::Matrix3d>(const Eigen::MatrixBase<Eigen::Matrix3d>&);
+
+template Eigen::Matrix2d so_skew<Eigen::Vector<double, 1>>(const Eigen::MatrixBase<Eigen::Vector<double, 1>>&);
+template Eigen::Matrix3d so_skew<Eigen::Vector3d>(const Eigen::MatrixBase<Eigen::Vector3d>&);
+
 template Eigen::Matrix<double, 3, 3> transform_adjoint<double, 2>(const Eigen::Isometry2d& transform, const bool);
 template Eigen::Matrix<double, 6, 6> transform_adjoint<double, 3>(const Eigen::Isometry3d& transform, const bool);
 

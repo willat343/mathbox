@@ -199,6 +199,36 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
         const Eigen::Matrix<typename Derived::Scalar, 3, 3>& covariance,
         const Eigen::RotationBase<Derived, 3>& rotation);
 
+template<typename DerivedOmega, typename DerivedV>
+    requires(DerivedOmega::RowsAtCompileTime == 1 && DerivedOmega::ColsAtCompileTime == 1 &&
+             DerivedV::RowsAtCompileTime == 2 && DerivedV::ColsAtCompileTime == 1 &&
+             std::is_same_v<typename DerivedOmega::Scalar, typename DerivedV::Scalar>)
+constexpr Eigen::Vector<typename DerivedOmega::Scalar, 2> so_cross(const Eigen::MatrixBase<DerivedOmega>& w,
+        const Eigen::MatrixBase<DerivedV>& v);
+
+template<typename DerivedOmega, typename DerivedV>
+    requires(DerivedOmega::RowsAtCompileTime == 3 && DerivedOmega::ColsAtCompileTime == 1 &&
+             DerivedV::RowsAtCompileTime == 3 && DerivedV::ColsAtCompileTime == 1 &&
+             std::is_same_v<typename DerivedOmega::Scalar, typename DerivedV::Scalar>)
+constexpr Eigen::Vector<typename DerivedOmega::Scalar, 3> so_cross(const Eigen::MatrixBase<DerivedOmega>& w,
+        const Eigen::MatrixBase<DerivedV>& v);
+
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 2 && Derived::ColsAtCompileTime == 2)
+constexpr Eigen::Vector<typename Derived::Scalar, 1> so_from_skew(const Eigen::MatrixBase<Derived>& skew);
+
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 3)
+constexpr Eigen::Vector<typename Derived::Scalar, 3> so_from_skew(const Eigen::MatrixBase<Derived>& skew);
+
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 1 && Derived::ColsAtCompileTime == 1)
+constexpr Eigen::Matrix<typename Derived::Scalar, 2, 2> so_skew(const Eigen::MatrixBase<Derived>& v);
+
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1)
+constexpr Eigen::Matrix<typename Derived::Scalar, 3, 3> so_skew(const Eigen::MatrixBase<Derived>& v);
+
 /**
  * @brief Convert pose from 3D to 2D.
  *
