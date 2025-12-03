@@ -122,13 +122,13 @@ constexpr Eigen::Vector<typename DerivedOmega::Scalar, 3> so_cross(const Eigen::
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 2 && Derived::ColsAtCompileTime == 2)
 constexpr inline Eigen::Vector<typename Derived::Scalar, 1> so_from_skew(const Eigen::MatrixBase<Derived>& skew) {
-    return Eigen::Vector<typename Derived::Scalar, 1>{m(1, 1)};
+    return Eigen::Vector<typename Derived::Scalar, 1>{skew(1, 1)};
 }
 
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 3)
 constexpr inline Eigen::Vector<typename Derived::Scalar, 3> so_from_skew(const Eigen::MatrixBase<Derived>& skew) {
-    return Eigen::Vector<typename Derived::Scalar, 3>{m(2, 1), m(0, 2), m(1, 0)};
+    return Eigen::Vector<typename Derived::Scalar, 3>{skew(2, 1), skew(0, 2), skew(1, 0)};
 }
 
 template<typename Derived>
