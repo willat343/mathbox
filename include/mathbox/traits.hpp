@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 #include <cppbox/time.hpp>
 #include <type_traits>
 
@@ -22,6 +23,70 @@ namespace math {
  */
 template<int D>
 constexpr bool is_2d_or_3d = (D == 2 || D == 3);
+
+template<typename T>
+concept IsMatrix = requires(T t) {
+    { static_cast<const Eigen::MatrixBase<T>&>(t) };
+};
+
+template<typename T, typename Scalar>
+concept IsMatrixOf = IsMatrix<T> && std::is_same_v<typename T::Scalar, Scalar>;
+
+template<typename T>
+concept IsMatrixf = IsMatrixOf<T, float>;
+
+template<typename T>
+concept IsMatrixd = IsMatrixOf<T, double>;
+
+template<typename T>
+concept IsSparseMatrix = requires(T t) {
+    { static_cast<const Eigen::SparseMatrixBase<T>&>(t) };
+};
+
+template<typename T, typename Scalar>
+concept IsSparseMatrixOf = IsSparseMatrix<T> && std::is_same_v<typename T::Scalar, Scalar>;
+
+template<typename T>
+concept IsSparseMatrixf = IsSparseMatrixOf<T, float>;
+
+template<typename T>
+concept IsSparseMatrixd = IsSparseMatrixOf<T, double>;
+
+template<typename T>
+concept IsRowMajorMatrix = IsMatrix<T> && T::IsRowMajor == 1;
+
+template<typename T, typename Scalar>
+concept IsRowMajorMatrixOf = IsRowMajorMatrix<T> && std::is_same_v<typename T::Scalar, Scalar>;
+
+template<typename T>
+concept IsRowMajorMatrixf = IsRowMajorMatrixOf<T, float>;
+
+template<typename T>
+concept IsRowMajorMatrixd = IsRowMajorMatrixOf<T, double>;
+
+template<typename T>
+concept IsRowMajorSparseMatrix = IsSparseMatrix<T> && T::IsRowMajor == 1;
+
+template<typename T, typename Scalar>
+concept IsRowMajorSparseMatrixOf = IsRowMajorSparseMatrix<T> && std::is_same_v<typename T::Scalar, Scalar>;
+
+template<typename T>
+concept IsRowMajorSparseMatrixf = IsRowMajorSparseMatrixOf<T, float>;
+
+template<typename T>
+concept IsRowMajorSparseMatrixd = IsRowMajorSparseMatrixOf<T, double>;
+
+template<typename T>
+concept IsVector = IsMatrix<T> && T::IsVectorAtCompileTime == 1;
+
+template<typename T, typename Scalar>
+concept IsVectorOf = IsVector<T> && std::is_same_v<typename T::Scalar, Scalar>;
+
+template<typename T>
+concept IsVectorf = IsVectorOf<T, float>;
+
+template<typename T>
+concept IsVectord = IsVectorOf<T, double>;
 
 template<class MathType, typename = void>
 class MathTypeTraits {};
