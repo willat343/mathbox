@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <limits>
 
 namespace math {
 
@@ -63,7 +64,11 @@ bool is_skew_symmetric(const Eigen::DenseBase<Derived>& m);
  */
 template<typename Derived>
 bool is_symmetric(const Eigen::DenseBase<Derived>& m,
-        const typename Derived::Scalar precision = static_cast<typename Derived::Scalar>(0));
+        const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
+
+template<typename Derived>
+bool is_upper_triangular(const Eigen::DenseBase<Derived>& m,
+        const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
 
 }
 

@@ -48,6 +48,18 @@ bool is_symmetric(const Eigen::DenseBase<Derived>& m, const typename Derived::Sc
     return true;
 }
 
+template<typename Derived>
+bool is_upper_triangular(const Eigen::DenseBase<Derived>& m, const typename Derived::Scalar precision) {
+    for (Eigen::Index r = 0; r < m.rows() - 1; ++r) {
+        for (Eigen::Index c = 0; c < r; ++c) {
+            if (std::abs(m(r, c)) > precision) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 }
 
 #endif
