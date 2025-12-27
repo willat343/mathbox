@@ -187,11 +187,26 @@ public:
     Scalar sum() const;
 
     /**
+     * @brief Get the sum of square differences.
+     *
+     * @return Scalar
+     */
+    Scalar sum_of_square_differences() const;
+
+    /**
      * @brief Update statistics with a new sample. For the mean and variances, Welford's Algorithm is used.
      *
      * @param sample
      */
     void update(const Scalar sample);
+
+    /**
+     * @brief Update statistics with another statistics objects (representing samples from the same population), also
+     * known as a Chan–Golub–LeVeque merge.
+     *
+     * @param statistics
+     */
+    void update(const RunningStatistics& statistics);
 
 protected:
     /**

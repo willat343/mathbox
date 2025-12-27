@@ -132,6 +132,11 @@ inline auto RunningStatistics<Scalar_>::sum() const -> Scalar {
 }
 
 template<std::floating_point Scalar_>
+inline auto RunningStatistics<Scalar_>::sum_of_square_differences() const -> Scalar {
+    return sum_of_square_differences_;
+}
+
+template<std::floating_point Scalar_>
 void RunningStatistics<Scalar_>::update(const Scalar sample) {
     ++num_samples_;
     sum_ += sample;
@@ -147,6 +152,29 @@ void RunningStatistics<Scalar_>::update(const Scalar sample) {
     this->population_variance() = sum_of_square_differences_ / num_samples_;
     this->minimum() = std::min(sample, this->minimum());
     this->maximum() = std::max(sample, this->maximum());
+}
+
+template<std::floating_point Scalar_>
+void RunningStatistics<Scalar_>::update(const RunningStatistics& statistics) {
+    throw_if(this == &statistics, "RunningStatistics should not be updated with itself.");
+    if (statistics.num_samples() == 0) {
+        return;
+    } else if (num_samples() == 0) {
+        *this = statistics;
+        return;
+    }
+    const std::size_t previous_num_samples = num_samples();
+    num_samples_ += statistics.num_samples();
+    sum_ += statistics.sum();
+    const Scalar delta = statistics.mean() - this->mean();
+    this->mean() += delta * static_cast<Scalar>(statistics.num_samples()) / static_cast<Scalar>(num_samples());
+    sum_of_square_differences_ +=
+            statistics.sum_of_square_differences() + delta * delta * static_cast<Scalar>(previous_num_samples) *
+                                                             static_cast<Scalar>(statistics.num_samples()) /
+                                                             static_cast<Scalar>(num_samples());
+    this->population_variance() = sum_of_square_differences_ / num_samples_;
+    this->minimum() = std::min(statistics.minimum(), this->minimum());
+    this->maximum() = std::max(statistics.maximum(), this->maximum());
 }
 
 }
