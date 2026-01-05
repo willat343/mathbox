@@ -37,6 +37,28 @@ template<typename Derived>
 constexpr Derived cumulative_col_top_sum(const Eigen::DenseBase<Derived>& m);
 
 /**
+ * @brief Compute the symmetric matrix \f$ \frac{1}{2} (M + M^T) \f$ of a square matrix \f$ M \f$.
+ *
+ * This is useful for enforcing symmetry when M should theoretically be symmetric but isn't exactly symmetric due to
+ * numerical precision during its construction.
+ *
+ * @tparam Derived
+ * @param m
+ * @return constexpr typename Derived::PlainObject
+ */
+template<typename Derived>
+constexpr typename Derived::PlainObject make_symmetric(const Eigen::MatrixBase<Derived>& m);
+
+/**
+ * @brief Same as `make_symmetric` but operates in-place on matrix `m`.
+ *
+ * @tparam Derived
+ * @param m
+ */
+template<typename Derived>
+void make_symmetric_inplace(Eigen::MatrixBase<Derived>& m);
+
+/**
  * @brief Re-order a symmetric matrix (e.g. covariance matrix) by swapping the blocks according to some boundary index.
  *
  * \f[

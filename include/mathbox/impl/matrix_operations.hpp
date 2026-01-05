@@ -34,6 +34,16 @@ constexpr Derived cumulative_col_top_sum(const Eigen::DenseBase<Derived>& m) {
 }
 
 template<typename Derived>
+constexpr typename Derived::PlainObject make_symmetric(const Eigen::MatrixBase<Derived>& m) {
+    return 0.5 * (m + m.transpose());
+}
+
+template<typename Derived>
+void make_symmetric_inplace(Eigen::MatrixBase<Derived>& m) {
+    m = 0.5 * (m + m.transpose());
+}
+
+template<typename Derived>
 Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eigen::Index boundary) {
     throw_if(boundary == 0, "Reorder boundary cannot be 0.");
     const Eigen::Index size = m.rows();
