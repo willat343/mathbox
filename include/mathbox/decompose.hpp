@@ -30,6 +30,13 @@ enum LLTDecompositionMethod {
 inline const std::vector<LLTDecompositionMethod> llt_decomposition_methods = {{CHOLESKY, EIGEN, ROBUST_CHOLESKY}};
 
 /**
+ * @brief Check the computation info and throw an exception if computation was not successful.
+ *
+ * @param info
+ */
+void check_computation_info(const Eigen::ComputationInfo info);
+
+/**
  * @brief Decompose a hermitian, matrix (of valid form, see `LLTDecompositionMethod` documention) into form
  * \f$\mathbf{L}\mathbf{L}^*\f$ (\f$\mathbf{L}\mathbf{L}^T\f$ for real matrices), and return \f$\mathbf{L}\f$.
  *

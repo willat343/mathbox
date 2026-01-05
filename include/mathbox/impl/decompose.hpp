@@ -9,7 +9,7 @@
 
 namespace math {
 
-inline void check_llt_computation_info(const Eigen::ComputationInfo info) {
+inline void check_computation_info(const Eigen::ComputationInfo info) {
     if (info != Eigen::ComputationInfo::Success) {
         throw_if(info == Eigen::ComputationInfo::NumericalIssue,
                 "NumericalIssue encountered while performing LL^* decomposition of matrix.");
@@ -27,17 +27,17 @@ Derived LLT(const Eigen::MatrixBase<Derived>& matrix, const LLTDecompositionMeth
     if (method == LLTDecompositionMethod::CHOLESKY) {
         // Decomposition is LL^T
         Eigen::LLT<Derived> decomposer(matrix);
-        check_llt_computation_info(decomposer.info());
+        check_computation_info(decomposer.info());
         L = decomposer.matrixL();
     } else if (method == LLTDecompositionMethod::EIGEN) {
         // Decomposition is QDQ^T
         Eigen::SelfAdjointEigenSolver<Derived> decomposer(matrix);
-        check_llt_computation_info(decomposer.info());
+        check_computation_info(decomposer.info());
         L = decomposer.eigenvectors() * decomposer.eigenvalues().cwiseSqrt().asDiagonal();
     } else if (method == LLTDecompositionMethod::ROBUST_CHOLESKY) {
         // Decomposition is P^TLDL^TP
         Eigen::LDLT<Derived> decomposer(matrix);
-        check_llt_computation_info(decomposer.info());
+        check_computation_info(decomposer.info());
         L = decomposer.vectorD().cwiseSqrt().asDiagonal();
         L = decomposer.matrixL() * L;
         L = decomposer.transpositionsP().transpose() * L;
