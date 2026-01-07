@@ -59,6 +59,22 @@ template<typename Derived>
 void make_symmetric_inplace(Eigen::MatrixBase<Derived>& m);
 
 /**
+ * @brief Return matrix `m` with rows removed where corresponding row of `v` is less than `threshold`. The number of
+ * rows in `m` and `v` must be equal.
+ *
+ * @param m
+ * @param v
+ * @param threshold
+ * @return Eigen::MatrixXd
+ */
+
+template<typename DerivedMatrix, typename DerivedVector>
+    requires(std::is_same_v<typename DerivedMatrix::Scalar, typename DerivedVector::Scalar>)
+Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, DerivedMatrix::ColsAtCompileTime>
+remove_rows_by_threshold(const Eigen::MatrixBase<DerivedMatrix>& m, const Eigen::MatrixBase<DerivedVector>& v,
+        const typename DerivedMatrix::Scalar threshold);
+
+/**
  * @brief Re-order a symmetric matrix (e.g. covariance matrix) by swapping the blocks according to some boundary index.
  *
  * \f[

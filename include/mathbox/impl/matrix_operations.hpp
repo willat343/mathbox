@@ -43,6 +43,25 @@ void make_symmetric_inplace(Eigen::MatrixBase<Derived>& m) {
     m = 0.5 * (m + m.transpose());
 }
 
+template<typename DerivedMatrix, typename DerivedVector>
+    requires(std::is_same_v<typename DerivedMatrix::Scalar, typename DerivedVector::Scalar>)
+Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, DerivedMatrix::ColsAtCompileTime>
+remove_rows_by_threshold(const Eigen::MatrixBase<DerivedMatrix>& m, const Eigen::MatrixBase<DerivedVector>& v,
+        const typename DerivedMatrix::Scalar threshold) {
+    throw_if(m.rows() != v.rows(), "Number of rows must match.");
+    throw_if(v.cols() != 1, "Vector must have 1 column.");
+    Eigen::MatrixXd m_reduced(m.rows(), m.cols());
+    int m_reduced_rows{0};
+    for (int r = 0; r < m.rows(); ++r) {
+        if (v[r] >= threshold) {
+            m_reduced.row(m_reduced_rows) = m.row(r);
+            ++m_reduced_rows;
+        }
+    }
+    m_reduced.resize(m_reduced_rows, m.cols());
+    return m_reduced;
+}
+
 template<typename Derived>
 Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eigen::Index boundary) {
     throw_if(boundary == 0, "Reorder boundary cannot be 0.");
