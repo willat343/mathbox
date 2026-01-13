@@ -70,6 +70,14 @@ template<typename Derived>
 bool is_upper_triangular(const Eigen::DenseBase<Derived>& m,
         const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
 
+template<typename Derived>
+int num_zero_columns(const Eigen::MatrixBase<Derived>& m,
+        const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
+
+template<typename Derived>
+int num_zero_rows(const Eigen::MatrixBase<Derived>& m,
+        const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
+
 }
 
 #include "mathbox/impl/matrix_properties.hpp"

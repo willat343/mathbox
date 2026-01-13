@@ -60,6 +60,24 @@ bool is_upper_triangular(const Eigen::DenseBase<Derived>& m, const typename Deri
     return true;
 }
 
+template<typename Derived>
+int num_zero_columns(const Eigen::MatrixBase<Derived>& m, const typename Derived::Scalar precision) {
+    std::size_t num_zero_columns_{0};
+    for (int i = 0; i < m.cols(); ++i) {
+        num_zero_columns_ += (m.col(i).isZero(precision) ? 1 : 0);
+    }
+    return num_zero_columns_;
+}
+
+template<typename Derived>
+int num_zero_rows(const Eigen::MatrixBase<Derived>& m, const typename Derived::Scalar precision) {
+    std::size_t num_zero_rows_{0};
+    for (int i = 0; i < m.rows(); ++i) {
+        num_zero_rows_ += (m.row(i).isZero(precision) ? 1 : 0);
+    }
+    return num_zero_rows_;
+}
+
 }
 
 #endif
