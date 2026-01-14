@@ -127,8 +127,8 @@ std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDe
     assert(contribution_threshold >= static_cast<Scalar>(0) && contribution_threshold <= static_cast<Scalar>(1));
 
     // Count eigenvalues in each category
-    const int num_nullspaces = (eigenvalues < nullspace_threshold).count();
-    const int num_weak = (eigenvalues < weak_threshold).count() - num_nullspaces;
+    const int num_nullspaces = (eigenvalues.array() < nullspace_threshold).count();
+    const int num_weak = (eigenvalues.array() < weak_threshold).count() - num_nullspaces;
     const int num_strong = eigenvalues.size() - num_weak - num_nullspaces;
 
     // Generate diagnostic information
