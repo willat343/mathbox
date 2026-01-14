@@ -51,16 +51,16 @@ std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std
     std::stringstream ss;
     if (m.size() > 0) {
         // Precompute min/max string lengths
-        const std::size_t max_row_size_width = std::to_string(
-                row_block_sizes.empty() ? 0 : *std::max_element(row_block_sizes.cbegin(), row_block_sizes.cend()))
-                                                       .size();
-        const std::size_t min_column_width = 4 + 2 * max_row_size_width;
+        const std::size_t max_row_index_width =
+                std::to_string(row_block_sizes.empty() ? 0 : row_block_sizes.size() - 1).size();
+        const std::size_t min_column_width = 6 + 2 * max_row_index_width;
 
         // Row identifiers
         std::vector<std::string> row_identifiers(row_block_sizes.size());
         for (std::size_t i = 0; i < row_block_sizes.size(); ++i) {
             std::stringstream internal_ss;
-            internal_ss << (row_block_names ? (*row_block_names)[i] : "Block") << "(" << row_block_sizes[i] << ")";
+            internal_ss << (row_block_names && !(*row_block_names)[i].empty() ? (*row_block_names)[i] : "Block") << "("
+                        << row_block_sizes[i] << ")";
             row_identifiers[i] = internal_ss.str();
         }
         const std::size_t max_row_identifier_width = cppbox::max_size(row_identifiers);
@@ -69,14 +69,15 @@ std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std
         std::vector<std::string> column_identifiers(column_block_sizes.size());
         for (std::size_t i = 0; i < column_block_sizes.size(); ++i) {
             std::stringstream internal_ss;
-            internal_ss << (column_block_names ? (*column_block_names)[i] : "Block") << "(" << column_block_sizes[i]
-                        << ")";
+            internal_ss << (column_block_names && !(*column_block_names)[i].empty() ? (*column_block_names)[i]
+                                                                                    : "Block")
+                        << "(" << column_block_sizes[i] << ")";
             column_identifiers[i] = internal_ss.str();
         }
 
         // Column header
         std::stringstream column_header_ss;
-        column_header_ss << std::string(max_row_size_width + 3 + max_row_identifier_width, ' ');
+        column_header_ss << std::string(max_row_index_width + 3 + max_row_identifier_width, ' ');
         for (std::size_t i = 0; i < column_block_sizes.size(); ++i) {
             column_header_ss << " | " << column_identifiers[i];
         }
@@ -84,13 +85,13 @@ std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std
         const std::string column_header = column_header_ss.str();
 
         // Header
-        const std::string header_start = "=== " + matrix_name.value_or("") + "Matrix Structure ";
+        const std::string header_start = "=== " + matrix_name.value_or("Matrix") + " Structure ";
         ss << header_start << std::string(column_header.size() - header_start.size() - 1, '=') << "\n";
         ss << column_header;
 
         // Information for each block
         for (std::size_t i = 0, r = 0; i < row_block_sizes.size(); ++i, r += row_block_sizes[i]) {
-            ss << std::setw(max_row_size_width) << i << " | " << std::setw(max_row_identifier_width)
+            ss << std::setw(max_row_index_width) << i << " | " << std::setw(max_row_identifier_width)
                << row_identifiers[i];
             for (std::size_t j = 0, c = 0; j < column_block_sizes.size(); ++j, c += column_block_sizes[j]) {
                 const Eigen::Ref<const Eigen::MatrixXd>& block =
@@ -135,7 +136,7 @@ std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDe
     std::stringstream ss;
     if (eigenvalues.size() > 0) {
         // Header
-        ss << std::scientific << std::setprecision(3) << "=== " << matrix_name.value_or("")
+        ss << std::scientific << std::setprecision(3) << "=== " << matrix_name.value_or("Matrix")
            << " Spectral Structure [Max Eigenvalue: " << eigenvalues.maxCoeff()
            << ", Min Eigenvalue: " << eigenvalues.minCoeff() << ", " << num_strong << " Strong"
            << ", " << num_weak << " Weak (Threshold: " << weak_threshold << ")"
@@ -194,8 +195,8 @@ std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDe
                             << contributions[j].first;
             }
             if (contributions.size() < static_cast<std::size_t>(eigenvector.size())) {
-                internal_ss << (contributions.size() == 0 ? "None" : "")
-                            << ",\n" + std::string(length_to_contributors, ' ') + "Remainder=" << std::fixed
+                internal_ss << std::fixed << (contributions.size() == 0 ? " None" : "") << ",\n"
+                            << std::string(length_to_contributors, ' ')
                             << std::sqrt(static_cast<Scalar>(1) -
                                          std::accumulate(contributions.cbegin(), contributions.cend(),
                                                  static_cast<Scalar>(0),
@@ -203,7 +204,8 @@ std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDe
                                                          const std::pair<std::string, Scalar>& eigenvector_component) {
                                                      return squared_norm +
                                                             eigenvector_component.second * eigenvector_component.second;
-                                                 }));
+                                                 }))
+                            << " Remainder";
             }
             internal_ss << "\n";
             if ((eigenvalue < nullspace_threshold && !exclude_nullspaces) ||
