@@ -33,12 +33,12 @@ std::string matrix_type_and_size(const Eigen::MatrixBase<Derived>& m) {
     return ss.str();
 }
 
-template<typename Derived>
+template<IsMatrix Derived>
 std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std::vector<std::size_t>& row_block_sizes,
         const std::vector<std::size_t>& column_block_sizes,
         const std::optional<std::vector<std::string>>& row_block_names,
         const std::optional<std::vector<std::string>>& column_block_names,
-        const std::optional<std::string>& matrix_name) {
+        const std::optional<std::string>& matrix_name, const bool print_block_norm) {
     // Check validity of inputs
     assert(!row_block_names || row_block_sizes.size() == row_block_names->size());
     assert(!column_block_names || column_block_sizes.size() == column_block_names->size());
@@ -53,13 +53,14 @@ std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std
         // Precompute min/max string lengths
         const std::size_t max_row_index_width =
                 std::to_string(row_block_sizes.empty() ? 0 : row_block_sizes.size() - 1).size();
-        const std::size_t min_column_width = 6 + 2 * max_row_index_width;
+        const std::size_t min_column_width = 5 + 2 * max_row_index_width + (print_block_norm ? 12 : 0);
 
         // Row identifiers
         std::vector<std::string> row_identifiers(row_block_sizes.size());
         for (std::size_t i = 0; i < row_block_sizes.size(); ++i) {
             std::stringstream internal_ss;
-            internal_ss << (row_block_names && !(*row_block_names)[i].empty() ? (*row_block_names)[i] : "Block") << "("
+            internal_ss << std::setw(min_column_width)
+                        << (row_block_names && !(*row_block_names)[i].empty() ? (*row_block_names)[i] : "Block") << "("
                         << row_block_sizes[i] << ")";
             row_identifiers[i] = internal_ss.str();
         }
@@ -69,9 +70,10 @@ std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std
         std::vector<std::string> column_identifiers(column_block_sizes.size());
         for (std::size_t i = 0; i < column_block_sizes.size(); ++i) {
             std::stringstream internal_ss;
-            internal_ss << (column_block_names && !(*column_block_names)[i].empty() ? (*column_block_names)[i]
-                                                                                    : "Block")
-                        << "(" << column_block_sizes[i] << ")";
+            internal_ss << std::setw(min_column_width)
+                        << (column_block_names && !(*column_block_names)[i].empty() ? (*column_block_names)[i]
+                                                                                    : "Block") +
+                                   "(" + std::to_string(column_block_sizes[i]) + ")";
             column_identifiers[i] = internal_ss.str();
         }
 
@@ -96,14 +98,27 @@ std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std
             for (std::size_t j = 0, c = 0; j < column_block_sizes.size(); ++j, c += column_block_sizes[j]) {
                 const Eigen::Ref<const Eigen::MatrixXd>& block =
                         m.block(r, c, row_block_sizes[i], column_block_sizes[j]);
+                std::stringstream block_info_ss;
+                block_info_ss << matrix_type_and_size(block);
+                if (print_block_norm) {
+                    block_info_ss << " (" << std::scientific << std::setprecision(3) << block.norm() << ")";
+                }
                 ss << " | " << std::setw(std::max(min_column_width, column_identifiers[j].size()))
-                   << matrix_type_and_size(block);
+                   << block_info_ss.str();
             }
             ss << " |\n";
         }
         ss << std::string(column_header.size() - 1, '=') << "\n";
     }
     return ss.str();
+}
+
+template<IsVector Derived>
+inline std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& v,
+        const std::vector<std::size_t>& row_block_sizes, const std::optional<std::vector<std::string>>& row_block_names,
+        const std::optional<std::string>& vector_name, const bool print_block_norm) {
+    return structure_diagnostics(v, row_block_sizes, std::vector<std::size_t>(1, 1), row_block_names, std::nullopt,
+            vector_name, print_block_norm);
 }
 
 template<IsVector EigenvaluesDerived, IsMatrix EigenvectorsDerived>

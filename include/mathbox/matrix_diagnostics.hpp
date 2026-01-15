@@ -36,14 +36,31 @@ std::string matrix_type_and_size(const Eigen::MatrixBase<Derived>& m);
  * @param column_block_sizes
  * @param row_block_names
  * @param column_block_names
+ * @param print_block_norm
  * @return std::string
  */
-template<typename Derived>
+template<IsMatrix Derived>
 std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std::vector<std::size_t>& row_block_sizes,
         const std::vector<std::size_t>& column_block_sizes,
         const std::optional<std::vector<std::string>>& row_block_names = std::nullopt,
         const std::optional<std::vector<std::string>>& column_block_names = std::nullopt,
-        const std::optional<std::string>& matrix_name = std::nullopt);
+        const std::optional<std::string>& matrix_name = std::nullopt, const bool print_block_norm = false);
+
+/**
+ * @brief Overload for vector types
+ *
+ * @tparam Derived
+ * @param v
+ * @param row_block_sizes
+ * @param row_block_names
+ * @param vector_name
+ * @param print_block_norm
+ * @return std::string
+ */
+template<IsVector Derived>
+std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& v, const std::vector<std::size_t>& row_block_sizes,
+        const std::optional<std::vector<std::string>>& row_block_names = std::nullopt,
+        const std::optional<std::string>& vector_name = std::nullopt, const bool print_block_norm = false);
 
 /**
  * @brief Produce diagnostic information about the spectral structure of a square matrix given its eigen decomposition.
