@@ -12,7 +12,7 @@ namespace math {
  *
  */
 enum LLTDecompositionMethod {
-    CHOLESKY,       /**< Cholesky decomposition. Usually faster than Eigen decomposition, but valid only from positive
+    CHOLESKY,       /**< Cholesky decomposition. Usually faster than Eigen decomposition, but valid only for positive
                         definite matrices, not positive semi-definite matrices. Returns the lower triangular matrix. */
     EIGEN,          /**< Eigen decomposition. Only valid for unitary (orthogonal), Hermitian (symmetric) or
                         skew-Hermitian (skew-symmetric) matrices (e.g. covariance/information matrices). Note that
@@ -20,7 +20,7 @@ enum LLTDecompositionMethod {
                         that eigenvectors and eigenvalues are obtained ordered, which determines the ordering of L. */
     ROBUST_CHOLESKY /**< Robust Cholesky decomposition. Valid for positive semi-definite and negative semi-definite
                         matrices. Note that neither the element nor their ordering is in general the same as any other
-                        method, including CHOLESKY or CHOLESKY_U. */
+                        method. */
 };
 
 /**
@@ -30,14 +30,7 @@ enum LLTDecompositionMethod {
 inline const std::vector<LLTDecompositionMethod> llt_decomposition_methods = {{CHOLESKY, EIGEN, ROBUST_CHOLESKY}};
 
 /**
- * @brief Check the computation info and throw an exception if computation was not successful.
- *
- * @param info
- */
-void check_computation_info(const Eigen::ComputationInfo info);
-
-/**
- * @brief Decompose a hermitian, matrix (of valid form, see `LLTDecompositionMethod` documention) into form
+ * @brief Decompose a hermitian, matrix (of valid form, see `LLTDecompositionMethod` documentation) into form
  * \f$\mathbf{L}\mathbf{L}^*\f$ (\f$\mathbf{L}\mathbf{L}^T\f$ for real matrices), and return \f$\mathbf{L}\f$.
  *
  * Note that different LLT decomposition methods will yield different \f$L\f$ matrices.
