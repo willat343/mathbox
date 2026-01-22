@@ -3,12 +3,22 @@
 
 #include <algorithm>
 #include <cppbox/parse.hpp>
+#include <numeric>
 #include <sstream>
 #include <utility>
 
 #include "mathbox/matrix_diagnostics.hpp"
 
 namespace math {
+
+inline void check_computation_info(const Eigen::ComputationInfo info) {
+    if (info != Eigen::ComputationInfo::Success) {
+        throw_if(info == Eigen::ComputationInfo::NumericalIssue, "NumericalIssue encountered during computation.");
+        throw_if(info == Eigen::ComputationInfo::NoConvergence, "NoConvergence encountered during computation.");
+        throw_if(info == Eigen::InvalidInput, "InvalidInput encountered during computation.");
+        throw_here("Unknown error encountered during computation.");
+    }
+}
 
 template<typename Derived>
 std::string matrix_type_and_size(const Eigen::MatrixBase<Derived>& m) {

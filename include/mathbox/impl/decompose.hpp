@@ -6,17 +6,9 @@
 #include <cppbox/exceptions.hpp>
 
 #include "mathbox/decompose.hpp"
+#include "mathbox/matrix_diagnostics.hpp"
 
 namespace math {
-
-inline void check_computation_info(const Eigen::ComputationInfo info) {
-    if (info != Eigen::ComputationInfo::Success) {
-        throw_if(info == Eigen::ComputationInfo::NumericalIssue, "NumericalIssue encountered during computation.");
-        throw_if(info == Eigen::ComputationInfo::NoConvergence, "NoConvergence encountered during computation.");
-        throw_if(info == Eigen::InvalidInput, "InvalidInput encountered during computation.");
-        throw_here("Unknown error encountered during computation.");
-    }
-}
 
 template<typename Derived>
 Derived LLT(const Eigen::MatrixBase<Derived>& matrix, const LLTDecompositionMethod method) {

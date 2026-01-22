@@ -11,6 +11,13 @@
 namespace math {
 
 /**
+ * @brief Check the computation info and throw an exception if computation was not successful.
+ *
+ * @param info
+ */
+void check_computation_info(const Eigen::ComputationInfo info);
+
+/**
  * @brief Produce diagnostic string about the type and size of a matrix. The type is one of:
  *  - Z: integer (additional "^+" symbol indicates the type is unsigned)
  *  - C: complex
