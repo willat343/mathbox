@@ -102,10 +102,10 @@ std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& m, const std
         ss << column_header;
 
         // Information for each block
-        for (std::size_t i = 0, r = 0; i < row_block_sizes.size(); ++i, r += row_block_sizes[i]) {
+        for (std::size_t i = 0, r = 0; i < row_block_sizes.size(); r += row_block_sizes[i], ++i) {
             ss << std::setw(max_row_index_width) << i << " | " << std::setw(max_row_identifier_width)
                << row_identifiers[i];
-            for (std::size_t j = 0, c = 0; j < column_block_sizes.size(); ++j, c += column_block_sizes[j]) {
+            for (std::size_t j = 0, c = 0; j < column_block_sizes.size(); c += column_block_sizes[j], ++j) {
                 const Eigen::Ref<const Eigen::MatrixXd>& block =
                         m.block(r, c, row_block_sizes[i], column_block_sizes[j]);
                 std::stringstream block_info_ss;
@@ -222,14 +222,16 @@ std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDe
             if (contributions.size() < static_cast<std::size_t>(eigenvector.size())) {
                 internal_ss << std::fixed << (contributions.size() == 0 ? " None" : "") << ",\n"
                             << std::string(length_to_contributors, ' ')
-                            << std::sqrt(static_cast<Scalar>(1) -
-                                         std::accumulate(contributions.cbegin(), contributions.cend(),
-                                                 static_cast<Scalar>(0),
-                                                 [](const Scalar squared_norm,
-                                                         const std::pair<std::string, Scalar>& eigenvector_component) {
-                                                     return squared_norm +
-                                                            eigenvector_component.second * eigenvector_component.second;
-                                                 }))
+                            << std::sqrt(std::max(static_cast<Scalar>(0),
+                                       static_cast<Scalar>(1) - std::accumulate(contributions.cbegin(),
+                                                                        contributions.cend(), static_cast<Scalar>(0),
+                                                                        [](const Scalar squared_norm,
+                                                                                const std::pair<std::string, Scalar>&
+                                                                                        eigenvector_component) {
+                                                                            return squared_norm +
+                                                                                   eigenvector_component.second *
+                                                                                           eigenvector_component.second;
+                                                                        })))
                             << " Remainder";
             }
             internal_ss << "\n";
