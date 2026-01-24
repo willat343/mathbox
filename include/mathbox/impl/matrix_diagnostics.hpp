@@ -2,6 +2,7 @@
 #define MATHBOX_IMPL_MATRIX_DIAGNOSTICS_HPP
 
 #include <algorithm>
+#include <cppbox/exceptions.hpp>
 #include <cppbox/parse.hpp>
 #include <numeric>
 #include <sstream>
@@ -131,12 +132,22 @@ inline std::string structure_diagnostics(const Eigen::MatrixBase<Derived>& v,
             vector_name, print_block_norm);
 }
 
+template<typename Scalar>
+template<IsVector Derived>
+    requires(std::is_same_v<typename Derived::Scalar, Scalar>)
+SpectralStructureSummary<Scalar>::SpectralStructureSummary(const Eigen::MatrixBase<Derived>& eigenvalues)
+    : min_eigenvalue(eigenvalues.minCoeff()),
+      max_eigenvalue(eigenvalues.maxCoeff()),
+      nullspace_threshold(1.0e3 * std::numeric_limits<Scalar>::epsilon() * max_eigenvalue),
+      weak_threshold(1.0e-6 * max_eigenvalue),
+      num_nullspace_eigenvalues((eigenvalues.array() < nullspace_threshold).count()),
+      num_weak_eigenvalues((eigenvalues.array() < weak_threshold).count() - num_nullspace_eigenvalues),
+      num_strong_eigenvalues(eigenvalues.size() - num_weak_eigenvalues - num_nullspace_eigenvalues) {}
+
 template<IsVector EigenvaluesDerived, IsMatrix EigenvectorsDerived>
     requires(std::is_same_v<typename EigenvaluesDerived::Scalar, typename EigenvectorsDerived::Scalar>)
 std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDerived>& eigenvalues,
         const Eigen::MatrixBase<EigenvectorsDerived>& eigenvectors,
-        const typename EigenvaluesDerived::Scalar nullspace_threshold,
-        const typename EigenvaluesDerived::Scalar weak_threshold,
         const typename EigenvaluesDerived::Scalar contribution_threshold,
         const std::optional<std::vector<std::size_t>>& block_sizes,
         const std::optional<std::vector<std::string>>& block_names, const std::optional<std::string>& matrix_name,
@@ -148,24 +159,23 @@ std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDe
     assert(!block_sizes || std::count(block_sizes->begin(), block_sizes->end(), 0) > 0 ||
             std::accumulate(block_sizes->begin(), block_sizes->end(), 0) == eigenvalues.size());
     assert(!block_names || (block_sizes && block_sizes->size() == block_names->size()));
-    assert(nullspace_threshold >= static_cast<Scalar>(0));
-    assert(weak_threshold >= nullspace_threshold);
     assert(contribution_threshold >= static_cast<Scalar>(0) && contribution_threshold <= static_cast<Scalar>(1));
 
     // Count eigenvalues in each category
-    const int num_nullspaces = (eigenvalues.array() < nullspace_threshold).count();
-    const int num_weak = (eigenvalues.array() < weak_threshold).count() - num_nullspaces;
-    const int num_strong = eigenvalues.size() - num_weak - num_nullspaces;
+    const SpectralStructureSummary<Scalar> eigenvalue_summary(eigenvalues);
 
     // Generate diagnostic information
     std::stringstream ss;
     if (eigenvalues.size() > 0) {
         // Header
         ss << std::scientific << std::setprecision(3) << "=== " << matrix_name.value_or("Matrix")
-           << " Spectral Structure [Max Eigenvalue: " << eigenvalues.maxCoeff()
-           << ", Min Eigenvalue: " << eigenvalues.minCoeff() << ", " << num_strong << " Strong"
-           << ", " << num_weak << " Weak (Threshold: " << weak_threshold << ")"
-           << ", " << num_nullspaces << " Nullspaces (Threshold: " << nullspace_threshold << ")] ===\n";
+           << " Spectral Structure [Max Eigenvalue: " << eigenvalue_summary.max_eigenvalue
+           << ", Min Eigenvalue: " << eigenvalue_summary.min_eigenvalue << ", "
+           << eigenvalue_summary.num_strong_eigenvalues << " Strong"
+           << ", " << eigenvalue_summary.num_weak_eigenvalues
+           << " Weak (Threshold: " << eigenvalue_summary.weak_threshold << ")"
+           << ", " << eigenvalue_summary.num_nullspace_eigenvalues
+           << " Nullspaces (Threshold: " << eigenvalue_summary.nullspace_threshold << ")] ===\n";
         const std::size_t header_width = ss.str().size() - 1;
         const std::size_t max_index_width = std::to_string(eigenvalues.size() - 1).size();
 
@@ -211,8 +221,9 @@ std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDe
             std::stringstream internal_ss;
             internal_ss << std::scientific << std::setprecision(3) << std::setw(max_index_width) << i << " | "
                         << std::setw(9)
-                        << (eigenvalue < nullspace_threshold ? "Nullspace"
-                                                             : (eigenvalue < weak_threshold ? "Weak" : "Strong"))
+                        << (eigenvalue < eigenvalue_summary.nullspace_threshold
+                                           ? "Nullspace"
+                                           : (eigenvalue < eigenvalue_summary.weak_threshold ? "Weak" : "Strong"))
                         << " | Eigenvalue: " << std::setw(9) << eigenvalue << " | Eigenvector contributors: ";
             const std::size_t length_to_contributors = internal_ss.str().size();
             for (std::size_t j = 0; j < contributions.size(); ++j) {
@@ -235,9 +246,10 @@ std::string spectral_structure_diagnostics(const Eigen::MatrixBase<EigenvaluesDe
                             << " Remainder";
             }
             internal_ss << "\n";
-            if ((eigenvalue < nullspace_threshold && !exclude_nullspaces) ||
-                    (eigenvalue >= nullspace_threshold && eigenvalue < weak_threshold && !exclude_weak) ||
-                    (eigenvalue >= weak_threshold && !exclude_strong)) {
+            if ((eigenvalue < eigenvalue_summary.nullspace_threshold && !exclude_nullspaces) ||
+                    (eigenvalue >= eigenvalue_summary.nullspace_threshold &&
+                            eigenvalue < eigenvalue_summary.weak_threshold && !exclude_weak) ||
+                    (eigenvalue >= eigenvalue_summary.weak_threshold && !exclude_strong)) {
                 ss << internal_ss.str();
             }
         }
