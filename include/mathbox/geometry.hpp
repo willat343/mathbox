@@ -199,6 +199,12 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
         const Eigen::Matrix<typename Derived::Scalar, 3, 3>& covariance,
         const Eigen::RotationBase<Derived, 3>& rotation);
 
+/**
+ * @brief Compute the SO(2) cross product between an angular velocity `w` and a vector `v`.
+ *
+ * @tparam DerivedOmega
+ * @tparam DerivedV
+ */
 template<typename DerivedOmega, typename DerivedV>
     requires(DerivedOmega::RowsAtCompileTime == 1 && DerivedOmega::ColsAtCompileTime == 1 &&
              DerivedV::RowsAtCompileTime == 2 && DerivedV::ColsAtCompileTime == 1 &&
@@ -206,6 +212,12 @@ template<typename DerivedOmega, typename DerivedV>
 constexpr Eigen::Vector<typename DerivedOmega::Scalar, 2> so_cross(const Eigen::MatrixBase<DerivedOmega>& w,
         const Eigen::MatrixBase<DerivedV>& v);
 
+/**
+ * @brief Compute the SO(3) cross product between an angular velocity `w` and a vector `v`.
+ *
+ * @tparam DerivedOmega
+ * @tparam DerivedV
+ */
 template<typename DerivedOmega, typename DerivedV>
     requires(DerivedOmega::RowsAtCompileTime == 3 && DerivedOmega::ColsAtCompileTime == 1 &&
              DerivedV::RowsAtCompileTime == 3 && DerivedV::ColsAtCompileTime == 1 &&

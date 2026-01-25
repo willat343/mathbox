@@ -227,10 +227,12 @@ extern template Eigen::Matrix2d rotate_point_covariance<Eigen::Matrix2d>(
 extern template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(
         const Eigen::MatrixBase<Eigen::Matrix3d>& covariance, const Eigen::MatrixBase<Eigen::Matrix3d>& rotation);
 
+#ifndef DOXYGEN_EXCLUDE
 extern template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(
         const Eigen::MatrixBase<Eigen::Vector<double, 1>>&, const Eigen::MatrixBase<Eigen::Vector2d>&);
 extern template Eigen::Vector3d so_cross<Eigen::Vector3d, Eigen::Vector3d>(const Eigen::MatrixBase<Eigen::Vector3d>&,
         const Eigen::MatrixBase<Eigen::Vector3d>&);
+#endif
 
 extern template Eigen::Vector<double, 1> so_from_skew<Eigen::Matrix2d>(const Eigen::MatrixBase<Eigen::Matrix2d>&);
 extern template Eigen::Vector3d so_from_skew<Eigen::Matrix3d>(const Eigen::MatrixBase<Eigen::Matrix3d>&);

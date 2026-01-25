@@ -4,7 +4,7 @@
 
 TEST(vector_operations, lin_spaced_0) {
     const double start{0.0}, end{4.0}, step{1.0};
-    const Eigen::VectorXd result = math::lin_spaced(step, start, end);
+    const Eigen::VectorXd result = math::lin_spaced_vector(step, start, end);
     const int expected_size{5};
     const double expected_step{1.0};
     Eigen::VectorXd expected(expected_size);
@@ -17,7 +17,7 @@ TEST(vector_operations, lin_spaced_0) {
 
 TEST(vector_operations, lin_spaced_1) {
     const double start{1.0}, end{5.1}, step{1.0};
-    const Eigen::VectorXd result = math::lin_spaced(step, start, end);
+    const Eigen::VectorXd result = math::lin_spaced_vector(step, start, end);
     const int expected_size{5};
     const double expected_step{1.025};
     Eigen::VectorXd expected(expected_size);
@@ -30,7 +30,7 @@ TEST(vector_operations, lin_spaced_1) {
 
 TEST(vector_operations, lin_spaced_2) {
     const double start{1.3}, end{11.2}, step{2.0};
-    const Eigen::VectorXd result = math::lin_spaced(step, start, end);
+    const Eigen::VectorXd result = math::lin_spaced_vector(step, start, end);
     const int expected_size{5};
     const double expected_step{2.475};
     Eigen::VectorXd expected(expected_size);
@@ -43,7 +43,7 @@ TEST(vector_operations, lin_spaced_2) {
 
 TEST(vector_operations, lin_spaced_3) {
     const double start{-1.3}, end{-11.2}, step{-2.0};
-    const Eigen::VectorXd result = math::lin_spaced(step, start, end);
+    const Eigen::VectorXd result = math::lin_spaced_vector(step, start, end);
     const int expected_size{5};
     const double expected_step{-2.475};
     Eigen::VectorXd expected(expected_size);
@@ -56,7 +56,7 @@ TEST(vector_operations, lin_spaced_3) {
 
 TEST(vector_operations, lin_spaced_4) {
     const double start{-11.2}, end{-1.3}, step{2.0};
-    const Eigen::VectorXd result = math::lin_spaced(step, start, end);
+    const Eigen::VectorXd result = math::lin_spaced_vector(step, start, end);
     const int expected_size{5};
     const double expected_step{2.475};
     Eigen::VectorXd expected(expected_size);

@@ -29,7 +29,7 @@ namespace math {
  * This second formula is used for the linear interpolation of `std::chrono::time_point<Clock, Duration>` objects.
  *
  * @tparam T This must be a mathbox arithmetic type (e.g., floating-point scalars and Eigen matrices), a
- * `std::chrono::time_point<Clock, Duration>` or std::chrono::duration<Rep, Period>` object.
+ * `std::chrono::time_point<Clock, Duration>` or `std::chrono::duration<Rep, Period>` object.
  * @tparam Scalar
  * @param y_0 start point (\f$\alpha = 0\f$) of interpolation \f$\mathbf{y}_0\f$
  * @param y_1 end point (\f$\alpha = 1\f$) of interpolation \f$\mathbf{y}_1\f$

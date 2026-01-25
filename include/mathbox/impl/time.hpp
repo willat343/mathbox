@@ -8,15 +8,15 @@ namespace math {
 
 template<class Time, class Duration>
 std::vector<Time> lin_spaced(const Duration step, const Time start, const Time end) {
-    Eigen::Matrix<double, Eigen::Dynamic, 1> lin_spaced_vector =
-            lin_spaced<double>(cppbox::to_sec(step), cppbox::to_sec(start), cppbox::to_sec(end));
-    const std::size_t size = static_cast<std::size_t>(lin_spaced_vector.size());
-    std::vector<Time> lin_spaced_times(size);
+    Eigen::Matrix<double, Eigen::Dynamic, 1> vector =
+            lin_spaced_vector<double>(cppbox::to_sec(step), cppbox::to_sec(start), cppbox::to_sec(end));
+    const std::size_t size = static_cast<std::size_t>(vector.size());
+    std::vector<Time> times(size);
     // Eigen 3.3 does not support iterators so cannot use std::transform.
     for (std::size_t i = 0; i < size; ++i) {
-        lin_spaced_times[i] = cppbox::to_time<Time>(lin_spaced_vector[i]);
+        times[i] = cppbox::to_time<Time>(vector[i]);
     }
-    return lin_spaced_times;
+    return times;
 }
 
 template<class Time, class Duration>
@@ -54,6 +54,7 @@ std::vector<Time> to_times(const Eigen::Matrix<Scalar, 1, Eigen::Dynamic>& secon
 #if !MATHBOX_HEADER_ONLY
 namespace math {
 
+#ifndef DOXYGEN_EXCLUDE
 extern template std::vector<std::chrono::time_point<std::chrono::steady_clock>>
 lin_spaced<std::chrono::time_point<std::chrono::steady_clock>, std::chrono::steady_clock::duration>(
         const std::chrono::steady_clock::duration, const std::chrono::time_point<std::chrono::steady_clock>,
@@ -62,7 +63,9 @@ extern template std::vector<std::chrono::time_point<std::chrono::system_clock>>
 lin_spaced<std::chrono::time_point<std::chrono::system_clock>, std::chrono::system_clock::duration>(
         const std::chrono::system_clock::duration, const std::chrono::time_point<std::chrono::system_clock>,
         const std::chrono::time_point<std::chrono::system_clock>);
+#endif
 
+#ifndef DOXYGEN_EXCLUDE
 extern template std::vector<std::chrono::time_point<std::chrono::steady_clock>>
 range<std::chrono::time_point<std::chrono::steady_clock>, std::chrono::steady_clock::duration>(
         const std::chrono::steady_clock::duration, const std::chrono::time_point<std::chrono::steady_clock>,
@@ -71,6 +74,7 @@ extern template std::vector<std::chrono::time_point<std::chrono::system_clock>>
 range<std::chrono::time_point<std::chrono::system_clock>, std::chrono::system_clock::duration>(
         const std::chrono::system_clock::duration, const std::chrono::time_point<std::chrono::system_clock>,
         const std::chrono::time_point<std::chrono::system_clock>);
+#endif
 
 extern template std::vector<std::chrono::time_point<std::chrono::steady_clock>>
 to_times<std::chrono::time_point<std::chrono::steady_clock>, double>(const Eigen::Matrix<double, Eigen::Dynamic, 1>&);

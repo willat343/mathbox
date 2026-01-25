@@ -2,6 +2,7 @@
 
 namespace math {
 
+#ifndef DOXYGEN_EXCLUDE
 template std::vector<std::chrono::time_point<std::chrono::steady_clock>>
 lin_spaced<std::chrono::time_point<std::chrono::steady_clock>, std::chrono::steady_clock::duration>(
         const std::chrono::steady_clock::duration, const std::chrono::time_point<std::chrono::steady_clock>,
@@ -10,7 +11,9 @@ template std::vector<std::chrono::time_point<std::chrono::system_clock>>
 lin_spaced<std::chrono::time_point<std::chrono::system_clock>, std::chrono::system_clock::duration>(
         const std::chrono::system_clock::duration, const std::chrono::time_point<std::chrono::system_clock>,
         const std::chrono::time_point<std::chrono::system_clock>);
+#endif
 
+#ifndef DOXYGEN_EXCLUDE
 template std::vector<std::chrono::time_point<std::chrono::steady_clock>>
 range<std::chrono::time_point<std::chrono::steady_clock>, std::chrono::steady_clock::duration>(
         const std::chrono::steady_clock::duration, const std::chrono::time_point<std::chrono::steady_clock>,
@@ -19,6 +22,7 @@ template std::vector<std::chrono::time_point<std::chrono::system_clock>>
 range<std::chrono::time_point<std::chrono::system_clock>, std::chrono::system_clock::duration>(
         const std::chrono::system_clock::duration, const std::chrono::time_point<std::chrono::system_clock>,
         const std::chrono::time_point<std::chrono::system_clock>);
+#endif
 
 template std::vector<std::chrono::time_point<std::chrono::steady_clock>>
 to_times<std::chrono::time_point<std::chrono::steady_clock>, double>(const Eigen::Matrix<double, Eigen::Dynamic, 1>&);

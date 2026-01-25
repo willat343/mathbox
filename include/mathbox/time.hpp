@@ -14,7 +14,7 @@ namespace math {
  *
  * The first element will be `start` and the last element will be `end`.
  *
- * Overload of math::lin_spaced for Time and Duration.
+ * Overload of math::lin_spaced_vector for Time and Duration.
  *
  * @tparam Time
  * @tparam Time::Duration

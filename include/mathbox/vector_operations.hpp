@@ -19,7 +19,7 @@ namespace math {
  * @return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
  */
 template<typename Scalar>
-Eigen::Matrix<Scalar, Eigen::Dynamic, 1> lin_spaced(const Scalar step, const Scalar start, const Scalar end);
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1> lin_spaced_vector(const Scalar step, const Scalar start, const Scalar end);
 
 /**
  * @brief Generate a range from `start` to `end` incrementing by `step`.
@@ -34,7 +34,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> lin_spaced(const Scalar step, const Sca
  * @return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
  */
 template<typename Scalar>
-Eigen::Matrix<Scalar, Eigen::Dynamic, 1> range(const Scalar step, const Scalar start, const Scalar end);
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1> range_vector(const Scalar step, const Scalar start, const Scalar end);
 
 }
 
