@@ -5,7 +5,32 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <cppbox/time.hpp>
+#include <cppbox/traits.hpp>
 #include <type_traits>
+
+namespace cppbox {
+
+template<typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+struct const_ref<Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>> {
+    using type = const Eigen::Ref<const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>>&;
+};
+
+template<typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+struct ref<Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>> {
+    using type = Eigen::Ref<Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>>;
+};
+
+template<typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+struct ref<const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>> {
+    using type = Eigen::Ref<const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>>;
+};
+
+template<typename PlainObjectType>
+struct remove_ref<Eigen::Ref<PlainObjectType>> {
+    using type = PlainObjectType;
+};
+
+}
 
 namespace math {
 
@@ -177,6 +202,121 @@ constexpr bool is_independent_variable_type_v = is_independent_variable_type<T>:
 
 template<typename T>
 concept IsIndependentVariableType = is_independent_variable_type_v<T>;
+
+template<typename T, typename Enable = void>
+struct remove_map {
+    using type = T;
+};
+
+template<typename T, typename Enable = void>
+using remove_map_t = remove_map<T, Enable>::type;
+
+template<typename PlainObjectType>
+struct remove_map<Eigen::Map<PlainObjectType>> {
+    using type = PlainObjectType;
+};
+
+template<typename T, typename Enable = void>
+struct remove_ref_or_map {
+    using type = std::remove_reference_t<T>;
+};
+
+template<typename T, typename Enable = void>
+using remove_ref_or_map_t = remove_ref_or_map<T, Enable>::type;
+
+template<typename PlainObjectType>
+struct remove_ref_or_map<Eigen::Ref<PlainObjectType>> {
+    using type = PlainObjectType;
+};
+
+template<typename PlainObjectType>
+struct remove_ref_or_map<Eigen::Map<PlainObjectType>> {
+    using type = PlainObjectType;
+};
+
+template<typename T, typename Base, typename Enable = void>
+struct is_ref_or_map : std::false_type {};
+
+template<typename T, typename Base, typename Enable = void>
+constexpr inline bool is_ref_or_map_v = is_ref_or_map<T, Base, Enable>::value;
+
+template<typename T, typename Base>
+struct is_ref_or_map<T, Base,
+        std::enable_if_t<std::is_same_v<T, cppbox::ref_t<Base>> || std::is_same_v<T, Eigen::Map<Base>>>>
+    : std::true_type {};
+
+/**
+ * @brief Reference or Eigen non-const map (Eigen::Map<...>) concept.
+ *
+ * Types that obey this constraint are typically passed with perfect forwarding, e.g.
+ * ```
+ * template<IsRefOrMap<Base> T>
+ * void foo(T&& lie_group);
+ * ```
+ *
+ * @tparam T type
+ * @tparam Base base type
+ */
+template<typename T, typename Base>
+concept IsRefOrMap = is_ref_or_map_v<T, Base>;
+
+template<typename T, typename Base, typename Enable = void>
+struct is_same_or_const_map : std::false_type {};
+
+template<typename T, typename Base, typename Enable = void>
+constexpr inline bool is_same_or_const_map_v = is_same_or_const_map<T, Base, Enable>::value;
+
+template<typename T, typename Base>
+struct is_same_or_const_map<T, Base,
+        std::enable_if_t<std::is_same_v<T, Base> || std::is_same_v<T, Eigen::Map<const Base>>>> : std::true_type {};
+
+/**
+ * @brief Same or Eigen const map (Eigen::Map<const ...>) concept.
+ *
+ * Types that obey this constraint are typically passed as const lvalue references, e.g.
+ * ```
+ * template<IsSameOrConstMap<Base> T>
+ * void foo(const T& lie_group);
+ * ```
+ *
+ * This concept is stricter than `IsSameOrAnyMap` since it does not allow Eigen non-const maps (Eigen::Map<...>) even
+ * though typical usages passes these types by const reference. Use `IsSameOrAnyMap` for more flexibility.
+ *
+ * @tparam T type
+ * @tparam Base base type
+ */
+template<typename T, typename Base>
+concept IsSameOrConstMap = is_same_or_const_map_v<T, Base>;
+
+template<typename T, typename Base, typename Enable = void>
+struct is_same_or_any_map : std::false_type {};
+
+template<typename T, typename Base, typename Enable = void>
+constexpr inline bool is_same_or_any_map_v = is_same_or_any_map<T, Base, Enable>::value;
+
+template<typename T, typename Base>
+struct is_same_or_any_map<T, Base,
+        std::enable_if_t<std::is_same_v<T, Base> || std::is_same_v<T, Eigen::Map<Base>> ||
+                         std::is_same_v<T, Eigen::Map<const Base>>>> : std::true_type {};
+
+/**
+ * @brief Same or any Eigen non-const map (Eigen::Map<...> or Eigen::Map<const ...>) concept. By collecting these
+ * types, this concept allows for more flexible passing of parameters that are meant to be passed by const reference.
+ *
+ * Types that obey this constraint are typically passed as const lvalue references, e.g.
+ * ```
+ * template<IsSameOrAnyMap<Base> T>
+ * void foo(const T& lie_group);
+ * ```
+ *
+ * Note, however, that in the case of Eigen non-const maps, the constness could in theory be cast away and the object
+ * modified.
+ *
+ * @tparam T type
+ * @tparam Base base type
+ */
+template<typename T, typename Base>
+concept IsSameOrAnyMap = is_same_or_any_map_v<T, Base>;
 
 }
 
