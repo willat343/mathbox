@@ -1,8 +1,10 @@
 #ifndef MATHBOX_STATISTICS_HPP
 #define MATHBOX_STATISTICS_HPP
 
+#include <Eigen/Core>
 #include <concepts>
 #include <cstdint>
+#include <vector>
 
 namespace math {
 
@@ -166,6 +168,16 @@ public:
     using Statistics<Scalar>::population_variance;
 
     /**
+     * @brief Root mean square:
+     * \f[
+     *      \text{RMS} = \sqrt{\frac{1}{N} \sum_i^N{x_i^2}}
+     * \f]
+     *
+     * @return Scalar
+     */
+    Scalar rms() const;
+
+    /**
      * @brief Compute sample standard deviation.
      *
      * @return Scalar
@@ -192,6 +204,13 @@ public:
      * @return Scalar
      */
     Scalar sum_of_square_differences() const;
+
+    /**
+     * @brief Get the sum of squares.
+     *
+     * @return Scalar
+     */
+    Scalar sum_of_squares() const;
 
     /**
      * @brief Update statistics with a new sample. For the mean and variances, Welford's Algorithm is used.
@@ -231,6 +250,34 @@ private:
     std::size_t num_samples_;
     Scalar sum_of_square_differences_;
     Scalar sum_;
+    Scalar sum_of_squares_;
+};
+
+template<std::floating_point Scalar_>
+class RunningStatisticsVector {
+public:
+    using Scalar = Scalar_;
+
+    explicit RunningStatisticsVector(const std::size_t size);
+
+    const std::vector<RunningStatistics<Scalar>>& statistics() const;
+
+    std::vector<RunningStatistics<Scalar>>& statistics();
+
+    const RunningStatistics<Scalar>& at(const std::size_t i) const;
+
+    RunningStatistics<Scalar>& at(const std::size_t i);
+
+    std::size_t size() const;
+
+    void update(const Eigen::Vector<Scalar, Eigen::Dynamic>& samples);
+
+    void update(const std::vector<Scalar>& samples);
+
+    void update(const std::vector<RunningStatistics<Scalar>>& statistics__);
+
+private:
+    std::vector<RunningStatistics<Scalar>> statistics_;
 };
 
 }

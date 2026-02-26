@@ -75,14 +75,16 @@ RunningStatistics<Scalar_>::RunningStatistics()
     : Statistics<Scalar_>(),
       num_samples_(0),
       sum_of_square_differences_(static_cast<Scalar>(0)),
-      sum_(static_cast<Scalar_>(0)) {}
+      sum_(static_cast<Scalar_>(0)),
+      sum_of_squares_(static_cast<Scalar_>(0)) {}
 
 template<std::floating_point Scalar_>
 RunningStatistics<Scalar_>::RunningStatistics(const Scalar sample)
     : Statistics<Scalar_>(sample, static_cast<Scalar>(0)),
       num_samples_(1),
       sum_of_square_differences_(static_cast<Scalar>(0)),
-      sum_(sample) {}
+      sum_(sample),
+      sum_of_squares_(sample * sample) {}
 
 template<std::floating_point Scalar_>
 RunningStatistics<Scalar_>::RunningStatistics(const Scalar mean_, const Scalar population_variance_,
@@ -96,7 +98,8 @@ RunningStatistics<Scalar_>::RunningStatistics(const Scalar mean_, const Scalar p
       num_samples_(num_samples_),
       sum_of_square_differences_(num_samples_ == 0 ? static_cast<Scalar>(0)
                                                    : static_cast<Scalar>(num_samples_ - 1) * population_variance_),
-      sum_(static_cast<Scalar>(num_samples_) * mean_) {
+      sum_(static_cast<Scalar>(num_samples_) * mean_),
+      sum_of_squares_(static_cast<Scalar>(num_samples_) * mean_ * mean_) {
     throw_if(num_samples_ == 0 && (mean_ != static_cast<Scalar>(0) || population_variance_ != static_cast<Scalar>(0)),
             "Cannot construct RunningStatistics with zero samples but non-zero mean or non-zero variance");
     if (num_samples_ == 1) [[unlikely]] {
@@ -113,6 +116,12 @@ RunningStatistics<Scalar_>::RunningStatistics(const Scalar mean_, const Scalar p
 template<std::floating_point Scalar_>
 inline std::size_t RunningStatistics<Scalar_>::num_samples() const {
     return num_samples_;
+}
+
+template<std::floating_point Scalar_>
+inline auto RunningStatistics<Scalar_>::rms() const -> Scalar {
+    return num_samples() == 0 ? static_cast<Scalar>(0)
+                              : std::sqrt(sum_of_squares() / static_cast<Scalar>(num_samples()));
 }
 
 template<std::floating_point Scalar_>
@@ -137,9 +146,15 @@ inline auto RunningStatistics<Scalar_>::sum_of_square_differences() const -> Sca
 }
 
 template<std::floating_point Scalar_>
+inline auto RunningStatistics<Scalar_>::sum_of_squares() const -> Scalar {
+    return sum_of_squares_;
+}
+
+template<std::floating_point Scalar_>
 void RunningStatistics<Scalar_>::update(const Scalar sample) {
     ++num_samples_;
     sum_ += sample;
+    sum_of_squares_ += sample * sample;
     if (num_samples_ == 1) {
         this->mean() = sample;
         this->minimum() = sample;
@@ -177,6 +192,59 @@ void RunningStatistics<Scalar_>::update(const RunningStatistics& statistics) {
     this->maximum() = std::max(statistics.maximum(), this->maximum());
 }
 
+template<std::floating_point Scalar_>
+RunningStatisticsVector<Scalar_>::RunningStatisticsVector(const std::size_t size)
+    : statistics_(size) {}
+
+template<std::floating_point Scalar_>
+inline auto RunningStatisticsVector<Scalar_>::statistics() const -> const std::vector<RunningStatistics<Scalar>>& {
+    return statistics_;
+}
+
+template<std::floating_point Scalar_>
+inline auto RunningStatisticsVector<Scalar_>::statistics() -> std::vector<RunningStatistics<Scalar>>& {
+    return statistics_;
+}
+
+template<std::floating_point Scalar_>
+inline auto RunningStatisticsVector<Scalar_>::at(const std::size_t i) const -> const RunningStatistics<Scalar>& {
+    return statistics_.at(i);
+}
+
+template<std::floating_point Scalar_>
+inline auto RunningStatisticsVector<Scalar_>::at(const std::size_t i) -> RunningStatistics<Scalar>& {
+    return statistics_.at(i);
+}
+
+template<std::floating_point Scalar_>
+inline std::size_t RunningStatisticsVector<Scalar_>::size() const {
+    return statistics_.size();
+}
+
+template<std::floating_point Scalar_>
+void RunningStatisticsVector<Scalar_>::update(const Eigen::Vector<Scalar, Eigen::Dynamic>& samples) {
+    throw_if(samples.size() != static_cast<int>(size()), "Attempted update with different size vector.");
+    for (std::size_t i = 0; i < size(); ++i) {
+        statistics_[i].update(samples[i]);
+    }
+}
+
+template<std::floating_point Scalar_>
+void RunningStatisticsVector<Scalar_>::update(const std::vector<Scalar>& samples) {
+    throw_if(samples.size() != size(), "Attempted update with different size vector.");
+    for (std::size_t i = 0; i < size(); ++i) {
+        statistics_[i].update(samples[i]);
+    }
+}
+
+template<std::floating_point Scalar_>
+void RunningStatisticsVector<Scalar_>::update(const std::vector<RunningStatistics<Scalar>>& statistics__) {
+    throw_if(statistics__.size() != size(), "Attempted update with different size vector.");
+    for (std::size_t i = 0; i < size(); ++i) {
+        statistics_[i].update(statistics__[i]);
+    }
+}
+
 }
 
 #if !MATHBOX_HEADER_ONLY
@@ -184,6 +252,7 @@ namespace math {
 
 extern template class Statistics<double>;
 extern template class RunningStatistics<double>;
+extern template class RunningStatisticsVector<double>;
 
 }
 #endif

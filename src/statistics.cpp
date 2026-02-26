@@ -4,5 +4,6 @@ namespace math {
 
 template class Statistics<double>;
 template class RunningStatistics<double>;
+template class RunningStatisticsVector<double>;
 
 }
