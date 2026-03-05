@@ -178,6 +178,29 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> stiffness_from_variance(co
 template<typename Scalar = double>
 Scalar stiffness_from_variance(const Scalar variance);
 
+/**
+ * @brief Transform a stiffness matrix \f$ S \f$ with \f$ \Sigma^{-1} = S^T S \f$ to a new stiffness matrix \f$ S' = S
+ * A^{-1} \f$ with \f$ (A \Sigma A^T)^{-1} = S'^T S' \f$.
+ *
+ * I.e., this function lets you compute the new stiffness of the new covariance matrix of a variable with uncertainty
+ * \f$ \Sigma^{-1} \f$ that has been passed through a linear function \f$ A \f$, when the stiffness \f$ S \f$ of that
+ * original variable is known, without having to compute and decompose the new uncertainty (\f$ A \Sigma A^T \f$)
+ * from the original uncertainty (\f$ \Sigma \f$).
+ *
+ * @tparam DerivedStiffness
+ * @tparam DerivedLinearFunctionInverse
+ * @param stiffness \f$ S \f$, the original stiffness
+ * @param linear_function_inverse \f$ A^{-1} \f$, the inverse of the linear function
+ * @return Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> \f$ S' \f$, the new stiffness
+ */
+template<typename DerivedStiffness, typename DerivedLinearFunctionInverse>
+    requires(std::is_same_v<typename DerivedStiffness::Scalar, typename DerivedLinearFunctionInverse::Scalar> &&
+             DerivedStiffness::ColsAtCompileTime == DerivedLinearFunctionInverse::RowsAtCompileTime)
+Eigen::Matrix<typename DerivedStiffness::Scalar, DerivedStiffness::RowsAtCompileTime,
+        DerivedLinearFunctionInverse::ColsAtCompileTime>
+transform_stiffness(const Eigen::MatrixBase<DerivedStiffness>& stiffness,
+        const Eigen::MatrixBase<DerivedLinearFunctionInverse>& linear_function_inverse);
+
 }
 
 #include "mathbox/impl/stiffness.hpp"

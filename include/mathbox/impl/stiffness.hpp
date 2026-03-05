@@ -110,6 +110,16 @@ inline Scalar stiffness_from_variance(const Scalar variance) {
     return static_cast<Scalar>(1) / std::sqrt(variance);
 }
 
+template<typename DerivedStiffness, typename DerivedLinearFunctionInverse>
+    requires(std::is_same_v<typename DerivedStiffness::Scalar, typename DerivedLinearFunctionInverse::Scalar> &&
+             DerivedStiffness::ColsAtCompileTime == DerivedLinearFunctionInverse::RowsAtCompileTime)
+Eigen::Matrix<typename DerivedStiffness::Scalar, DerivedStiffness::RowsAtCompileTime,
+        DerivedLinearFunctionInverse::ColsAtCompileTime>
+transform_stiffness(const Eigen::MatrixBase<DerivedStiffness>& stiffness,
+        const Eigen::MatrixBase<DerivedLinearFunctionInverse>& linear_function_inverse) {
+    return stiffness * linear_function_inverse;
+}
+
 }
 
 #if !MATHBOX_HEADER_ONLY
@@ -126,6 +136,9 @@ extern template Eigen::MatrixXd stiffness_from_variances<Eigen::VectorXd>(const 
 extern template Eigen::MatrixXd stiffness_from_variances<Eigen::Dynamic>(const Eigen::Ref<const Eigen::VectorXd>&);
 
 extern template double stiffness_from_variance<double>(const double);
+
+extern template Eigen::MatrixXd transform_stiffness(const Eigen::MatrixBase<Eigen::MatrixXd>&,
+        const Eigen::MatrixBase<Eigen::MatrixXd>&);
 
 }
 #endif

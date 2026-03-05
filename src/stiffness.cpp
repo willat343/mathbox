@@ -14,4 +14,7 @@ template Eigen::MatrixXd stiffness_from_variances<Eigen::Dynamic>(const Eigen::R
 
 template double stiffness_from_variance<double>(const double);
 
+template Eigen::MatrixXd transform_stiffness(const Eigen::MatrixBase<Eigen::MatrixXd>&,
+        const Eigen::MatrixBase<Eigen::MatrixXd>&);
+
 }
