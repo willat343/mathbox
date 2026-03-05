@@ -95,6 +95,13 @@ std::deque<std::string> TransformManager<D_>::root_frames() const {
 
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
+inline auto TransformManager<D_>::rotation(const std::string& parent_frame, const std::string& child_frame) const
+        -> Orientation<D> {
+    return Orientation<D>{transform(parent_frame, child_frame).rotation()};
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
 void TransformManager<D_>::set_transform(const std::string& parent_frame, const std::string& child_frame,
         const Pose<D>& transform) {
     throw_if(parent_frame.empty() || child_frame.empty(), "Empty frames not allowed.");
@@ -210,6 +217,13 @@ inline auto TransformManager<D_>::transforms() const -> std::deque<Transform<D>>
         root.append_transforms(transforms_);
     }
     return transforms_;
+}
+
+template<int D_>
+    requires(math::is_2d_or_3d<D_>)
+inline auto TransformManager<D_>::translation(const std::string& parent_frame, const std::string& child_frame) const
+        -> Position<D> {
+    return transform(parent_frame, child_frame).translation();
 }
 
 template<int D_>

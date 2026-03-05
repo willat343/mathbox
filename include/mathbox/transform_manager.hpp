@@ -97,6 +97,15 @@ public:
     std::deque<std::string> root_frames() const;
 
     /**
+     * @brief Get the rotation component of the transform from parent_frame to child_frame, R_P_C.
+     *
+     * @param parent_frame
+     * @param child_frame
+     * @return Orientation<D>
+     */
+    Orientation<D> rotation(const std::string& parent_frame, const std::string& child_frame) const;
+
+    /**
      * @brief Set the transform from parent_frame to child_frame, T_P_C, i.e. the pose of the child frame in the parent
      * frame. If a transform between these frames already exists, update it. Otherwise add it.
      *
@@ -129,6 +138,15 @@ public:
      * @return std::deque<Transform<D>>
      */
     std::deque<Transform<D>> transforms() const;
+
+    /**
+     * @brief Get the translation component of the transform from parent_frame to child_frame, P_p_P_C.
+     *
+     * @param parent_frame
+     * @param child_frame
+     * @return Position<D>
+     */
+    Position<D> translation(const std::string& parent_frame, const std::string& child_frame) const;
 
     /**
      * @brief Create a string of all the transform trees (i.e. the transform forest).

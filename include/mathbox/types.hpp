@@ -3,6 +3,9 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <type_traits>
+
+#include "mathbox/traits.hpp"
 
 namespace math {
 
@@ -19,12 +22,31 @@ namespace math {
     MATHBOX_REF_TYPES(Name)
 
 /**
+ * @brief Orientation type.
+ *
+ * @tparam D
+ */
+template<int D>
+    requires(is_2d_or_3d<D>)
+using Orientation = std::conditional_t<D == 2, Eigen::Rotation2D<double>, Eigen::Quaternion<double>>;
+
+/**
  * @brief Pose type.
  *
  * @tparam D dimension
  */
 template<int D>
+    requires(is_2d_or_3d<D>)
 using Pose = Eigen::Transform<double, D, Eigen::Isometry>;
+
+/**
+ * @brief Position type.
+ *
+ * @tparam D
+ */
+template<int D>
+    requires(is_2d_or_3d<D>)
+using Position = Eigen::Vector<double, D>;
 
 }
 
