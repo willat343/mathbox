@@ -156,6 +156,16 @@ inline Pose<2> to_pose_2D(const Pose<3>& pose, const Eigen::Vector3d& axis) {
     return Eigen::Translation2d{pose.translation()[0], pose.translation()[1]} * Eigen::Rotation2Dd{orientation.angle()};
 }
 
+template<int D>
+    requires(is_2d_or_3d<D>)
+Pose<D> to_pose_ND(const Pose<3>& pose, [[maybe_unused]] const Eigen::Vector3d& axis) {
+    if constexpr (D == 2) {
+        return to_pose_2D(pose, axis);
+    } else {
+        return pose;
+    }
+}
+
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
 inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> transform_adjoint(

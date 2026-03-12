@@ -251,6 +251,10 @@ constexpr Eigen::Matrix<typename Derived::Scalar, 3, 3> so_skew(const Eigen::Mat
  */
 Pose<2> to_pose_2D(const Pose<3>& pose, const Eigen::Vector3d& axis = Eigen::Vector3d::Zero());
 
+template<int D>
+    requires(is_2d_or_3d<D>)
+Pose<D> to_pose_ND(const Pose<3>& pose, [[maybe_unused]] const Eigen::Vector3d& axis = Eigen::Vector3d::Zero());
+
 /**
  * @brief Compute the adjoint matrix of a transform T (R, t) in SE(D). It can be used to change the reference frame of
  * twists in the form \f$[v, \omega]\f$ (translation before rotation) or \f$[\omega, v]\f$ (rotation before translation)
