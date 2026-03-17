@@ -268,6 +268,12 @@ public:
 
     RunningStatistics<Scalar>& at(const std::size_t i);
 
+    const RunningStatistics<Scalar>& operator[](const std::size_t i) const;
+
+    RunningStatistics<Scalar>& operator[](const std::size_t i);
+
+    Eigen::Vector<Scalar, Eigen::Dynamic> rms() const;
+
     std::size_t size() const;
 
     void update(const Eigen::Vector<Scalar, Eigen::Dynamic>& samples);

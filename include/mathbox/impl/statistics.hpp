@@ -217,6 +217,26 @@ inline auto RunningStatisticsVector<Scalar_>::at(const std::size_t i) -> Running
 }
 
 template<std::floating_point Scalar_>
+inline auto RunningStatisticsVector<Scalar_>::operator[](const std::size_t i) const
+        -> const RunningStatistics<Scalar>& {
+    return statistics_[i];
+}
+
+template<std::floating_point Scalar_>
+inline auto RunningStatisticsVector<Scalar_>::operator[](const std::size_t i) -> RunningStatistics<Scalar>& {
+    return statistics_[i];
+}
+
+template<std::floating_point Scalar_>
+auto RunningStatisticsVector<Scalar_>::rms() const -> Eigen::Vector<Scalar, Eigen::Dynamic> {
+    Eigen::Vector<Scalar, Eigen::Dynamic> rms_(size());
+    for (std::size_t i = 0; i < size(); ++i) {
+        rms_[i] = statistics_[i].rms();
+    }
+    return rms_;
+}
+
+template<std::floating_point Scalar_>
 inline std::size_t RunningStatisticsVector<Scalar_>::size() const {
     return statistics_.size();
 }
