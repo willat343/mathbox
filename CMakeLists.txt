@@ -88,7 +88,9 @@ else()
 
     # Private Compile Options
     target_compile_options(${LIBRARY_NAME} PRIVATE
-        -Wall -Wextra -Wpedantic
+        -Wall
+        -Wextra
+        -Wpedantic
     )
 endif()
 add_library(${PROJECT_NAME}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
