@@ -1,6 +1,8 @@
 #ifndef MATHBOX_IMPL_TIME_HPP
 #define MATHBOX_IMPL_TIME_HPP
 
+#include <cppbox/exceptions.hpp>
+
 #include "mathbox/time.hpp"
 #include "mathbox/vector_operations.hpp"
 
