@@ -66,6 +66,22 @@ std::vector<Time> to_times(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& secon
 template<class Time, typename Scalar = double>
 std::vector<Time> to_times(const Eigen::Matrix<Scalar, 1, Eigen::Dynamic>& seconds);
 
+template<class Time, typename Scalar = double>
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& times);
+
+template<class Time, typename Scalar = double>
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& times, const int start_index);
+
+template<class Time, typename Scalar = double>
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& times, const int start_index,
+        const int size);
+
+template<class Time, int Size, typename Scalar = double>
+Eigen::Matrix<Scalar, Size, 1> from_times(const std::vector<Time>& times);
+
+template<class Time, int Size, typename Scalar = double>
+Eigen::Matrix<Scalar, Size, 1> from_times(const std::vector<Time>& times, const int start_index);
+
 }
 
 #include "mathbox/impl/time.hpp"
