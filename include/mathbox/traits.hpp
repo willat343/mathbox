@@ -50,7 +50,47 @@ template<int D>
 constexpr bool is_2d_or_3d = (D == 2 || D == 3);
 
 template<typename T>
-concept IsMatrix = requires(T t) {
+struct eigen_map_type {
+    using type = T;
+    static constexpr bool value = false;
+};
+
+template<typename T, int MapOptions, typename StrideType>
+struct eigen_map_type<Eigen::Map<T, MapOptions, StrideType>> {
+    using type = T;
+    static constexpr bool value = true;
+};
+
+template<typename T>
+using eigen_map_type_t = eigen_map_type<T>::type;
+
+template<typename T>
+static constexpr bool eigen_map_type_v = eigen_map_type<T>::value;
+
+/**
+ * @brief Concept to check if type is `Eigen::Map<...>`.
+ *
+ * @tparam T
+ */
+template<typename T>
+concept IsEigenMap = eigen_map_type_v<T>;
+
+/**
+ * @brief Almost every Eigen type specializes `internal::traits`, so this can be used to check if `T` is an Eigen type.
+ *
+ * Since `Eigen::Map` uses the traits of its internal type, we get the map type to avoid compilation errors with
+ * `Eigen::Map` types with internal types that don't have `internal::traits`.
+ *
+ * @tparam T
+ */
+template<typename T>
+concept HasEigenTraits = requires { sizeof(Eigen::internal::traits<eigen_map_type_t<T>>); };
+
+template<typename T>
+concept IsEigenType = HasEigenTraits<T> && std::is_base_of_v<Eigen::EigenBase<T>, T>;
+
+template<typename T>
+concept IsMatrix = IsEigenType<T> && requires(T t) {
     { static_cast<const Eigen::MatrixBase<T>&>(t) };
 };
 
@@ -64,7 +104,7 @@ template<typename T>
 concept IsMatrixd = IsMatrixOf<T, double>;
 
 template<typename T>
-concept IsSparseMatrix = requires(T t) {
+concept IsSparseMatrix = IsEigenType<T> && requires(T t) {
     { static_cast<const Eigen::SparseMatrixBase<T>&>(t) };
 };
 

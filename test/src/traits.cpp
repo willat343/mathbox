@@ -35,6 +35,46 @@ TEST(traits, remove_ref) {
     EXPECT_TRUE((std::is_same_v<cppbox::remove_ref_t<Eigen::Ref<const Eigen::MatrixXd>>, const Eigen::MatrixXd>));
 }
 
+TEST(traits, is_2d_or_3d) {
+    EXPECT_FALSE(math::is_2d_or_3d<-1>);
+    EXPECT_FALSE(math::is_2d_or_3d<0>);
+    EXPECT_FALSE(math::is_2d_or_3d<1>);
+    EXPECT_TRUE(math::is_2d_or_3d<2>);
+    EXPECT_TRUE(math::is_2d_or_3d<3>);
+    EXPECT_FALSE(math::is_2d_or_3d<4>);
+    EXPECT_FALSE(math::is_2d_or_3d<5>);
+}
+
+TEST(traits, IsMatrix) {
+    static_assert(!math::IsMatrix<double>);
+    static_assert(!math::IsMatrix<double&>);
+    static_assert(math::IsMatrix<Eigen::VectorXd>);
+    static_assert(math::IsMatrix<Eigen::Vector<double, 1>>);
+    static_assert(math::IsMatrix<Eigen::Vector2d>);
+    static_assert(math::IsMatrix<Eigen::Vector3d>);
+    static_assert(!math::IsMatrix<Eigen::VectorXd&>);
+    static_assert(math::IsMatrix<Eigen::MatrixXd>);
+    static_assert(math::IsMatrix<Eigen::Matrix<double, 1, 1>>);
+    static_assert(math::IsMatrix<Eigen::Matrix2d>);
+    static_assert(math::IsMatrix<Eigen::Matrix3d>);
+    static_assert(!math::IsMatrix<Eigen::MatrixXd&>);
+}
+
+TEST(traits, IsVector) {
+    static_assert(!math::IsVector<double>);
+    static_assert(!math::IsVector<double&>);
+    static_assert(math::IsVector<Eigen::VectorXd>);
+    static_assert(math::IsVector<Eigen::Vector<double, 1>>);
+    static_assert(math::IsVector<Eigen::Vector2d>);
+    static_assert(math::IsVector<Eigen::Vector3d>);
+    static_assert(!math::IsVector<Eigen::VectorXd&>);
+    static_assert(!math::IsVector<Eigen::MatrixXd>);
+    static_assert(math::IsVector<Eigen::Matrix<double, 1, 1>>);
+    static_assert(!math::IsVector<Eigen::Matrix2d>);
+    static_assert(!math::IsVector<Eigen::Matrix3d>);
+    static_assert(!math::IsVector<Eigen::MatrixXd&>);
+}
+
 TEST(traits, remove_map) {
     EXPECT_TRUE((std::is_same_v<math::remove_map_t<double>, double>));
     EXPECT_TRUE((std::is_same_v<math::remove_map_t<Eigen::Vector3d>, Eigen::Vector3d>));
