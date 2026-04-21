@@ -156,16 +156,12 @@ public:
     explicit RunningStatistics(const Scalar mean_, const Scalar population_variance_, const Scalar minimum_,
             const Scalar maximum_, const std::size_t num_samples_);
 
-    using Statistics<Scalar>::mean;
-
     /**
      * @brief Get number of samples.
      *
      * @return Scalar
      */
     std::size_t num_samples() const;
-
-    using Statistics<Scalar>::population_variance;
 
     /**
      * @brief Root mean square:
@@ -226,25 +222,6 @@ public:
      * @param statistics
      */
     void update(const RunningStatistics& statistics);
-
-protected:
-    /**
-     * @brief Remove mutable variance access.
-     *
-     * @return Scalar&
-     */
-    inline Scalar& mean() {
-        return Statistics<Scalar>::mean();
-    }
-
-    /**
-     * @brief Remove mutable population variance access.
-     *
-     * @return Scalar&
-     */
-    inline Scalar& population_variance() {
-        return Statistics<Scalar>::population_variance();
-    }
 
 private:
     std::size_t num_samples_;
