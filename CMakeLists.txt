@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(mathbox
-    VERSION 0.7.0
+    VERSION 0.8.0
     DESCRIPTION "Math Toolbox"
     LANGUAGES CXX
 )
@@ -28,7 +28,7 @@ if (DEVELOPER_MODE)
 endif()
 
 # Dependency: cmakebox
-set(CMAKEBOX_VERSION "0.0.9")
+set(CMAKEBOX_VERSION "0.0.11")
 FetchContent_Declare(
     cmakebox
     GIT_REPOSITORY git@github.com:willat343/cmakebox.git
@@ -51,7 +51,7 @@ import_Eigen3(
 )
 
 # Dependency: cppbox (Target: cppbox::cppbox)
-set(CPPBOX_VERSION "0.1.5")
+set(CPPBOX_VERSION "0.2.0")
 import_dependency(
     cppbox
     TARGET cppbox::cppbox
