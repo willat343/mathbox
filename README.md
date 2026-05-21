@@ -8,7 +8,7 @@ A general purpose math library based on Eigen. It is currently a header-only lib
 |----------------|-------------|-----------------|
 | CMake | >= 3.21 | CMake Build Tool |
 | [cmakebox](https://github.com/willat343/cmakebox) | >= 0.0.11 | CMake Functions and Utilities |
-| [cppbox](https://github.com/willat343/cppbox) | >= 0.2.0 | C++ Package |
+| [cppbox](https://github.com/willat343/cppbox) | >= 0.2.2 | C++ Package |
 | Eigen3 | >= 3.4.0 | Linear Algebra Package |
 
 There are several ways to include `mathbox` within your project:
