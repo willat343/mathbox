@@ -30,7 +30,13 @@ if (DEVELOPER_MODE)
 endif()
 
 # Dependency: cmakebox
-set(CMAKEBOX_VERSION "0.0.11")
+set(CMAKEBOX_MINIMUM_VERSION "0.0.13")
+if (NOT DEFINED CMAKEBOX_VERSION)
+    set(CMAKEBOX_VERSION "${CMAKEBOX_MINIMUM_VERSION}" CACHE STRING "Version of cmakebox to fetch")
+endif()
+if (CMAKEBOX_VERSION VERSION_LESS CMAKEBOX_MINIMUM_VERSION)
+    message(FATAL_ERROR "CMAKEBOX_VERSION ${CMAKEBOX_VERSION} was less than minimum ${CMAKEBOX_MINIMUM_VERSION}.")
+endif()
 FetchContent_Declare(
     cmakebox
     GIT_REPOSITORY git@github.com:willat343/cmakebox.git
@@ -47,13 +53,13 @@ setup_build_type()
 get_cxx_compiler_info()
 
 # Dependency: Eigen3 (Target: Eigen3::Eigen)
-set(EIGEN3_VERSION "3.4.0")
+dependency_version(EIGEN3 MINIMUM_VERSION "3.4.0")
 import_Eigen3(
     VERSION ${EIGEN3_VERSION}
 )
 
 # Dependency: cppbox (Target: cppbox::cppbox)
-set(CPPBOX_VERSION "0.2.0")
+dependency_version(CPPBOX MINIMUM_VERSION "0.2.0")
 import_dependency(
     cppbox
     TARGET cppbox::cppbox
@@ -188,7 +194,7 @@ create_uninstall_target()
 
 # Build Documentation
 if (BUILD_DOCUMENTATION)
-    set(DOXYGEN_VERSION "1.16.0")
+    dependency_version(DOXYGEN MINIMUM_VERSION "1.16.0")
     import_doxygen(VERSION ${DOXYGEN_VERSION})
     set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
     configure_file(Doxyfile.in ${DOXYGEN_OUT})
