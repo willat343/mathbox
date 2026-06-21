@@ -195,40 +195,29 @@ public:
 };
 
 /**
- * @brief False version of type trait to check if type is a mathbox arithmetic type (of which std::is_arithmetic types
- * are a subset).
- *
- * @tparam T type
- */
-template<typename T, typename = void>
-struct is_math_type : std::false_type {};
-
-/**
- * @brief True version of type trait to check if type is a mathbox arithmetic type (of which std::is_arithmetic types
- * are a subset).
- *
- * @tparam T type
- */
-template<typename T>
-struct is_math_type<T, std::enable_if_t<std::is_floating_point_v<T> || std::is_base_of_v<Eigen::MatrixBase<T>, T>>>
-    : std::true_type {};
-
-/**
- * @brief Value for type trait to check if type is a mathbox arithmetic type (of which std::is_arithmetic types are a
- * subset).
- *
- * @tparam T type
- */
-template<typename T>
-constexpr bool is_math_type_v = is_math_type<T>::value;
-
-/**
- * @brief Math type concept.
+ * @brief Type trait for euclidean arithmetic types, which include scalars, vectors and matrices.
  *
  * @tparam T
  */
 template<typename T>
-concept IsMathType = is_math_type_v<T>;
+struct is_euclidean_type : std::false_type {};
+
+template<typename T>
+constexpr bool is_euclidean_type_v = is_euclidean_type<T>::value;
+
+template<std::floating_point T>
+struct is_euclidean_type<T> : std::true_type {};
+
+template<IsMatrix T>
+struct is_euclidean_type<T> : std::true_type {};
+
+/**
+ * @brief Euclidean type concept, which includes scalars, vectors and matrices.
+ *
+ * @tparam T
+ */
+template<typename T>
+concept IsEuclideanType = is_euclidean_type<T>::value;
 
 template<typename T, typename = void>
 struct is_independent_variable_type : std::false_type {};

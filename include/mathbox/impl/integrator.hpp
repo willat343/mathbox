@@ -11,11 +11,11 @@
 
 namespace math {
 
-template<IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
-inline auto Integrator<MathType_, IndependentVariableType_>::integrate(const IndependentVariableType start,
-        const IndependentVariableType end, const IndependentVariableDifferenceType integration_step,
-        const MathType& initial_value, const IntegrandFunction<MathType, IndependentVariableType>& integrand) const
-        -> MathType {
+template<class IntegratedType_, IsIndependentVariableType IndependentVariableType_, class IntegrandType_>
+inline auto Integrator<IntegratedType_, IndependentVariableType_, IntegrandType_>::integrate(
+        const IndependentVariableType start, const IndependentVariableType end,
+        const IndependentVariableDifferenceType integration_step, const IntegratedType& initial_value,
+        const IntegrandFunction<IntegrandType_, IndependentVariableType_>& integrand) const -> IntegratedType {
     // Error handling and preprocessing
     throw_if(integration_step <= IndependentVariableDifferenceType(0),
             "Must integrate with a positive integration_step.");
@@ -25,7 +25,7 @@ inline auto Integrator<MathType_, IndependentVariableType_>::integrate(const Ind
     IndependentVariableType current_start = start;
     IndependentVariableType current_end = forwards ? std::min(current_start + directed_integration_step, end)
                                                    : std::max(current_start + directed_integration_step, end);
-    MathType integral = initial_value;
+    IntegratedType integral = initial_value;
     while ((forwards && current_start < end) || (!forwards && current_start > end)) {
         // Integrate over integration interval
         integral = integrate(current_start, current_end, integral, integrand);
@@ -39,11 +39,11 @@ inline auto Integrator<MathType_, IndependentVariableType_>::integrate(const Ind
 
 namespace newton_cotes {
 
-template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
-inline auto Integrator<N_, MathType_, IndependentVariableType_>::integrate(const IndependentVariableType start,
-        const IndependentVariableType end, const MathType& initial_value,
-        const IntegrandFunction<MathType, IndependentVariableType>& integrand) const -> MathType {
-    MathType integral = initial_value;
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_, class IntegrandType_>
+inline auto Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>::integrate(
+        const IndependentVariableType start, const IndependentVariableType end, const IntegratedType& initial_value,
+        const IntegrandFunction<IntegrandType_, IndependentVariableType_>& integrand) const -> IntegratedType {
+    IntegratedType integral = initial_value;
     const ArithmeticTypeScalar step_size_ = step_size(start, end);
     for (std::size_t i = 0; i <= N; ++i) {
         integral += step_size_ * weight(i) * integrand(lerp(start, end, alpha(i)));
@@ -53,20 +53,20 @@ inline auto Integrator<N_, MathType_, IndependentVariableType_>::integrate(const
 
 namespace closed {
 
-template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
-inline auto Integrator<N_, MathType_, IndependentVariableType_>::alpha(const std::size_t i) const
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_, class IntegrandType_>
+inline auto Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>::alpha(const std::size_t i) const
         -> ArithmeticTypeScalar {
     return static_cast<ArithmeticTypeScalar>(i) / static_cast<ArithmeticTypeScalar>(N);
 }
 
-template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
-inline auto Integrator<N_, MathType_, IndependentVariableType_>::step_size(const IndependentVariableType start,
-        const IndependentVariableType end) const -> ArithmeticTypeScalar {
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_, class IntegrandType_>
+inline auto Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>::step_size(
+        const IndependentVariableType start, const IndependentVariableType end) const -> ArithmeticTypeScalar {
     return cppbox::to_sec(end - start) / static_cast<ArithmeticTypeScalar>(N);
 }
 
-template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
-inline auto Integrator<N_, MathType_, IndependentVariableType_>::weight(const std::size_t i) const
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_, class IntegrandType_>
+inline auto Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>::weight(const std::size_t i) const
         -> ArithmeticTypeScalar {
     return Weights<N, ArithmeticTypeScalar>::weight(i);
 }
@@ -102,20 +102,20 @@ auto Weights<4, Scalar_>::weight(const std::size_t i) -> Scalar {
 
 namespace open {
 
-template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
-inline auto Integrator<N_, MathType_, IndependentVariableType_>::alpha(const std::size_t i) const
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_, class IntegrandType_>
+inline auto Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>::alpha(const std::size_t i) const
         -> ArithmeticTypeScalar {
     return static_cast<ArithmeticTypeScalar>(i + 1) / static_cast<ArithmeticTypeScalar>(N + 2);
 }
 
-template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
-inline auto Integrator<N_, MathType_, IndependentVariableType_>::step_size(const IndependentVariableType start,
-        const IndependentVariableType end) const -> ArithmeticTypeScalar {
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_, class IntegrandType_>
+inline auto Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>::step_size(
+        const IndependentVariableType start, const IndependentVariableType end) const -> ArithmeticTypeScalar {
     return cppbox::to_sec(end - start) / static_cast<ArithmeticTypeScalar>(N + 2);
 }
 
-template<int N_, IsMathType MathType_, IsIndependentVariableType IndependentVariableType_>
-inline auto Integrator<N_, MathType_, IndependentVariableType_>::weight(const std::size_t i) const
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_, class IntegrandType_>
+inline auto Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>::weight(const std::size_t i) const
         -> ArithmeticTypeScalar {
     return Weights<N, ArithmeticTypeScalar>::weight(i);
 }

@@ -4,38 +4,38 @@
 
 #include <chrono>
 
-template<math::IsMathType MathType>
-MathType zero_instance() {
-    if constexpr (std::is_base_of_v<Eigen::MatrixBase<MathType>, MathType>) {
+template<math::IsEuclideanType EuclideanType>
+EuclideanType zero_instance() {
+    if constexpr (math::IsMatrix<EuclideanType>) {
         // Set any dynamic-sized dimensions to 1
-        return math::MathTypeTraits<MathType>::zero(
-                MathType::RowsAtCompileTime == Eigen::Dynamic ? 1 : MathType::RowsAtCompileTime,
-                MathType::ColsAtCompileTime == Eigen::Dynamic ? 1 : MathType::ColsAtCompileTime);
+        return math::MathTypeTraits<EuclideanType>::zero(
+                EuclideanType::RowsAtCompileTime == Eigen::Dynamic ? 1 : EuclideanType::RowsAtCompileTime,
+                EuclideanType::ColsAtCompileTime == Eigen::Dynamic ? 1 : EuclideanType::ColsAtCompileTime);
     } else {
-        return math::MathTypeTraits<MathType>::zero();
+        return math::MathTypeTraits<EuclideanType>::zero();
     }
 }
 
 template<typename Integrator>
 void test_integrate_constant(const typename Integrator::IndependentVariableType& start,
-        const typename Integrator::IndependentVariableType& end, const typename Integrator::MathType constant,
+        const typename Integrator::IndependentVariableType& end, const typename Integrator::IntegratedType constant,
         const typename Integrator::IndependentVariableDifferenceType integration_step,
-        const typename Integrator::MathType& initial_value,
+        const typename Integrator::IntegratedType& initial_value,
         const typename Integrator::ArithmeticTypeScalar precision_per_unit_area) {
-    using MathType = Integrator::MathType;
+    using IntegratedType = Integrator::IntegratedType;
     using IndependentVariableType = Integrator::IndependentVariableType;
     using ArithmeticTypeScalar = Integrator::ArithmeticTypeScalar;
     Integrator integrator;
-    MathType expected_value = constant;
+    IntegratedType expected_value = constant;
     const ArithmeticTypeScalar duration = cppbox::to_sec(end - start);
     expected_value *= duration;
     expected_value += initial_value;
-    const MathType value = integrator.integrate(start, end, integration_step, initial_value,
-            [constant](const IndependentVariableType) -> MathType { return constant; });
-    if constexpr (std::is_floating_point_v<MathType>) {
+    const IntegratedType value = integrator.integrate(start, end, integration_step, initial_value,
+            [constant](const IndependentVariableType) -> IntegratedType { return constant; });
+    if constexpr (std::floating_point<IntegratedType>) {
         const ArithmeticTypeScalar precision = precision_per_unit_area * std::abs(duration) * std::abs(constant);
         EXPECT_NEAR(value, expected_value, precision);
-    } else if constexpr (std::is_base_of_v<Eigen::MatrixBase<MathType>, MathType>) {
+    } else if constexpr (math::IsMatrix<IntegratedType>) {
         const ArithmeticTypeScalar precision =
                 precision_per_unit_area * std::abs(duration) * std::abs(constant.value());
         // Note isApprox does not work when integration is close to zero
@@ -45,28 +45,28 @@ void test_integrate_constant(const typename Integrator::IndependentVariableType&
 
 template<typename Integrator>
 void test_integrate_linear(const typename Integrator::IndependentVariableType& start,
-        const typename Integrator::IndependentVariableType& end, const typename Integrator::MathType start_height,
-        const typename Integrator::MathType end_height,
+        const typename Integrator::IndependentVariableType& end, const typename Integrator::IntegratedType start_height,
+        const typename Integrator::IntegratedType end_height,
         const typename Integrator::IndependentVariableDifferenceType integration_step,
-        const typename Integrator::MathType& initial_value,
+        const typename Integrator::IntegratedType& initial_value,
         const typename Integrator::ArithmeticTypeScalar precision_per_unit_area) {
-    using MathType = Integrator::MathType;
+    using IntegratedType = Integrator::IntegratedType;
     using IndependentVariableType = Integrator::IndependentVariableType;
     using ArithmeticTypeScalar = Integrator::ArithmeticTypeScalar;
     Integrator integrator;
-    const MathType mean_height = (start_height + end_height) / ArithmeticTypeScalar(2.0);
-    MathType expected_value = mean_height;
+    const IntegratedType mean_height = (start_height + end_height) / ArithmeticTypeScalar(2.0);
+    IntegratedType expected_value = mean_height;
     const ArithmeticTypeScalar duration = cppbox::to_sec(end - start);
     expected_value *= duration;
     expected_value += initial_value;
-    const MathType value1 = integrator.integrate(start, end, integration_step, initial_value,
-            std::bind(math::linear_function<MathType, IndependentVariableType>, std::placeholders::_1, start, end,
+    const IntegratedType value1 = integrator.integrate(start, end, integration_step, initial_value,
+            std::bind(math::linear_function<IntegratedType, IndependentVariableType>, std::placeholders::_1, start, end,
                     start_height, end_height));
-    const MathType value2 = integrator.integrate(start, end, integration_step, initial_value,
-            [start, end, start_height, end_height](const IndependentVariableType t) -> MathType {
+    const IntegratedType value2 = integrator.integrate(start, end, integration_step, initial_value,
+            [start, end, start_height, end_height](const IndependentVariableType t) -> IntegratedType {
                 return math::linear_function(t, start, end, start_height, end_height);
             });
-    if constexpr (std::is_floating_point_v<MathType>) {
+    if constexpr (std::floating_point<IntegratedType>) {
         // Absolute area is more complicated than integral, depending on if a zero-crossing occurred
         ArithmeticTypeScalar area;
         if (start_height * end_height >= ArithmeticTypeScalar(0.0)) {
@@ -82,7 +82,7 @@ void test_integrate_linear(const typename Integrator::IndependentVariableType& s
         EXPECT_EQ(value1, value2);
         EXPECT_NEAR(value1, expected_value, precision);
         EXPECT_NEAR(value2, expected_value, precision);
-    } else if constexpr (std::is_base_of_v<Eigen::MatrixBase<MathType>, MathType>) {
+    } else if constexpr (math::IsMatrix<IntegratedType>) {
         // Absolute area is more complicated than integral, depending on if a zero-crossing occurred
         ArithmeticTypeScalar area;
         if (start_height.value() * end_height.value() >= ArithmeticTypeScalar(0.0)) {

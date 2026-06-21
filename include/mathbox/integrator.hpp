@@ -13,50 +13,51 @@ namespace math {
  * @brief Integrand function type. std::function is used to allow for a wide variety of callables (e.g. function
  * pointers, lambdas, bound functions, etc.), while still restricting the type.
  *
- * @tparam MathType arithmetic type, supporting addition and multiplication with scalar values
- * @tparam IndependentVariableType type of the independent variable (e.g. time)
+ * @tparam IntegrandType arithmetic type, supporting addition and multiplication with scalar values
+ * @tparam IndependentVariableType type of the independent variable (e.g. double, time point)
  */
-template<IsMathType MathType,
-        IsIndependentVariableType IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using IntegrandFunction = std::function<MathType(const IndependentVariableType)>;
+template<class IntegrandType, IsIndependentVariableType IndependentVariableType>
+using IntegrandFunction = std::function<IntegrandType(const IndependentVariableType)>;
 
-template<IsMathType MathType_,
-        IsIndependentVariableType IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
+template<class IntegratedType_, IsIndependentVariableType IndependentVariableType_,
+        class IntegrandType_ = IntegratedType_>
 class Integrator {
 public:
-    using MathType = MathType_;
-    using ArithmeticTypeScalar = MathTypeTraits<MathType>::Scalar;
+    using IntegratedType = IntegratedType_;
+    using ArithmeticTypeScalar = MathTypeTraits<IntegratedType>::Scalar;
     using IndependentVariableType = IndependentVariableType_;
     using IndependentVariableDifferenceType = decltype(IndependentVariableType() - IndependentVariableType());
+    using IntegrandType = IntegrandType_;
 
-    MathType integrate(const IndependentVariableType start, const IndependentVariableType end,
-            const IndependentVariableDifferenceType integration_step, const MathType& initial_value,
-            const IntegrandFunction<MathType, IndependentVariableType>& integrand) const;
+    IntegratedType integrate(const IndependentVariableType start, const IndependentVariableType end,
+            const IndependentVariableDifferenceType integration_step, const IntegratedType& initial_value,
+            const IntegrandFunction<IntegrandType, IndependentVariableType>& integrand) const;
 
-    virtual MathType integrate(const IndependentVariableType start, const IndependentVariableType end,
-            const MathType& initial_value,
-            const IntegrandFunction<MathType, IndependentVariableType>& integrand) const = 0;
+    virtual IntegratedType integrate(const IndependentVariableType start, const IndependentVariableType end,
+            const IntegratedType& initial_value,
+            const IntegrandFunction<IntegrandType, IndependentVariableType>& integrand) const = 0;
 };
 
 namespace newton_cotes {
 
-template<int N_, IsMathType MathType_,
-        IsIndependentVariableType IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
-class Integrator : public math::Integrator<MathType_, IndependentVariableType_> {
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_,
+        class IntegrandType_ = IntegratedType_>
+class Integrator : public math::Integrator<IntegratedType_, IndependentVariableType_, IntegrandType_> {
 public:
-    using Base = math::Integrator<MathType_, IndependentVariableType_>;
-    using MathType = Base::MathType;
+    using Base = math::Integrator<IntegratedType_, IndependentVariableType_, IntegrandType_>;
+    using IntegratedType = Base::IntegratedType;
     using ArithmeticTypeScalar = Base::ArithmeticTypeScalar;
     using IndependentVariableType = Base::IndependentVariableType;
+    using IntegrandType = Base::IntegrandType;
     static constexpr int N = N_;
 
     virtual ArithmeticTypeScalar alpha(const std::size_t i) const = 0;
 
     using Base::integrate;
 
-    MathType integrate(const IndependentVariableType start, const IndependentVariableType end,
-            const MathType& initial_value,
-            const IntegrandFunction<MathType, IndependentVariableType>& integrand) const override;
+    IntegratedType integrate(const IndependentVariableType start, const IndependentVariableType end,
+            const IntegratedType& initial_value,
+            const IntegrandFunction<IntegrandType_, IndependentVariableType_>& integrand) const override;
 
     virtual ArithmeticTypeScalar step_size(const IndependentVariableType start,
             const IndependentVariableType end) const = 0;
@@ -66,14 +67,16 @@ public:
 
 namespace closed {
 
-template<int N_, IsMathType MathType_,
-        IsIndependentVariableType IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
-class Integrator : public math::newton_cotes::Integrator<N_, MathType_, IndependentVariableType_> {
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_,
+        class IntegrandType_ = IntegratedType_>
+class Integrator
+    : public math::newton_cotes::Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_> {
 public:
-    using Base = math::newton_cotes::Integrator<N_, MathType_, IndependentVariableType_>;
-    using MathType = Base::MathType;
+    using Base = math::newton_cotes::Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>;
+    using IntegratedType = Base::IntegratedType;
     using ArithmeticTypeScalar = Base::ArithmeticTypeScalar;
     using IndependentVariableType = Base::IndependentVariableType;
+    using IntegrandType = Base::IntegrandType;
     static constexpr int N = Base::N;
     static_assert(N > 0, "N must be > 0.");
 
@@ -132,14 +135,16 @@ public:
 
 namespace open {
 
-template<int N_, IsMathType MathType_,
-        IsIndependentVariableType IndependentVariableType_ = typename MathTypeTraits<MathType_>::Scalar>
-class Integrator : public math::newton_cotes::Integrator<N_, MathType_, IndependentVariableType_> {
+template<int N_, class IntegratedType_, IsIndependentVariableType IndependentVariableType_,
+        class IntegrandType_ = IntegratedType_>
+class Integrator
+    : public math::newton_cotes::Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_> {
 public:
-    using Base = math::newton_cotes::Integrator<N_, MathType_, IndependentVariableType_>;
-    using MathType = Base::MathType;
+    using Base = math::newton_cotes::Integrator<N_, IntegratedType_, IndependentVariableType_, IntegrandType_>;
+    using IntegratedType = Base::IntegratedType;
     using ArithmeticTypeScalar = Base::ArithmeticTypeScalar;
     using IndependentVariableType = Base::IndependentVariableType;
+    using IntegrandType = Base::IntegrandType;
     static constexpr int N = Base::N;
     static_assert(N >= 0, "N must be >= 0.");
 
@@ -198,57 +203,57 @@ public:
 
 namespace rectangle {
 
-template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::open::Integrator<0, MathType, IndependentVariableType>;
+template<class IntegratedType, typename IndependentVariableType, class IntegrandType = IntegratedType>
+using Integrator = newton_cotes::open::Integrator<0, IntegratedType, IndependentVariableType, IntegrandType>;
 
 }
 
 namespace open1 {
 
-template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::open::Integrator<1, MathType, IndependentVariableType>;
+template<class IntegratedType, typename IndependentVariableType, class IntegrandType = IntegratedType>
+using Integrator = newton_cotes::open::Integrator<1, IntegratedType, IndependentVariableType, IntegrandType>;
 
 }
 
 namespace milnes {
 
-template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::open::Integrator<2, MathType, IndependentVariableType>;
+template<class IntegratedType, typename IndependentVariableType, class IntegrandType = IntegratedType>
+using Integrator = newton_cotes::open::Integrator<2, IntegratedType, IndependentVariableType, IntegrandType>;
 
 }
 
 namespace open3 {
 
-template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::open::Integrator<3, MathType, IndependentVariableType>;
+template<class IntegratedType, typename IndependentVariableType, class IntegrandType = IntegratedType>
+using Integrator = newton_cotes::open::Integrator<3, IntegratedType, IndependentVariableType, IntegrandType>;
 
 }
 
 namespace trapezoidal {
 
-template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::closed::Integrator<1, MathType, IndependentVariableType>;
+template<class IntegratedType, typename IndependentVariableType, class IntegrandType = IntegratedType>
+using Integrator = newton_cotes::closed::Integrator<1, IntegratedType, IndependentVariableType, IntegrandType>;
 
 }
 
 namespace simpsons {
 
-template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::closed::Integrator<2, MathType, IndependentVariableType>;
+template<class IntegratedType, typename IndependentVariableType, class IntegrandType = IntegratedType>
+using Integrator = newton_cotes::closed::Integrator<2, IntegratedType, IndependentVariableType, IntegrandType>;
 
 }
 
 namespace simpsons38 {
 
-template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::closed::Integrator<3, MathType, IndependentVariableType>;
+template<class IntegratedType, typename IndependentVariableType, class IntegrandType = IntegratedType>
+using Integrator = newton_cotes::closed::Integrator<3, IntegratedType, IndependentVariableType, IntegrandType>;
 
 }
 
 namespace booles {
 
-template<typename MathType, typename IndependentVariableType = typename MathTypeTraits<MathType>::Scalar>
-using Integrator = newton_cotes::closed::Integrator<4, MathType, IndependentVariableType>;
+template<class IntegratedType, typename IndependentVariableType, class IntegrandType = IntegratedType>
+using Integrator = newton_cotes::closed::Integrator<4, IntegratedType, IndependentVariableType, IntegrandType>;
 
 }
 

@@ -37,7 +37,7 @@ namespace math {
  * @return T interpolation or extrapolation result \f$\mathbf{y}\f$
  */
 template<typename T, std::floating_point Scalar>
-    requires(is_math_type_v<T> || cppbox::is_time_point_or_duration_v<T>)
+    requires(IsEuclideanType<T> || cppbox::IsTimePointOrDuration<T>)
 T lerp(const T& y_0, const T& y_1, const Scalar alpha);
 
 /**
@@ -48,18 +48,18 @@ T lerp(const T& y_0, const T& y_1, const Scalar alpha);
  *      \alpha = \frac{x - x_0}{x_1 - x_0}
  * \f]
  *
- * @tparam MathType
+ * @tparam EuclideanType
  * @tparam IndependentVariableType
  * @param x
  * @param x_0
  * @param x_1
  * @param y_0
  * @param y_1
- * @return MathType
+ * @return EuclideanType
  */
-template<IsMathType MathType, IsIndependentVariableType IndependentVariableType>
-inline MathType linear_function(const IndependentVariableType x, const IndependentVariableType x_0,
-        const IndependentVariableType x_1, const MathType y_0, const MathType y_1);
+template<IsEuclideanType EuclideanType, IsIndependentVariableType IndependentVariableType>
+inline EuclideanType linear_function(const IndependentVariableType x, const IndependentVariableType x_0,
+        const IndependentVariableType x_1, const EuclideanType y_0, const EuclideanType y_1);
 
 }
 
