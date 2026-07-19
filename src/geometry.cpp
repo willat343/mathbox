@@ -7,16 +7,16 @@ template Eigen::Isometry3d change_relative_transform_frame<double>(const Eigen::
 template Eigen::Isometry3d change_relative_transform_frame<double>(const Eigen::Isometry3d&, const Eigen::Isometry3d&,
         const Eigen::Isometry3d&);
 
-template Eigen::Matrix<double, 6, 6> change_tf_covariance_frame<double>(const Eigen::Matrix<double, 6, 6>&,
-        const Eigen::Isometry3d&, const bool);
+template Eigen::Matrix<double, 6, 6> change_tf_covariance_frame_tr<double>(const Eigen::Matrix<double, 6, 6>&,
+        const Eigen::Isometry3d&);
 
-template Eigen::Matrix<double, 6, 1> change_twist_reference_frame<double>(const Eigen::Isometry3d&,
-        const Eigen::Matrix<double, 6, 1>&, const bool);
+template Eigen::Matrix<double, 6, 1> change_twist_reference_frame_tr<double>(const Eigen::Isometry3d&,
+        const Eigen::Matrix<double, 6, 1>&);
 
-template Eigen::Matrix<double, 3, 3> compose_transform_covariance<double, 2>(const Eigen::Matrix<double, 3, 3>&,
-        const Eigen::Matrix<double, 3, 3>&, const Eigen::Isometry2d&, const Eigen::Matrix<double, 3, 3>&, const bool);
-template Eigen::Matrix<double, 6, 6> compose_transform_covariance<double, 3>(const Eigen::Matrix<double, 6, 6>&,
-        const Eigen::Matrix<double, 6, 6>&, const Eigen::Isometry3d&, const Eigen::Matrix<double, 6, 6>&, const bool);
+template Eigen::Matrix<double, 3, 3> compose_transform_covariance_tr<double, 2>(const Eigen::Matrix<double, 3, 3>&,
+        const Eigen::Matrix<double, 3, 3>&, const Eigen::Isometry2d&, const Eigen::Matrix<double, 3, 3>&);
+template Eigen::Matrix<double, 6, 6> compose_transform_covariance_tr<double, 3>(const Eigen::Matrix<double, 6, 6>&,
+        const Eigen::Matrix<double, 6, 6>&, const Eigen::Isometry3d&, const Eigen::Matrix<double, 6, 6>&);
 
 template Eigen::Matrix<double, 6, 1> compute_constant_rates<double>(const typename Eigen::Isometry3d& pose_1,
         const typename Eigen::Isometry3d&, const double);
@@ -46,7 +46,7 @@ template Eigen::Vector3d so_from_skew<Eigen::Matrix3d>(const Eigen::MatrixBase<E
 template Eigen::Matrix2d so_skew<Eigen::Vector<double, 1>>(const Eigen::MatrixBase<Eigen::Vector<double, 1>>&);
 template Eigen::Matrix3d so_skew<Eigen::Vector3d>(const Eigen::MatrixBase<Eigen::Vector3d>&);
 
-template Eigen::Matrix<double, 3, 3> transform_adjoint<double, 2>(const Eigen::Isometry2d& transform, const bool);
-template Eigen::Matrix<double, 6, 6> transform_adjoint<double, 3>(const Eigen::Isometry3d& transform, const bool);
+template Eigen::Matrix<double, 3, 3> adjoint_SE_tr<double, 2>(const Eigen::Isometry2d& transform);
+template Eigen::Matrix<double, 6, 6> adjoint_SE_tr<double, 3>(const Eigen::Isometry3d& transform);
 
 }
