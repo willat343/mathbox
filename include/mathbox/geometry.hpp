@@ -233,10 +233,22 @@ template<typename Derived>
     requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 3)
 constexpr Eigen::Vector<typename Derived::Scalar, 3> so_from_skew(const Eigen::MatrixBase<Derived>& skew);
 
+/**
+ * @brief Compute the skew symmetric matrix for the 2D so Lie algebra.
+ *
+ * @tparam Derived
+ */
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 1 && Derived::ColsAtCompileTime == 1)
 constexpr Eigen::Matrix<typename Derived::Scalar, 2, 2> so_skew(const Eigen::MatrixBase<Derived>& v);
 
+/**
+ * @brief Compute the skew symmetric matrix for the 3D so Lie algebra.
+ *
+ * Equivalent to `skew_symmetric_cross(v)`.
+ *
+ * @tparam Derived
+ */
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1)
 constexpr Eigen::Matrix<typename Derived::Scalar, 3, 3> so_skew(const Eigen::MatrixBase<Derived>& v);

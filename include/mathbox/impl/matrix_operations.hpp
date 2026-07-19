@@ -109,10 +109,13 @@ inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const
     return damping;
 }
 
-template<typename Scalar>
-inline Eigen::Matrix<Scalar, 3, 3> skew_symmetric_cross(const Eigen::Matrix<Scalar, 3, 1>& v) {
-    return (Eigen::Matrix<Scalar, 3, 3>() << static_cast<Scalar>(0), -v[2], v[1], v[2], static_cast<Scalar>(0), -v[0],
-            -v[1], v[0], static_cast<Scalar>(0))
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1)
+constexpr inline Eigen::Matrix<typename Derived::Scalar, 3, 3> skew_symmetric_cross(
+        const Eigen::MatrixBase<Derived>& v) {
+    return (Eigen::Matrix<typename Derived::Scalar, 3, 3>() << static_cast<typename Derived::Scalar>(0), -v[2], v[1],
+            v[2], static_cast<typename Derived::Scalar>(0), -v[0], -v[1], v[0],
+            static_cast<typename Derived::Scalar>(0))
             .finished();
 }
 
@@ -121,7 +124,7 @@ inline Eigen::Matrix<Scalar, 3, 3> skew_symmetric_cross(const Eigen::Matrix<Scal
 #if !MATHBOX_HEADER_ONLY
 namespace math {
 
-extern template Eigen::Matrix3d skew_symmetric_cross(const Eigen::Vector3d& v);
+extern template Eigen::Matrix3d skew_symmetric_cross(const Eigen::MatrixBase<Eigen::Vector3d>& v);
 
 }
 #endif

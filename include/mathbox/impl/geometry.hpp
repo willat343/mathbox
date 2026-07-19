@@ -142,10 +142,7 @@ constexpr inline Eigen::Matrix<typename Derived::Scalar, 2, 2> so_skew(const Eig
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1)
 constexpr inline Eigen::Matrix<typename Derived::Scalar, 3, 3> so_skew(const Eigen::MatrixBase<Derived>& v) {
-    return (Eigen::Matrix<typename Derived::Scalar, 3, 3>() << static_cast<typename Derived::Scalar>(0), -v[2], v[1],
-            v[2], static_cast<typename Derived::Scalar>(0), -v[0], -v[1], v[0],
-            static_cast<typename Derived::Scalar>(0))
-            .finished();
+    return skew_symmetric_cross<Derived>(v);
 }
 
 inline Pose<2> to_pose_2D(const Pose<3>& pose, const Eigen::Vector3d& axis) {

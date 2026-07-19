@@ -139,12 +139,13 @@ double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen:
  * Note also that \f$\mathbf{x} \times \mathbf{y} = - \mathbf{y} \times \mathbf{x} = - [\mathbf{y}]_\times \mathbf{x}
  * = [\mathbf{y}]_\times^T \mathbf{x} = [\mathbf{x}]_\times \mathbf{y}\f$.
  *
- * @tparam Scalar
+ * @tparam Derived a 3x1 vector
  * @param v
- * @return Eigen::Matrix<Scalar, 3, 3>
+ * @return Eigen::Matrix<typename Derived::Scalar, 3, 3>
  */
-template<typename Scalar>
-Eigen::Matrix<Scalar, 3, 3> skew_symmetric_cross(const Eigen::Matrix<Scalar, 3, 1>& v);
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1)
+constexpr Eigen::Matrix<typename Derived::Scalar, 3, 3> skew_symmetric_cross(const Eigen::MatrixBase<Derived>& v);
 
 }
 

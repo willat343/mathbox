@@ -2,6 +2,6 @@
 
 namespace math {
 
-template Eigen::Matrix3d skew_symmetric_cross(const Eigen::Vector3d& v);
+template Eigen::Matrix3d skew_symmetric_cross(const Eigen::MatrixBase<Eigen::Vector3d>& v);
 
 }
