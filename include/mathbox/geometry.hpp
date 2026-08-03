@@ -3,10 +3,22 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <cmath>
 #include <mathbox/traits.hpp>
 #include <mathbox/types.hpp>
 
 namespace math {
+
+template<IsVector DerivedU, IsVector DerivedV>
+    requires(std::is_same_v<typename DerivedU::Scalar, typename DerivedV::Scalar> &&
+             DerivedU::SizeAtCompileTime == DerivedV::SizeAtCompileTime)
+typename DerivedU::Scalar angle_between(const Eigen::MatrixBase<DerivedU>& u, const Eigen::MatrixBase<DerivedV>& v);
+
+template<typename Scalar>
+constexpr Scalar deg2rad(const Scalar degrees);
+
+template<typename Scalar>
+constexpr Scalar rad2deg(const Scalar radians);
 
 /**
  * @brief Given a relative transform between any two timestamps in the reference frame of A, and a rigid body transform
@@ -18,9 +30,9 @@ namespace math {
  * \f]
  *
  * @tparam Scalar
- * @param relative_transform_A \f$T_{A1}^{A2}\f$
- * @param rigid_transform_B_A \f$T_B^A\f$
- * @return Eigen::Transform<Scalar, 3, Eigen::Isometry> \f$T_{B1}^{B2}\f$
+ * @param relative_transform_A \f$ T_{A1}^{A2} \f$
+ * @param rigid_transform_B_A \f$ T_B^A \f$
+ * @return Eigen::Transform<Scalar, 3, Eigen::Isometry> \f$ T_{B1}^{B2} \f$
  */
 template<typename Scalar>
 Eigen::Transform<Scalar, 3, Eigen::Isometry> change_relative_transform_frame(
@@ -28,12 +40,12 @@ Eigen::Transform<Scalar, 3, Eigen::Isometry> change_relative_transform_frame(
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& rigid_transform_B_A);
 
 /**
- * @brief Same as `change_relative_transform_frame`, except \f$T_A^B\f$ is also provided.
+ * @brief Same as `change_relative_transform_frame`, except \f$ T_A^B \f$ is also provided.
  *
  * @tparam Scalar
- * @param relative_transform_A \f$T_{A1}^{A2}\f$
- * @param rigid_transform_B_A \f$T_B^A\f$
- * @param rigid_transform_A_B \f$T_A^B\f$
+ * @param relative_transform_A \f$ T_{A1}^{A2} \f$
+ * @param rigid_transform_B_A \f$ T_B^A \f$
+ * @param rigid_transform_A_B \f$ T_A^B \f$
  * @return Eigen::Transform<Scalar, 3, Eigen::Isometry>
  */
 template<typename Scalar>
@@ -50,9 +62,9 @@ Eigen::Transform<Scalar, 3, Eigen::Isometry> change_relative_transform_frame(
  * \f]
  *
  * @tparam Scalar
- * @param covariance_A \f$\boldsymbol{\Sigma}_A\f$
+ * @param covariance_A \f$ \boldsymbol{\Sigma}_A \f$
  * @param adjoint_SE_B_A \f$ \mathbf{Ad}_{T_B^A} \f$
- * @return Eigen::Matrix<Scalar, 6, 6> \f$\boldsymbol{\Sigma}_B\f$
+ * @return Eigen::Matrix<Scalar, 6, 6> \f$ \boldsymbol{\Sigma}_B \f$
  */
 template<typename Scalar>
 Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame(const typename Eigen::Matrix<Scalar, 6, 6>& covariance_A,
@@ -67,9 +79,9 @@ Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame(const typename Eigen::Mat
  * using this function multiple times with the same transform.
  *
  * @tparam Scalar
- * @param covariance_A \f$\boldsymbol{\Sigma}_A\f$
- * @param transform_B_A \f$T_B^A\f$
- * @return Eigen::Matrix<Scalar, 6, 6> \f$\boldsymbol{\Sigma}_B\f$
+ * @param covariance_A \f$ \boldsymbol{\Sigma}_A \f$
+ * @param transform_B_A \f$ T_B^A \f$
+ * @return Eigen::Matrix<Scalar, 6, 6> \f$ \boldsymbol{\Sigma}_B \f$
  */
 template<typename Scalar>
 Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame_tr(const typename Eigen::Matrix<Scalar, 6, 6>& covariance_A,
@@ -88,7 +100,7 @@ Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame_rt(const typename Eigen::
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& transform_B_A);
 
 /**
- * @brief Given a transform \f$T_A^B\f$ (i.e. frame B w.r.t. frame A) and the twist in reference frame B, compute
+ * @brief Given a transform \f$ T_A^B \f$ (i.e. frame B w.r.t. frame A) and the twist in reference frame B, compute
  * the twist in reference frame A. Internally, this function calculates and applies the pose adjoint.
  *
  * \f[
@@ -98,7 +110,7 @@ Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame_rt(const typename Eigen::
  * This function assumes a translation-rotation ordering in the covariance and adjoint.
  *
  * @tparam Scalar
- * @param transform \f$T_A^B\f$
+ * @param transform \f$ T_A^B \f$
  * @param twist
  * @param translation_before_rotation true if ordering of twist has linear before angular velocity
  * @return Eigen::Matrix<Scalar, 6, 1>
@@ -122,11 +134,12 @@ Eigen::Matrix<Scalar, 6, 1> change_twist_reference_frame_rt(
 /**
  * @brief Approximation of the covariance of transform composition.
  *
- * Given the covariance of a (previous) pose \f$T_A^B\f$, \f$\boldsymbol{\Sigma}_{AB}\f$, and a relative transform
- * \f$T_B^C\f$ from that state to a new pose (\f$T_A^C = T_A^B T_B^C\f$) with covariance \f$\boldsymbol{\Sigma}_{BC}\f$,
- * the covariance of the new state \f$\boldsymbol{\Sigma}_{AC}\f$ is computed. The cross correlation between the two
- * relative transforms \f$\boldsymbol{\Sigma}_{AB,BC}\f$ can also be supplied to achieve a better estimate as described
- * in Mangelson et al (2019). Otherwise, the approximation is equal to Barfoot et al's (2013).
+ * Given the covariance of a (previous) pose \f$ T_A^B \f$, \f$ \boldsymbol{\Sigma}_{AB} \f$, and a relative transform
+ * \f$ T_B^C \f$ from that state to a new pose (\f$ T_A^C = T_A^B T_B^C \f$) with covariance \f$
+ * \boldsymbol{\Sigma}_{BC} \f$, the covariance of the new state \f$ \boldsymbol{\Sigma}_{AC} \f$ is computed. The cross
+ * correlation between the two relative transforms \f$ \boldsymbol{\Sigma}_{AB,BC} \f$ can also be supplied to achieve a
+ * better estimate as described in Mangelson et al (2019). Otherwise, the approximation is equal to Barfoot et al's
+ * (2013).
  *
  * This function assumes a translation-rotation ordering in the covariance and adjoint.
  *
@@ -138,10 +151,10 @@ Eigen::Matrix<Scalar, 6, 1> change_twist_reference_frame_rt(
  *
  * @tparam Scalar
  * @tparam D
- * @param previous_covariance \f$\boldsymbol{\Sigma}_{AB}\f$
- * @param relative_covariance \f$\boldsymbol{\Sigma}_{BC}\f$
- * @param relative_transform \f$T_B^C\f$
- * @param relative_cross_covariance \f$\boldsymbol{\Sigma}_{AB,BC}\f$
+ * @param previous_covariance \f$ \boldsymbol{\Sigma}_{AB} \f$
+ * @param relative_covariance \f$ \boldsymbol{\Sigma}_{BC} \f$
+ * @param relative_transform \f$ T_B^C \f$
+ * @param relative_cross_covariance \f$ \boldsymbol{\Sigma}_{AB,BC} \f$
  * @return Derived
  */
 template<typename Scalar, int D>
@@ -157,10 +170,10 @@ Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_tr(
  *
  * @tparam Scalar
  * @tparam D
- * @param previous_covariance \f$\boldsymbol{\Sigma}_{AB}\f$
- * @param relative_covariance \f$\boldsymbol{\Sigma}_{BC}\f$
- * @param relative_transform \f$T_B^C\f$
- * @param relative_cross_covariance \f$\boldsymbol{\Sigma}_{AB,BC}\f$
+ * @param previous_covariance \f$ \boldsymbol{\Sigma}_{AB} \f$
+ * @param relative_covariance \f$ \boldsymbol{\Sigma}_{BC} \f$
+ * @param relative_transform \f$ T_B^C \f$
+ * @param relative_cross_covariance \f$ \boldsymbol{\Sigma}_{AB,BC} \f$
  * @return Derived
  */
 template<typename Scalar, int D>
@@ -172,14 +185,14 @@ Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_rt(
         const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance);
 
 /**
- * @brief Compute the constant twist (angular and linear velocities) required to pose \f$T_A^B\f$ to $\f$T_A^C\f$ in
- * time `dt`, relative to \f$T_A^B\f$ in frame B (i.e., "body-frame" velocities).
+ * @brief Compute the constant twist (angular and linear velocities) required to pose \f$ T_A^B \f$ to \f$ T_A^C \f$ in
+ * time `dt`, relative to \f$ T_A^B \f$ in frame B (i.e., "body-frame" velocities).
  *
  * Throws error if `dt` is not strictly positive.
  *
  * @tparam Scalar
- * @param pose_1 \f$T_A^B\f$
- * @param pose_2 $\f$T_A^C\f$
+ * @param pose_1 \f$ T_A^B \f$
+ * @param pose_2 \f$ T_A^C \f$
  * @param dt
  * @return Eigen::Matrix<Scalar, 6, 1>
  */
@@ -201,7 +214,8 @@ Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform<Scalar
         const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_1, const Scalar alpha);
 
 /**
- * @brief Compute the relative transform \f$T_B^C = (T_A^B)^{-1} T_A^C\f$ between two poses \f$T_A^B\f$ and \f$T_A^C\f$.
+ * @brief Compute the relative transform \f$ T_B^C = (T_A^B)^{-1} T_A^C \f$ between two poses \f$ T_A^B \f$ and \f$
+ * T_A^C \f$.
  *
  * @tparam Scalar
  * @tparam D
@@ -216,10 +230,10 @@ Eigen::Transform<Scalar, D, Eigen::Isometry> relative_transform(
         const typename Eigen::Transform<Scalar, D, Eigen::Isometry>& pose_A_C);
 
 /**
- * @brief Rotate the covariance of an \f$\mathbb{R}^3\f$ point given a rotation matrix.
+ * @brief Rotate the covariance of an \f$ \mathbb{R}^3 \f$ point given a rotation matrix.
  *
  * Since points are simply vectors, the application of a rotation matrix means that the returned matrix is
- * \f$R \Sigma R^T\f$, derived from the definition of variance.
+ * \f$ R \Sigma R^T \f$, derived from the definition of variance.
  *
  * @tparam Derived
  * @param covariance
@@ -313,8 +327,8 @@ Pose<D> to_pose_ND(const Pose<3>& pose, [[maybe_unused]] const Eigen::Vector3d& 
 
 /**
  * @brief Compute the adjoint matrix of a transform T (R, t) in SE(D). It can be used to change the reference frame of
- * twists in the form \f$[v, \omega]\f$ (translation before rotation) or \f$[\omega, v]\f$ (rotation before translation)
- * by \f$V_A = Ad_{T_A^B} V_B\f$.
+ * twists in the form \f$ [v, \omega] \f$ (translation before rotation) or \f$ [\omega, v] \f$ (rotation before
+ * translation) by \f$ V_A = Ad_{T_A^B} V_B \f$.
  *
  * Note that the order matters. If we assume a tangent space where translation is before rotation ([t1, t2, r] for SE(2)
  * or [t1, t2, t3, r1, r2, r3] for SE(3)).
@@ -326,8 +340,8 @@ Pose<D> to_pose_ND(const Pose<3>& pose, [[maybe_unused]] const Eigen::Vector3d& 
  *
  * @tparam Scalar
  * @tparam D
- * @param transform \f$T_A^B\f$
- * @return Eigen::Matrix<Scalar, 6, 6> \f$Ad_{T_A^B}\f$
+ * @param transform \f$ T_A^B \f$
+ * @return Eigen::Matrix<Scalar, 6, 6> \f$ Ad_{T_A^B} \f$
  */
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
@@ -339,8 +353,8 @@ Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_tr(
  *
  * @tparam Scalar
  * @tparam D
- * @param transform \f$T_A^B\f$
- * @return Eigen::Matrix<Scalar, 6, 6> \f$Ad_{T_A^B}\f$
+ * @param transform \f$ T_A^B \f$
+ * @return Eigen::Matrix<Scalar, 6, 6> \f$ Ad_{T_A^B} \f$
  */
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)

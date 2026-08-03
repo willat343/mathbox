@@ -2,12 +2,67 @@
 #define MATHBOX_IMPL_GEOMETRY_HPP
 
 #include <cppbox/exceptions.hpp>
+#include <numbers>
 
 #include "mathbox/geometry.hpp"
 #include "mathbox/lerp.hpp"
 #include "mathbox/matrix_operations.hpp"
 
 namespace math {
+
+template<IsVector DerivedU, IsVector DerivedV>
+    requires(std::is_same_v<typename DerivedU::Scalar, typename DerivedV::Scalar> &&
+             DerivedU::SizeAtCompileTime == DerivedV::SizeAtCompileTime)
+typename DerivedU::Scalar angle_between(const Eigen::MatrixBase<DerivedU>& u, const Eigen::MatrixBase<DerivedV>& v) {
+    if constexpr (DerivedU::SizeAtCompileTime == 1) {
+        // Use the sign
+        return u.coeff(0) * v.coeff(0) >= static_cast<typename DerivedU::Scalar>(0)
+                       ? static_cast<typename DerivedU::Scalar>(0)
+                       : std::numbers::pi_v<typename DerivedU::Scalar>;
+    } else if constexpr (DerivedU::SizeAtCompileTime == 2) {
+        // Use atan2 for superior numerical precision
+        return std::atan2(std::abs(u.x() * v.y() - u.y() * v.x()), u.dot(v));
+    } else if constexpr (DerivedU::SizeAtCompileTime == 3) {
+        // Use atan2 for superior numerical precision (alternate: AngleAxis(Quaternion::FromTwoVectors(u,v).angle())
+        return std::atan2(u.cross(v).norm(), u.dot(v));
+    } else {
+        if constexpr (DerivedU::SizeAtCompileTime == Eigen::Dynamic) {
+            if (u.size() == 1) {
+                // Use the sign
+                return u.coeff(0) * v.coeff(0) >= static_cast<typename DerivedU::Scalar>(0)
+                               ? static_cast<typename DerivedU::Scalar>(0)
+                               : std::numbers::pi_v<typename DerivedU::Scalar>;
+
+            } else if (u.size() == 2) {
+                // Use atan2 for superior numerical precision
+                return std::atan2(std::abs(u.x() * v.y() - u.y() * v.x()), u.dot(v));
+
+            } else if (u.size() == 3) {
+                // Use atan2 for superior numerical precision
+                return std::atan2(u.cross(v).norm(), u.dot(v));
+
+            } else {
+                // Fallback to standard cosine similarity
+                return std::acos(std::clamp(u.normalized().dot(v.normalized()), typename DerivedU::Scalar(-1.0),
+                        typename DerivedU::Scalar(1.0)));
+            }
+        } else {
+            // Fallback to standard cosine similarity
+            return std::acos(std::clamp(u.normalized().dot(v.normalized()), typename DerivedU::Scalar(-1.0),
+                    typename DerivedU::Scalar(1.0)));
+        }
+    }
+}
+
+template<typename Scalar>
+constexpr inline Scalar deg2rad(const Scalar degrees) {
+    return degrees * std::numbers::pi_v<Scalar> / static_cast<Scalar>(180);
+}
+
+template<typename Scalar>
+constexpr inline Scalar rad2deg(const Scalar radians) {
+    return radians * static_cast<Scalar>(180) / std::numbers::pi_v<Scalar>;
+}
 
 template<typename Scalar>
 inline Eigen::Transform<Scalar, 3, Eigen::Isometry> change_relative_transform_frame(
