@@ -245,9 +245,21 @@ public:
 
     RunningStatistics<Scalar>& at(const std::size_t i);
 
+    Eigen::Vector<Scalar, Eigen::Dynamic> maximum() const;
+
+    Eigen::Vector<Scalar, Eigen::Dynamic> mean() const;
+
+    Eigen::Vector<Scalar, Eigen::Dynamic> minimum() const;
+
+    std::vector<std::size_t> num_samples() const;
+
     const RunningStatistics<Scalar>& operator[](const std::size_t i) const;
 
     RunningStatistics<Scalar>& operator[](const std::size_t i);
+
+    Eigen::Vector<Scalar, Eigen::Dynamic> population_stddev() const;
+
+    Eigen::Vector<Scalar, Eigen::Dynamic> population_variance() const;
 
     Eigen::Vector<Scalar, Eigen::Dynamic> rms() const;
 

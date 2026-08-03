@@ -217,6 +217,42 @@ inline auto RunningStatisticsVector<Scalar_>::at(const std::size_t i) -> Running
 }
 
 template<std::floating_point Scalar_>
+auto RunningStatisticsVector<Scalar_>::maximum() const -> Eigen::Vector<Scalar, Eigen::Dynamic> {
+    Eigen::Vector<Scalar, Eigen::Dynamic> maximum_(size());
+    for (std::size_t i = 0; i < size(); ++i) {
+        maximum_[i] = statistics_[i].maximum();
+    }
+    return maximum_;
+}
+
+template<std::floating_point Scalar_>
+auto RunningStatisticsVector<Scalar_>::mean() const -> Eigen::Vector<Scalar, Eigen::Dynamic> {
+    Eigen::Vector<Scalar, Eigen::Dynamic> mean_(size());
+    for (std::size_t i = 0; i < size(); ++i) {
+        mean_[i] = statistics_[i].mean();
+    }
+    return mean_;
+}
+
+template<std::floating_point Scalar_>
+auto RunningStatisticsVector<Scalar_>::minimum() const -> Eigen::Vector<Scalar, Eigen::Dynamic> {
+    Eigen::Vector<Scalar, Eigen::Dynamic> minimum_(size());
+    for (std::size_t i = 0; i < size(); ++i) {
+        minimum_[i] = statistics_[i].minimum();
+    }
+    return minimum_;
+}
+
+template<std::floating_point Scalar_>
+std::vector<std::size_t> RunningStatisticsVector<Scalar_>::num_samples() const {
+    std::vector<std::size_t> num_samples_(size());
+    for (std::size_t i = 0; i < size(); ++i) {
+        num_samples_[i] = statistics_[i].num_samples();
+    }
+    return num_samples_;
+}
+
+template<std::floating_point Scalar_>
 inline auto RunningStatisticsVector<Scalar_>::operator[](const std::size_t i) const
         -> const RunningStatistics<Scalar>& {
     return statistics_[i];
@@ -225,6 +261,24 @@ inline auto RunningStatisticsVector<Scalar_>::operator[](const std::size_t i) co
 template<std::floating_point Scalar_>
 inline auto RunningStatisticsVector<Scalar_>::operator[](const std::size_t i) -> RunningStatistics<Scalar>& {
     return statistics_[i];
+}
+
+template<std::floating_point Scalar_>
+auto RunningStatisticsVector<Scalar_>::population_stddev() const -> Eigen::Vector<Scalar, Eigen::Dynamic> {
+    Eigen::Vector<Scalar, Eigen::Dynamic> population_stddev_(size());
+    for (std::size_t i = 0; i < size(); ++i) {
+        population_stddev_[i] = statistics_[i].population_stddev();
+    }
+    return population_stddev_;
+}
+
+template<std::floating_point Scalar_>
+auto RunningStatisticsVector<Scalar_>::population_variance() const -> Eigen::Vector<Scalar, Eigen::Dynamic> {
+    Eigen::Vector<Scalar, Eigen::Dynamic> population_variance_(size());
+    for (std::size_t i = 0; i < size(); ++i) {
+        population_variance_[i] = statistics_[i].population_variance();
+    }
+    return population_variance_;
 }
 
 template<std::floating_point Scalar_>
