@@ -21,6 +21,16 @@ template<typename Scalar>
 constexpr Scalar rad2deg(const Scalar radians);
 
 /**
+ * @brief Converts a quaternion to roll-pitch-yaw angles (in radians), in the order of x-axis, y-axis, z-axis (0, 1, 2).
+ *
+ * @tparam Scalar
+ * @param q quaternion
+ * @return constexpr Eigen::Vector<Scalar, 3>
+ */
+template<typename Scalar>
+constexpr Eigen::Vector<Scalar, 3> rpy(const Eigen::Quaternion<Scalar>& q);
+
+/**
  * @brief Given a relative transform between any two timestamps in the reference frame of A, and a rigid body transform
  * from some other fixed frame B on the body to A, this function computes the relative transform in the reference frame
  * of B.

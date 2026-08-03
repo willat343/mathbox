@@ -65,6 +65,11 @@ constexpr inline Scalar rad2deg(const Scalar radians) {
 }
 
 template<typename Scalar>
+constexpr inline Eigen::Vector<Scalar, 3> rpy(const Eigen::Quaternion<Scalar>& q) {
+    return q.toRotationMatrix().eulerAngles(0, 1, 2);
+}
+
+template<typename Scalar>
 inline Eigen::Transform<Scalar, 3, Eigen::Isometry> change_relative_transform_frame(
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& relative_transform_A,
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& rigid_transform_B_A) {
