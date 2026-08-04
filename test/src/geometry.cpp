@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
+
 #include "mathbox/matrix_operations.hpp"
 
 void check_adjoint_SE_rt_blocks(const Eigen::Matrix<double, 6, 6>& adjoint_SE, const Eigen::Isometry3d& transform) {
@@ -100,7 +102,7 @@ TEST(compute_constant_rates, compute_constant_rates_1) {
     const Eigen::Vector3d rotation_axis = Eigen::Vector3d(0.8, 0.1, 0.05).normalized();
     const double rotation_angle_rate{0.492};
     const Eigen::Vector3d linear_velocity{1.0, 2.0, 3.0};
-    const double dt = M_PI / rotation_angle_rate;  // Too large a dt will invalidate test because the rotation will wrap
+    const double dt = std::numbers::pi / rotation_angle_rate;  // Too large a dt will invalidate test because the rotation will wrap
     const Eigen::Vector3d angular_velocity = rotation_angle_rate * rotation_axis;
     const Eigen::Isometry3d pose = Eigen::Translation<double, 3>{linear_velocity * dt} *
                                    Eigen::AngleAxisd{rotation_angle_rate * dt, rotation_axis};
@@ -182,7 +184,7 @@ TEST(rotate_point_covariance, identity_rotation) {
 TEST(rotate_point_covariance, yaw_90_x_covariance) {
     Eigen::Matrix<double, 3, 3> covariance;
     covariance << 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-    Eigen::AngleAxisd rotation = Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitZ());
+    Eigen::AngleAxisd rotation = Eigen::AngleAxisd(std::numbers::pi / 2.0, Eigen::Vector3d::UnitZ());
     Eigen::Matrix<double, 3, 3> expected_covariance;
     expected_covariance << 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0;
     EXPECT_TRUE(expected_covariance.isApprox(math::rotate_point_covariance(covariance, rotation)));
@@ -191,7 +193,7 @@ TEST(rotate_point_covariance, yaw_90_x_covariance) {
 TEST(rotate_point_covariance, yaw_180_x_covariance) {
     Eigen::Matrix<double, 3, 3> covariance;
     covariance << 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-    Eigen::AngleAxisd rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
+    Eigen::AngleAxisd rotation = Eigen::AngleAxisd(std::numbers::pi, Eigen::Vector3d::UnitZ());
     Eigen::Matrix<double, 3, 3> expected_covariance;
     expected_covariance << 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
     EXPECT_TRUE(expected_covariance.isApprox(math::rotate_point_covariance(covariance, rotation)));
@@ -200,7 +202,7 @@ TEST(rotate_point_covariance, yaw_180_x_covariance) {
 TEST(rotate_point_covariance, yaw_270_x_covariance) {
     Eigen::Matrix<double, 3, 3> covariance;
     covariance << 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-    Eigen::AngleAxisd rotation = Eigen::AngleAxisd(1.5 * M_PI, Eigen::Vector3d::UnitZ());
+    Eigen::AngleAxisd rotation = Eigen::AngleAxisd(1.5 * std::numbers::pi, Eigen::Vector3d::UnitZ());
     Eigen::Matrix<double, 3, 3> expected_covariance;
     expected_covariance << 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0;
     EXPECT_TRUE(expected_covariance.isApprox(math::rotate_point_covariance(covariance, rotation)));
@@ -210,7 +212,7 @@ TEST(rotate_point_covariance, yaw_45_x_covariance) {
     const double var = 0.5;
     Eigen::Matrix<double, 3, 3> covariance;
     covariance << var, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-    Eigen::AngleAxisd rotation = Eigen::AngleAxisd(M_PI / 4.0, Eigen::Vector3d::UnitZ());
+    Eigen::AngleAxisd rotation = Eigen::AngleAxisd(std::numbers::pi / 4.0, Eigen::Vector3d::UnitZ());
     Eigen::Vector3d xy = Eigen::Vector3d(1.0 / std::sqrt(2.0), 1.0 / std::sqrt(2.0), 0.0);
     Eigen::Matrix<double, 3, 3> expected_covariance = var * xy * xy.transpose();
     EXPECT_TRUE(expected_covariance.isApprox(math::rotate_point_covariance(covariance, rotation)));
