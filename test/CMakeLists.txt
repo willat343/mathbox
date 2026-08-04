@@ -3,6 +3,7 @@ enable_testing()
 
 # Build Example
 add_executable(${PROJECT_NAME}_tests
+    src/axis.cpp
     src/covariance.cpp
     src/decompose.cpp
     src/geometry.cpp
