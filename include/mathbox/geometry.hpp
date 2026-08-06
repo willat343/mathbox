@@ -9,14 +9,37 @@
 
 namespace math {
 
+/**
+ * @brief Compute the angle between two vectors.
+ *
+ * @tparam DerivedU
+ * @tparam DerivedV
+ * @param u
+ * @param v
+ * @return DerivedU::Scalar angle, in radians, in [0, pi]
+ */
 template<IsVector DerivedU, IsVector DerivedV>
     requires(std::is_same_v<typename DerivedU::Scalar, typename DerivedV::Scalar> &&
              DerivedU::SizeAtCompileTime == DerivedV::SizeAtCompileTime)
 typename DerivedU::Scalar angle_between(const Eigen::MatrixBase<DerivedU>& u, const Eigen::MatrixBase<DerivedV>& v);
 
+/**
+ * @brief Convert an angle from degrees to radians.
+ *
+ * @tparam Scalar
+ * @param degrees
+ * @return constexpr Scalar
+ */
 template<typename Scalar>
 constexpr Scalar deg2rad(const Scalar degrees);
 
+/**
+ * @brief Convert an angle from radians to degrees.
+ *
+ * @tparam Scalar
+ * @param radians
+ * @return constexpr Scalar
+ */
 template<typename Scalar>
 constexpr Scalar rad2deg(const Scalar radians);
 
@@ -272,6 +295,9 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
  *
  * @tparam DerivedOmega
  * @tparam DerivedV
+ * @param w
+ * @param v
+ * @return Eigen::Vector<typename DerivedOmega::Scalar, 2>
  */
 template<typename DerivedOmega, typename DerivedV>
     requires(DerivedOmega::RowsAtCompileTime == 1 && DerivedOmega::ColsAtCompileTime == 1 &&
@@ -285,6 +311,9 @@ constexpr Eigen::Vector<typename DerivedOmega::Scalar, 2> so_cross(const Eigen::
  *
  * @tparam DerivedOmega
  * @tparam DerivedV
+ * @param w
+ * @param v
+ * @return Eigen::Vector<typename DerivedOmega::Scalar, 3>
  */
 template<typename DerivedOmega, typename DerivedV>
     requires(DerivedOmega::RowsAtCompileTime == 3 && DerivedOmega::ColsAtCompileTime == 1 &&
@@ -293,10 +322,24 @@ template<typename DerivedOmega, typename DerivedV>
 constexpr Eigen::Vector<typename DerivedOmega::Scalar, 3> so_cross(const Eigen::MatrixBase<DerivedOmega>& w,
         const Eigen::MatrixBase<DerivedV>& v);
 
+/**
+ * @brief Compute the so(2) vector from its skew-symmetric matrix representation.
+ *
+ * @tparam Derived
+ * @param skew
+ * @return Eigen::Vector<typename Derived::Scalar, 1>
+ */
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 2 && Derived::ColsAtCompileTime == 2)
 constexpr Eigen::Vector<typename Derived::Scalar, 1> so_from_skew(const Eigen::MatrixBase<Derived>& skew);
 
+/**
+ * @brief Compute the so(3) vector from its skew-symmetric matrix representation.
+ *
+ * @tparam Derived
+ * @param skew
+ * @return Eigen::Vector<typename Derived::Scalar, 3>
+ */
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 3)
 constexpr Eigen::Vector<typename Derived::Scalar, 3> so_from_skew(const Eigen::MatrixBase<Derived>& skew);
@@ -305,6 +348,8 @@ constexpr Eigen::Vector<typename Derived::Scalar, 3> so_from_skew(const Eigen::M
  * @brief Compute the skew symmetric matrix for the 2D so Lie algebra.
  *
  * @tparam Derived
+ * @param v
+ * @return Eigen::Matrix<typename Derived::Scalar, 2, 2>
  */
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 1 && Derived::ColsAtCompileTime == 1)
@@ -316,6 +361,8 @@ constexpr Eigen::Matrix<typename Derived::Scalar, 2, 2> so_skew(const Eigen::Mat
  * Equivalent to `skew_symmetric_cross(v)`.
  *
  * @tparam Derived
+ * @param v
+ * @return Eigen::Matrix<typename Derived::Scalar, 3, 3>
  */
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1)

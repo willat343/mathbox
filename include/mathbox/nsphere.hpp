@@ -24,7 +24,7 @@ namespace math {
  * mathematics often has \f$r, \theta, \phi\f$ representing radius, azimuthal angle (xy-plane) and polar angle (any
  * plane with the z-axis) respectively, and physics often has \f$r, \theta, \phi\f$ representing radius, polar angle
  * (any plane with the z-axis) and azimuthal angle (xy-plane) respectively. One reason for this is how `atan2` is
- * typicall defined. Another reason is because the generalisation to n-dimensions is inconsistent with the mathematics
+ * typically defined. Another reason is because the generalisation to n-dimensions is inconsistent with the mathematics
  * or physics conventions in 3D. If the spherical coordinates are defined on those planes, then the returned cartesian
  * coordinates are \f$\begin{bmatrix}z & x & y\end{bmatrix}^T\f$. Note that the 2D case is consistent with the
  * n-dimensional generalisation, returning \f$\begin{bmatrix}x & y\end{bmatrix}^T\f$.
@@ -66,7 +66,7 @@ Eigen::Matrix<Scalar, D, 1> spherical_angles_to_unit_cartesian(const Eigen::Matr
 /**
  * @brief Convert n-dimensional spherical coordinates expressed in form \f$\begin{bmatrix}r & \theta_1 & \dots &
  * \theta_{D-1}\end{bmatrix}^T\f$ where \f$r\f$ is the radius, \f$\theta_1, \dots, \theta_{D-2}\f$ are angles in range
- * \f$[0, \pi]\f$ and \f$theta_{D-1}\f$ is in range\f$[-\pi, \pi]\f$, to cartesian coordinates, as:
+ * \f$[0, \pi]\f$ and \f$\theta_{D-1}\f$ is in range \f$[-\pi, \pi]\f$, to cartesian coordinates, as:
  *
  * \f[
  *      \begin{bmatrix}x_1 \\ x_2 \\ \vdots \\ x_{D-1} \\ x_D\end{bmatrix} = r \begin{bmatrix}\cos(\theta_1)

@@ -92,14 +92,14 @@ public:
     Scalar population_stddev() const;
 
     /**
-     * @brief Get population variance
+     * @brief Get population variance.
      *
      * @return Scalar
      */
     Scalar population_variance() const;
 
     /**
-     * @brief Get mutable population variance
+     * @brief Get mutable population variance.
      *
      * @return Scalar&
      */
@@ -137,9 +137,9 @@ public:
     /**
      * @brief Construct statistics with known (current) mean and variance from a certain number of samples.
      *
-     * @param num_samples_
      * @param mean_
      * @param population_variance_
+     * @param num_samples_
      */
     explicit RunningStatistics(const Scalar mean_, const Scalar population_variance_, const std::size_t num_samples_);
 
@@ -159,7 +159,7 @@ public:
     /**
      * @brief Get number of samples.
      *
-     * @return Scalar
+     * @return std::size_t
      */
     std::size_t num_samples() const;
 
@@ -230,46 +230,150 @@ private:
     Scalar sum_of_squares_;
 };
 
+/**
+ * @brief A fixed-size vector of independent RunningStatistics, one per element (dimension), for accumulating
+ * per-element statistics of a stream of vector-valued samples.
+ *
+ * @tparam Scalar_
+ */
 template<std::floating_point Scalar_>
 class RunningStatisticsVector {
 public:
+    /**
+     * @brief Floating-point scalar type.
+     *
+     */
     using Scalar = Scalar_;
 
+    /**
+     * @brief Construct a vector of `size` zero-initialised running statistics.
+     *
+     * @param size
+     */
     explicit RunningStatisticsVector(const std::size_t size);
 
+    /**
+     * @brief Get the underlying vector of running statistics.
+     *
+     * @return const std::vector<RunningStatistics<Scalar>>&
+     */
     const std::vector<RunningStatistics<Scalar>>& statistics() const;
 
+    /**
+     * @brief Get the mutable underlying vector of running statistics.
+     *
+     * @return std::vector<RunningStatistics<Scalar>>&
+     */
     std::vector<RunningStatistics<Scalar>>& statistics();
 
+    /**
+     * @brief Get the running statistics at index `i`, with bounds checking.
+     *
+     * @param i
+     * @return const RunningStatistics<Scalar>&
+     */
     const RunningStatistics<Scalar>& at(const std::size_t i) const;
 
+    /**
+     * @brief Get the mutable running statistics at index `i`, with bounds checking.
+     *
+     * @param i
+     * @return RunningStatistics<Scalar>&
+     */
     RunningStatistics<Scalar>& at(const std::size_t i);
 
+    /**
+     * @brief Get the maximum of each element's running statistics.
+     *
+     * @return Eigen::Vector<Scalar, Eigen::Dynamic>
+     */
     Eigen::Vector<Scalar, Eigen::Dynamic> maximum() const;
 
+    /**
+     * @brief Get the mean of each element's running statistics.
+     *
+     * @return Eigen::Vector<Scalar, Eigen::Dynamic>
+     */
     Eigen::Vector<Scalar, Eigen::Dynamic> mean() const;
 
+    /**
+     * @brief Get the minimum of each element's running statistics.
+     *
+     * @return Eigen::Vector<Scalar, Eigen::Dynamic>
+     */
     Eigen::Vector<Scalar, Eigen::Dynamic> minimum() const;
 
+    /**
+     * @brief Get the number of samples of each element's running statistics.
+     *
+     * @return std::vector<std::size_t>
+     */
     std::vector<std::size_t> num_samples() const;
 
+    /**
+     * @brief Get the running statistics at index `i`, without bounds checking.
+     *
+     * @param i
+     * @return const RunningStatistics<Scalar>&
+     */
     const RunningStatistics<Scalar>& operator[](const std::size_t i) const;
 
+    /**
+     * @brief Get the mutable running statistics at index `i`, without bounds checking.
+     *
+     * @param i
+     * @return RunningStatistics<Scalar>&
+     */
     RunningStatistics<Scalar>& operator[](const std::size_t i);
 
+    /**
+     * @brief Get the population standard deviation of each element's running statistics.
+     *
+     * @return Eigen::Vector<Scalar, Eigen::Dynamic>
+     */
     Eigen::Vector<Scalar, Eigen::Dynamic> population_stddev() const;
 
+    /**
+     * @brief Get the population variance of each element's running statistics.
+     *
+     * @return Eigen::Vector<Scalar, Eigen::Dynamic>
+     */
     Eigen::Vector<Scalar, Eigen::Dynamic> population_variance() const;
 
+    /**
+     * @brief Get the root mean square of each element's running statistics.
+     *
+     * @return Eigen::Vector<Scalar, Eigen::Dynamic>
+     */
     Eigen::Vector<Scalar, Eigen::Dynamic> rms() const;
 
+    /**
+     * @brief Get the number of elements (dimensions).
+     *
+     * @return std::size_t
+     */
     std::size_t size() const;
 
+    /**
+     * @brief Update each element's running statistics with the corresponding component of `samples`.
+     *
+     * @param samples
+     */
     void update(const Eigen::Vector<Scalar, Eigen::Dynamic>& samples);
 
+    /**
+     * @brief Update each element's running statistics with the corresponding component of `samples`.
+     *
+     * @param samples
+     */
     void update(const std::vector<Scalar>& samples);
 
-    void update(const std::vector<RunningStatistics<Scalar>>& statistics__);
+    /**
+     * @brief Update each element's running statistics with the corresponding element of `other_statistics`.
+     *
+     * @param other_statistics
+     */
+    void update(const std::vector<RunningStatistics<Scalar>>& other_statistics);
 
 private:
     std::vector<RunningStatistics<Scalar>> statistics_;

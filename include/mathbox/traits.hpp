@@ -309,7 +309,7 @@ struct is_same_or_const_map<T, Base,
  * ```
  *
  * This concept is stricter than `IsSameOrAnyMap` since it does not allow Eigen non-const maps (Eigen::Map<...>) even
- * though typical usages passes these types by const reference. Use `IsSameOrAnyMap` for more flexibility.
+ * though typical usage passes these types by const reference. Use `IsSameOrAnyMap` for more flexibility.
  *
  * @tparam T type
  * @tparam Base base type
@@ -329,8 +329,8 @@ struct is_same_or_any_map<T, Base,
                          std::is_same_v<T, Eigen::Map<const Base>>>> : std::true_type {};
 
 /**
- * @brief Same or any Eigen non-const map (Eigen::Map<...> or Eigen::Map<const ...>) concept. By collecting these
- * types, this concept allows for more flexible passing of parameters that are meant to be passed by const reference.
+ * @brief Same or any Eigen map (Eigen::Map<...> or Eigen::Map<const ...>) concept. By collecting these types, this
+ * concept allows for more flexible passing of parameters that are meant to be passed by const reference.
  *
  * Types that obey this constraint are typically passed as const lvalue references, e.g.
  * ```

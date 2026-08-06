@@ -191,7 +191,8 @@ Scalar stiffness_from_variance(const Scalar variance);
  * @tparam DerivedLinearFunctionInverse
  * @param stiffness \f$ S \f$, the original stiffness
  * @param linear_function_inverse \f$ A^{-1} \f$, the inverse of the linear function
- * @return Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> \f$ S' \f$, the new stiffness
+ * @return Eigen::Matrix<typename DerivedStiffness::Scalar, DerivedStiffness::RowsAtCompileTime,
+ * DerivedLinearFunctionInverse::ColsAtCompileTime> \f$ S' \f$, the new stiffness
  */
 template<typename DerivedStiffness, typename DerivedLinearFunctionInverse>
     requires(std::is_same_v<typename DerivedStiffness::Scalar, typename DerivedLinearFunctionInverse::Scalar> &&

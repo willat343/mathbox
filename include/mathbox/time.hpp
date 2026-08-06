@@ -9,7 +9,7 @@
 namespace math {
 
 /**
- * @brief Generate a linearly spaced dynamically-sized matrix from an interpolation step. The number of points are
+ * @brief Generate a linearly spaced dynamically-sized matrix from an interpolation step. The number of points is
  * chosen such that the actual interpolation step is greater than or equal to `step`.
  *
  * The first element will be `start` and the last element will be `end`.
@@ -17,7 +17,7 @@ namespace math {
  * Overload of math::lin_spaced_vector for Time and Duration.
  *
  * @tparam Time
- * @tparam Time::Duration
+ * @tparam Duration
  * @param step
  * @param start
  * @param end
@@ -47,7 +47,7 @@ std::vector<Time> range(const Duration step, const Time start, const Time end);
 /**
  * @brief Convert vector of seconds to vector of times (since clock epoch).
  *
- * @tparam Time Time type satisfying `std::is_arithemetic_v` or `is_time_point_v`
+ * @tparam Time Time type satisfying `std::is_arithmetic_v` or `is_time_point_v`
  * @tparam Scalar
  * @param seconds
  * @return std::vector<Time>

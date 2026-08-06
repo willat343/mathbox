@@ -62,12 +62,13 @@ void make_symmetric_inplace(Eigen::MatrixBase<Derived>& m);
  * @brief Return matrix `m` with rows removed where corresponding row of `v` is less than `threshold`. The number of
  * rows in `m` and `v` must be equal.
  *
+ * @tparam DerivedMatrix
+ * @tparam DerivedVector
  * @param m
  * @param v
  * @param threshold
- * @return Eigen::MatrixXd
+ * @return Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, DerivedMatrix::ColsAtCompileTime>
  */
-
 template<typename DerivedMatrix, typename DerivedVector>
     requires(std::is_same_v<typename DerivedMatrix::Scalar, typename DerivedVector::Scalar>)
 Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, DerivedMatrix::ColsAtCompileTime>

@@ -27,8 +27,6 @@ public:
      * @tparam Derived
      * @param matrix
      * @param skip_checks
-     *
-     * @tparam Derived
      */
     template<typename Derived>
     explicit PositiveSemiDefiniteMatrix(const Eigen::MatrixBase<Derived>& matrix, const bool skip_checks = false)

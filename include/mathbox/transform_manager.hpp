@@ -190,6 +190,7 @@ private:
          * @brief Construct a new FrameNode.
          *
          * @param frame_name_
+         * @param parent_transform_
          */
         explicit FrameNode(const std::string& frame_name_, TransformEdge* parent_transform_);
 
@@ -228,7 +229,7 @@ private:
         /**
          * @brief Get the child transforms.
          *
-         * @return std::map<std::string, std::unique_ptr<TransformEdge>>&
+         * @return const std::map<std::string, std::unique_ptr<TransformEdge>>&
          */
         const std::map<std::string, std::unique_ptr<TransformEdge>>& child_transforms() const;
 
@@ -402,7 +403,7 @@ private:
          * @brief Construct a new TransformEdge.
          *
          * @param parent_frame_
-         * @param child_frame_
+         * @param child_frame_name
          * @param transform_
          */
         explicit TransformEdge(const FrameNode& parent_frame_, const std::string& child_frame_name,
@@ -430,7 +431,7 @@ private:
         const FrameNode& parent_frame() const;
 
         /**
-         * @brief Get te parent FrameNode.
+         * @brief Get the parent FrameNode.
          *
          * @return FrameNode&
          */

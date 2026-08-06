@@ -188,7 +188,7 @@ auto TransformManager<D_>::transform(const std::string& parent_frame, const std:
             // Acquire transform from common/child FrameNode to parent frame
             transform_common_parent = current_frame->next_transform(parent_frame).transform_to(parent_frame);
         } else {
-            // Niether parent nor child found so continue to traverse to find last common parent FrameNode
+            // Neither parent nor child found so continue to traverse to find last common parent FrameNode
             const std::string next_child_for_parent_frame = current_frame->next_child_frame_name(parent_frame);
             const std::string next_child_for_child_frame = current_frame->next_child_frame_name(child_frame);
             if (next_child_for_parent_frame == next_child_for_child_frame) {

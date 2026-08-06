@@ -31,7 +31,7 @@ template<typename Derived>
 bool is_positive_definite(const Eigen::MatrixBase<Derived>& m);
 
 /**
- * @brief Check is matrix is positive-semidefinite. This funtion first checks if the matrix is symmetric, before
+ * @brief Check if matrix is positive-semidefinite. This function first checks if the matrix is symmetric, before
  * checking for positive-semidefiniteness through the SelfAdjointEigenSolver.
  *
  * @tparam Derived
@@ -66,14 +66,39 @@ template<typename Derived>
 bool is_symmetric(const Eigen::DenseBase<Derived>& m,
         const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
 
+/**
+ * @brief Check if a matrix is upper triangular, up to some level of precision (default = exact).
+ *
+ * @tparam Derived
+ * @param m
+ * @param precision
+ * @return true
+ * @return false
+ */
 template<typename Derived>
 bool is_upper_triangular(const Eigen::DenseBase<Derived>& m,
         const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
 
+/**
+ * @brief Count the number of all-zero columns in a matrix, up to some level of precision (default = exact).
+ *
+ * @tparam Derived
+ * @param m
+ * @param precision
+ * @return int
+ */
 template<typename Derived>
 int num_zero_columns(const Eigen::MatrixBase<Derived>& m,
         const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
 
+/**
+ * @brief Count the number of all-zero rows in a matrix, up to some level of precision (default = exact).
+ *
+ * @tparam Derived
+ * @param m
+ * @param precision
+ * @return int
+ */
 template<typename Derived>
 int num_zero_rows(const Eigen::MatrixBase<Derived>& m,
         const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
