@@ -9,6 +9,7 @@ add_executable(${PROJECT_NAME}_tests
     src/geometry.cpp
     src/integrator.cpp
     src/matrix_operations.cpp
+    src/matrix_properties.cpp
     src/normal.cpp
     src/nsphere.cpp
     src/statistics.cpp

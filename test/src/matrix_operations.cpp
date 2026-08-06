@@ -32,15 +32,6 @@ TEST(make_symmetric, 2x2) {
     EXPECT_TRUE(result.isApprox(result.transpose()));
 }
 
-TEST(make_symmetric_inplace, 2x2) {
-    Eigen::Matrix2d m;
-    m << 1.0, 2.0, 4.0, 3.0;
-    Eigen::Matrix2d expected;
-    expected << 1.0, 3.0, 3.0, 3.0;
-    math::make_symmetric_inplace(m);
-    EXPECT_TRUE(m.isApprox(expected));
-}
-
 TEST(remove_rows_by_threshold, keeps_rows_greater_equal_threshold) {
     Eigen::MatrixXd m(4, 2);
     m << 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0;

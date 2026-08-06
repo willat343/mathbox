@@ -49,6 +49,13 @@ bool is_symmetric(const Eigen::DenseBase<Derived>& m, const typename Derived::Sc
 }
 
 template<typename Derived>
+inline typename Derived::Scalar relative_asymmetry(const Eigen::MatrixBase<Derived>& m) {
+    const typename Derived::Scalar m_norm = m.norm();
+    return m_norm > static_cast<typename Derived::Scalar>(0) ? (m - m.transpose()).norm() / m_norm
+                                                             : static_cast<typename Derived::Scalar>(0);
+}
+
+template<typename Derived>
 bool is_upper_triangular(const Eigen::DenseBase<Derived>& m, const typename Derived::Scalar precision) {
     for (Eigen::Index r = 0; r < m.rows(); ++r) {
         for (Eigen::Index c = 0; c < r; ++c) {

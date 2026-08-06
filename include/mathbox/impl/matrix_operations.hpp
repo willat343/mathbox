@@ -5,6 +5,7 @@
 
 #include "mathbox/matrix_diagnostics.hpp"
 #include "mathbox/matrix_operations.hpp"
+#include "mathbox/matrix_properties.hpp"
 
 namespace math {
 
@@ -39,11 +40,6 @@ constexpr typename Derived::PlainObject make_symmetric(const Eigen::MatrixBase<D
     return 0.5 * (m + m.transpose());
 }
 
-template<typename Derived>
-void make_symmetric_inplace(Eigen::MatrixBase<Derived>& m) {
-    m = 0.5 * (m + m.transpose());
-}
-
 template<typename DerivedMatrix, typename DerivedVector>
     requires(std::is_same_v<typename DerivedMatrix::Scalar, typename DerivedVector::Scalar>)
 Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, DerivedMatrix::ColsAtCompileTime>
@@ -51,7 +47,8 @@ remove_rows_by_threshold(const Eigen::MatrixBase<DerivedMatrix>& m, const Eigen:
         const typename DerivedMatrix::Scalar threshold) {
     throw_if(m.rows() != v.rows(), "Number of rows must match.");
     throw_if(v.cols() != 1, "Vector must have 1 column.");
-    Eigen::MatrixXd m_reduced(m.rows(), m.cols());
+    Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, DerivedMatrix::ColsAtCompileTime> m_reduced(m.rows(),
+            m.cols());
     int m_reduced_rows{0};
     for (int r = 0; r < m.rows(); ++r) {
         if (v[r] >= threshold) {
@@ -59,7 +56,7 @@ remove_rows_by_threshold(const Eigen::MatrixBase<DerivedMatrix>& m, const Eigen:
             ++m_reduced_rows;
         }
     }
-    m_reduced.resize(m_reduced_rows, m.cols());
+    m_reduced.conservativeResize(m_reduced_rows, m.cols());
     return m_reduced;
 }
 
@@ -99,13 +96,10 @@ inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const
           H.bottomLeftCorner(lower_block_size, upper_block_size) * H_mm_inv_times_H_mk;
     b_p = b.tail(lower_block_size) - H.bottomLeftCorner(lower_block_size, upper_block_size) * H_mm_inv_times_b_m;
 
-    // H may not be exactly symmetric due to numerical precision, so enforce symmetry. H_p.norm() == 0 implies H_p is
-    // exactly the zero matrix, hence exactly symmetric, so the relative asymmetry check is skipped to avoid a division
-    // by zero.
-    throw_if(H_p.norm() > 0.0 && (H_p - H_p.transpose()).norm() / H_p.norm() >= symmetry_violation_threshold,
-            "Symmetry threshold violated for H_p.");
-    math::make_symmetric_inplace(H_p);
-    assert(H_p.norm() == 0.0 || (H_p - H_p.transpose()).norm() / H_p.norm() < symmetry_violation_threshold);
+    // H may not be exactly symmetric due to numerical precision, so enforce symmetry
+    throw_if(math::relative_asymmetry(H_p) >= symmetry_violation_threshold, "Symmetry threshold violated for H_p.");
+    H_p = math::make_symmetric(H_p);
+    assert(math::relative_asymmetry(H_p) < symmetry_violation_threshold);
 
     // Return the damping
     return damping;

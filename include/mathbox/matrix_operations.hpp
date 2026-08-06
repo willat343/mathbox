@@ -50,15 +50,6 @@ template<typename Derived>
 constexpr typename Derived::PlainObject make_symmetric(const Eigen::MatrixBase<Derived>& m);
 
 /**
- * @brief Same as `make_symmetric` but operates in-place on matrix `m`.
- *
- * @tparam Derived
- * @param m
- */
-template<typename Derived>
-void make_symmetric_inplace(Eigen::MatrixBase<Derived>& m);
-
-/**
  * @brief Return matrix `m` with rows removed where corresponding row of `v` is less than `threshold`. The number of
  * rows in `m` and `v` must be equal.
  *
