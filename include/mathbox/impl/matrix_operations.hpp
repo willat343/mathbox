@@ -79,7 +79,7 @@ inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const
         const int upper_block_size, Eigen::MatrixXd& H_p, Eigen::VectorXd& b_p, const double damping_factor,
         const double symmetry_violation_threshold) {
     assert(H.rows() == H.cols() && H.rows() == b.size());
-    assert(upper_block_size > 0 && upper_block_size < b.size() - 1);
+    assert(upper_block_size > 0 && upper_block_size < b.size());
     const int lower_block_size = b.size() - upper_block_size;
 
     // Apply damping to H_mm, addressing weakly constrained
@@ -99,11 +99,13 @@ inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const
           H.bottomLeftCorner(lower_block_size, upper_block_size) * H_mm_inv_times_H_mk;
     b_p = b.tail(lower_block_size) - H.bottomLeftCorner(lower_block_size, upper_block_size) * H_mm_inv_times_b_m;
 
-    // H may not be exactly symmetric due to numerical precision, so enforce symmetry
-    throw_if((H_p - H_p.transpose()).norm() / H_p.norm() >= symmetry_violation_threshold,
+    // H may not be exactly symmetric due to numerical precision, so enforce symmetry. H_p.norm() == 0 implies H_p is
+    // exactly the zero matrix, hence exactly symmetric, so the relative asymmetry check is skipped to avoid a division
+    // by zero.
+    throw_if(H_p.norm() > 0.0 && (H_p - H_p.transpose()).norm() / H_p.norm() >= symmetry_violation_threshold,
             "Symmetry threshold violated for H_p.");
     math::make_symmetric_inplace(H_p);
-    assert((H_p - H_p.transpose()).norm() / H_p.norm() < symmetry_violation_threshold);
+    assert(H_p.norm() == 0.0 || (H_p - H_p.transpose()).norm() / H_p.norm() < symmetry_violation_threshold);
 
     // Return the damping
     return damping;

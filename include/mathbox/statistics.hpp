@@ -3,7 +3,7 @@
 
 #include <Eigen/Core>
 #include <concepts>
-#include <cstdint>
+#include <cstddef>
 #include <vector>
 
 namespace math {

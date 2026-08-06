@@ -1,8 +1,12 @@
 #ifndef MATHBOX_IMPL_TRANSFORM_MANAGER_HPP
 #define MATHBOX_IMPL_TRANSFORM_MANAGER_HPP
 
+#include <algorithm>
+#include <cassert>
 #include <cppbox/exceptions.hpp>
+#include <iterator>
 #include <sstream>
+#include <utility>
 
 #include "mathbox/transform_manager.hpp"
 
@@ -259,7 +263,7 @@ template<int D_>
     requires(math::is_2d_or_3d<D_>)
 inline void TransformManager<D_>::FrameNode::add_next_child_frame_for_frame(const std::string& frame_name,
         const std::string& child_frame_name) {
-    next_child_frame_for_frame.emplace(frame_name, child_frame_name);
+    next_child_frame_for_frame_.emplace(frame_name, child_frame_name);
 }
 
 template<int D_>
@@ -321,7 +325,7 @@ inline bool TransformManager<D_>::FrameNode::has_frame(const std::string& query_
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
 inline bool TransformManager<D_>::FrameNode::has_child_frame(const std::string& query_frame_name) const {
-    return next_child_frame_for_frame.find(query_frame_name) != next_child_frame_for_frame.end();
+    return next_child_frame_for_frame_.find(query_frame_name) != next_child_frame_for_frame_.end();
 }
 
 template<int D_>
@@ -345,7 +349,7 @@ template<int D_>
     requires(math::is_2d_or_3d<D_>)
 inline const std::string& TransformManager<D_>::FrameNode::next_child_frame_name(
         const std::string& query_frame_name) const {
-    return next_child_frame_for_frame.at(query_frame_name);
+    return next_child_frame_for_frame_.at(query_frame_name);
 }
 
 template<int D_>

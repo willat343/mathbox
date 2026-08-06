@@ -1,13 +1,11 @@
 #ifndef MATHBOX_TRANSFORM_MANAGER_HPP
 #define MATHBOX_TRANSFORM_MANAGER_HPP
 
-#include <Eigen/Geometry>
 #include <deque>
 #include <map>
 #include <memory>
 #include <ostream>
 #include <string>
-#include <type_traits>
 
 #include "mathbox/traits.hpp"
 #include "mathbox/types.hpp"
@@ -390,7 +388,7 @@ private:
          * This avoids the need for tree search algorithms.
          *
          */
-        std::map<std::string, std::string> next_child_frame_for_frame;
+        std::map<std::string, std::string> next_child_frame_for_frame_;
     };
 
     /**

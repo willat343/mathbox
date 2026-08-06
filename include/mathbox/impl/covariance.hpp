@@ -15,7 +15,7 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Eig
     requires(SizeAtCompileTime == 1 || Derived::ColsAtCompileTime != 1)
     : Base(matrix) {
     throw_if(!skip_checks && !math::is_positive_semidefinite(matrix.eval()),
-            "Cannnot initialise PositiveSemiDefiniteMatrix with matrix that isn't positive semi-definite.");
+            "Cannot initialise PositiveSemiDefiniteMatrix with matrix that isn't positive semi-definite.");
 }
 
 template<typename Scalar_, int Size_>

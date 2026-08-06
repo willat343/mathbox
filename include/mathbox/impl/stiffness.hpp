@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cppbox/exceptions.hpp>
+#include <type_traits>
 
 #include "mathbox/decompose.hpp"
 #include "mathbox/stiffness.hpp"

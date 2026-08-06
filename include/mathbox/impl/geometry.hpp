@@ -1,6 +1,7 @@
 #ifndef MATHBOX_IMPL_GEOMETRY_HPP
 #define MATHBOX_IMPL_GEOMETRY_HPP
 
+#include <algorithm>
 #include <cppbox/exceptions.hpp>
 #include <numbers>
 
@@ -205,7 +206,7 @@ constexpr Eigen::Vector<typename DerivedOmega::Scalar, 3> so_cross(const Eigen::
 template<typename Derived>
     requires(Derived::RowsAtCompileTime == 2 && Derived::ColsAtCompileTime == 2)
 constexpr inline Eigen::Vector<typename Derived::Scalar, 1> so_from_skew(const Eigen::MatrixBase<Derived>& skew) {
-    return Eigen::Vector<typename Derived::Scalar, 1>{skew(1, 1)};
+    return Eigen::Vector<typename Derived::Scalar, 1>{skew(1, 0)};
 }
 
 template<typename Derived>
@@ -218,7 +219,7 @@ template<typename Derived>
     requires(Derived::RowsAtCompileTime == 1 && Derived::ColsAtCompileTime == 1)
 constexpr inline Eigen::Matrix<typename Derived::Scalar, 2, 2> so_skew(const Eigen::MatrixBase<Derived>& v) {
     return (Eigen::Matrix<typename Derived::Scalar, 2, 2>() << static_cast<typename Derived::Scalar>(0), -v.value(),
-            static_cast<typename Derived::Scalar>(0), v.value())
+            v.value(), static_cast<typename Derived::Scalar>(0))
             .finished();
 }
 
@@ -230,7 +231,7 @@ constexpr inline Eigen::Matrix<typename Derived::Scalar, 3, 3> so_skew(const Eig
 
 inline Pose<2> to_pose_2D(const Pose<3>& pose, const Eigen::Vector3d& axis) {
     const Eigen::AngleAxisd orientation{pose.rotation()};
-    throw_if(!axis.isZero() && orientation.axis().isApprox(axis),
+    throw_if(!axis.isZero() && !orientation.axis().isApprox(axis),
             "Orientation must be purely a rotation about a normalized axis argument (e.g. UnitZ) to be convertible to "
             "Eigen::Rotation2D, or this check can be disabled by passing the default value for axis (zero).");
     return Eigen::Translation2d{pose.translation()[0], pose.translation()[1]} * Eigen::Rotation2Dd{orientation.angle()};

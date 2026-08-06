@@ -1,8 +1,8 @@
+#include "mathbox/decompose.hpp"
+
 #include <gtest/gtest.h>
 
 #include <Eigen/Core>
-
-#include "mathbox/stiffness.hpp"
 
 TEST(decompose, LLT_cholesky_I) {
     const Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();

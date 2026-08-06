@@ -2,9 +2,11 @@
 #define MATHBOX_MATRIX_DIAGNOSTICS_HPP
 
 #include <Eigen/Core>
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #include "mathbox/traits.hpp"
 

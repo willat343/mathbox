@@ -4,7 +4,6 @@
 #include <Eigen/Core>
 #include <random>
 #include <type_traits>
-#include <vector>
 
 #include "mathbox/decompose.hpp"
 

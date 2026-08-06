@@ -50,7 +50,7 @@ bool is_symmetric(const Eigen::DenseBase<Derived>& m, const typename Derived::Sc
 
 template<typename Derived>
 bool is_upper_triangular(const Eigen::DenseBase<Derived>& m, const typename Derived::Scalar precision) {
-    for (Eigen::Index r = 0; r < m.rows() - 1; ++r) {
+    for (Eigen::Index r = 0; r < m.rows(); ++r) {
         for (Eigen::Index c = 0; c < r; ++c) {
             if (std::abs(m(r, c)) > precision) {
                 return false;
@@ -62,8 +62,8 @@ bool is_upper_triangular(const Eigen::DenseBase<Derived>& m, const typename Deri
 
 template<typename Derived>
 int num_zero_columns(const Eigen::MatrixBase<Derived>& m, const typename Derived::Scalar precision) {
-    std::size_t num_zero_columns_{0};
-    for (int i = 0; i < m.cols(); ++i) {
+    int num_zero_columns_{0};
+    for (Eigen::Index i = 0; i < m.cols(); ++i) {
         num_zero_columns_ += (m.col(i).isZero(precision) ? 1 : 0);
     }
     return num_zero_columns_;
@@ -71,8 +71,8 @@ int num_zero_columns(const Eigen::MatrixBase<Derived>& m, const typename Derived
 
 template<typename Derived>
 int num_zero_rows(const Eigen::MatrixBase<Derived>& m, const typename Derived::Scalar precision) {
-    std::size_t num_zero_rows_{0};
-    for (int i = 0; i < m.rows(); ++i) {
+    int num_zero_rows_{0};
+    for (Eigen::Index i = 0; i < m.rows(); ++i) {
         num_zero_rows_ += (m.row(i).isZero(precision) ? 1 : 0);
     }
     return num_zero_rows_;

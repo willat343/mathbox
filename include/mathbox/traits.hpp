@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <concepts>
 #include <cppbox/time.hpp>
 #include <cppbox/traits.hpp>
 #include <type_traits>
@@ -65,7 +66,7 @@ template<typename T>
 using eigen_map_type_t = eigen_map_type<T>::type;
 
 template<typename T>
-static constexpr bool eigen_map_type_v = eigen_map_type<T>::value;
+constexpr bool eigen_map_type_v = eigen_map_type<T>::value;
 
 /**
  * @brief Concept to check if type is `Eigen::Map<...>`.

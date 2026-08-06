@@ -4,7 +4,6 @@
 #include <functional>
 #include <type_traits>
 
-#include "mathbox/time.hpp"
 #include "mathbox/traits.hpp"
 
 namespace math {

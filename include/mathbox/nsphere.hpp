@@ -2,7 +2,6 @@
 #define MATHBOX_NSPHERE_HPP
 
 #include <Eigen/Core>
-#include <utility>
 
 namespace math {
 

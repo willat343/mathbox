@@ -1,7 +1,10 @@
 #ifndef MATHBOX_IMPL_TIME_HPP
 #define MATHBOX_IMPL_TIME_HPP
 
+#include <chrono>
 #include <cppbox/exceptions.hpp>
+#include <cppbox/time.hpp>
+#include <cstddef>
 
 #include "mathbox/time.hpp"
 #include "mathbox/vector_operations.hpp"

@@ -11,7 +11,7 @@
 namespace math {
 
 template<typename Scalar_, int Size_>
-GrvGenerator<Scalar_, Size_>::GrvGenerator(const Vector& mean, const Matrix& covariance,
+inline GrvGenerator<Scalar_, Size_>::GrvGenerator(const Vector& mean, const Matrix& covariance,
         const LLTDecompositionMethod decomposition_method, const unsigned int seed)
     : generator(seed) {
     set_mean_covariance(mean, covariance, decomposition_method);

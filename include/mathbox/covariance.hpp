@@ -2,7 +2,6 @@
 #define MATHBOX_COVARIANCE_HPP
 
 #include <Eigen/Core>
-#include <type_traits>
 
 namespace math {
 

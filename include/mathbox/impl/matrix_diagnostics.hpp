@@ -2,8 +2,12 @@
 #define MATHBOX_IMPL_MATRIX_DIAGNOSTICS_HPP
 
 #include <algorithm>
+#include <cassert>
+#include <cmath>
 #include <cppbox/exceptions.hpp>
 #include <cppbox/parse.hpp>
+#include <iomanip>
+#include <limits>
 #include <numeric>
 #include <sstream>
 #include <utility>
@@ -16,7 +20,7 @@ inline void check_computation_info(const Eigen::ComputationInfo info) {
     if (info != Eigen::ComputationInfo::Success) {
         throw_if(info == Eigen::ComputationInfo::NumericalIssue, "NumericalIssue encountered during computation.");
         throw_if(info == Eigen::ComputationInfo::NoConvergence, "NoConvergence encountered during computation.");
-        throw_if(info == Eigen::InvalidInput, "InvalidInput encountered during computation.");
+        throw_if(info == Eigen::ComputationInfo::InvalidInput, "InvalidInput encountered during computation.");
         throw_here("Unknown error encountered during computation.");
     }
 }

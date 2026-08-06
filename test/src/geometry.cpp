@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <numbers>
+#include <stdexcept>
 
 #include "mathbox/matrix_operations.hpp"
 
@@ -102,7 +103,8 @@ TEST(compute_constant_rates, compute_constant_rates_1) {
     const Eigen::Vector3d rotation_axis = Eigen::Vector3d(0.8, 0.1, 0.05).normalized();
     const double rotation_angle_rate{0.492};
     const Eigen::Vector3d linear_velocity{1.0, 2.0, 3.0};
-    const double dt = std::numbers::pi / rotation_angle_rate;  // Too large a dt will invalidate test because the rotation will wrap
+    const double dt = std::numbers::pi /
+                      rotation_angle_rate;  // Too large a dt will invalidate test because the rotation will wrap
     const Eigen::Vector3d angular_velocity = rotation_angle_rate * rotation_axis;
     const Eigen::Isometry3d pose = Eigen::Translation<double, 3>{linear_velocity * dt} *
                                    Eigen::AngleAxisd{rotation_angle_rate * dt, rotation_axis};

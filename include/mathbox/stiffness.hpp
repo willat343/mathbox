@@ -2,6 +2,7 @@
 #define MATHBOX_STIFFNESS_HPP
 
 #include <Eigen/Core>
+#include <type_traits>
 
 #include "mathbox/traits.hpp"
 

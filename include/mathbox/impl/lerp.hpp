@@ -3,7 +3,6 @@
 
 #include <chrono>
 #include <cppbox/exceptions.hpp>
-#include <stdexcept>
 
 #include "mathbox/lerp.hpp"
 

@@ -96,10 +96,10 @@ RunningStatistics<Scalar_>::RunningStatistics(const Scalar mean_, const Scalar p
         const Scalar minimum_, const Scalar maximum_, const std::size_t num_samples_)
     : Statistics<Scalar_>(mean_, population_variance_, minimum_, maximum_),
       num_samples_(num_samples_),
-      sum_of_square_differences_(num_samples_ == 0 ? static_cast<Scalar>(0)
-                                                   : static_cast<Scalar>(num_samples_ - 1) * population_variance_),
+      sum_of_square_differences_(
+              num_samples_ == 0 ? static_cast<Scalar>(0) : static_cast<Scalar>(num_samples_) * population_variance_),
       sum_(static_cast<Scalar>(num_samples_) * mean_),
-      sum_of_squares_(static_cast<Scalar>(num_samples_) * mean_ * mean_) {
+      sum_of_squares_(static_cast<Scalar>(num_samples_) * mean_ * mean_ + sum_of_square_differences_) {
     throw_if(num_samples_ == 0 && (mean_ != static_cast<Scalar>(0) || population_variance_ != static_cast<Scalar>(0)),
             "Cannot construct RunningStatistics with zero samples but non-zero mean or non-zero variance");
     if (num_samples_ == 1) [[unlikely]] {
@@ -109,8 +109,7 @@ RunningStatistics<Scalar_>::RunningStatistics(const Scalar mean_, const Scalar p
                 "Cannot construct RunningStatistics with one sample but non-zero variance");
     }
     throw_if(minimum_ > maximum_, "Cannot construct RunningStatistics with minimum > maximum");
-    throw_if(maximum_ > sum(),
-            "Cannot construct RunningStatistics with maximum > sum (where sum = num_samples * mean)");
+    throw_if(maximum_ < mean_, "Cannot construct RunningStatistics with maximum < mean");
 }
 
 template<std::floating_point Scalar_>
@@ -312,10 +311,10 @@ void RunningStatisticsVector<Scalar_>::update(const std::vector<Scalar>& samples
 }
 
 template<std::floating_point Scalar_>
-void RunningStatisticsVector<Scalar_>::update(const std::vector<RunningStatistics<Scalar>>& statistics__) {
-    throw_if(statistics__.size() != size(), "Attempted update with different size vector.");
+void RunningStatisticsVector<Scalar_>::update(const std::vector<RunningStatistics<Scalar>>& other_statistics) {
+    throw_if(other_statistics.size() != size(), "Attempted update with different size vector.");
     for (std::size_t i = 0; i < size(); ++i) {
-        statistics_[i].update(statistics__[i]);
+        statistics_[i].update(other_statistics[i]);
     }
 }
 

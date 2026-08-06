@@ -1,10 +1,9 @@
 #ifndef MATHBOX_IMPL_INTEGRATOR_HPP
 #define MATHBOX_IMPL_INTEGRATOR_HPP
 
+#include <algorithm>
 #include <array>
-#include <chrono>
 #include <cppbox/exceptions.hpp>
-#include <numeric>
 
 #include "mathbox/integrator.hpp"
 #include "mathbox/lerp.hpp"

@@ -38,6 +38,6 @@ private:
 
 }
 
-#include "mathbox/transform_components.hpp"
+#include "mathbox/impl/transform_components.hpp"
 
 #endif

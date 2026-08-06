@@ -1,6 +1,8 @@
 #ifndef MATHBOX_IMPL_VECTOR_OPERATIONS_HPP
 #define MATHBOX_IMPL_VECTOR_OPERATIONS_HPP
 
+#include <cmath>
+
 #include "mathbox/vector_operations.hpp"
 
 namespace math {

@@ -3,7 +3,6 @@
 
 #include <concepts>
 #include <cppbox/time.hpp>
-#include <type_traits>
 
 #include "mathbox/traits.hpp"
 
