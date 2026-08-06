@@ -9,12 +9,12 @@
 namespace math {
 
 /**
- * @brief Compute the stiffness matrix \f$\mathbf{A}\f$ from the covariance matrix \f$\boldsymbol{\Sigma}\f$ such that
- * \f$\boldsymbol{\Lambda} = \boldsymbol{\Sigma}^{-1} = \mathbf{A}^T\mathbf{A}\f$, with order preserved so that
- * computing the cost of a residual with this stiffness matrix as \f$\mathbf{A} \mathbf{e}\f$ for Mahalanobis norm
- * \f$\Vert \mathbf{e} \Vert_{\boldsymbol{\Sigma}}^2 = \mathbf{e}^T \boldsymbol{\Sigma}^{-1} \mathbf{e} =
- * \mathbf{e}^T \mathbf{A}^T \mathbf{A} \mathbf{e} = (\mathbf{A} \mathbf{e})^T (\mathbf{A} \mathbf{e})\f$
- * preserves the order of the terms in \f$\mathbf{e}\f$.
+ * @brief Compute the stiffness matrix \f$ \mathbf{A} \f$ from the covariance matrix \f$ \boldsymbol{\Sigma} \f$ such
+ * that \f$ \boldsymbol{\Lambda} = \boldsymbol{\Sigma}^{-1} = \mathbf{A}^T\mathbf{A} \f$, with order preserved so that
+ * computing the cost of a residual with this stiffness matrix as \f$ \mathbf{A} \mathbf{e} \f$ for Mahalanobis norm
+ * \f$ \Vert \mathbf{e} \Vert_{\boldsymbol{\Sigma}}^2 = \mathbf{e}^T \boldsymbol{\Sigma}^{-1} \mathbf{e} = \mathbf{e}^T
+ * \mathbf{A}^T \mathbf{A} \mathbf{e} = (\mathbf{A} \mathbf{e})^T (\mathbf{A} \mathbf{e}) \f$ preserves the order of the
+ * terms in \f$ \mathbf{e} \f$.
  *
  * @tparam Derived
  * @param covariance
@@ -37,12 +37,12 @@ Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_covariance(
         const Eigen::Ref<const Eigen::Matrix<Scalar, Rows, Rows>>& covariance);
 
 /**
- * @brief Compute the stiffness matrix \f$\mathbf{A}\f$ from the information matrix \f$\boldsymbol{\Lambda}\f$ such that
- * \f$\boldsymbol{\Lambda} = \boldsymbol{\Sigma}^{-1} = \mathbf{A}^T\mathbf{A}\f$, with order preserved so that
- * computing the cost of a residual with this stiffness matrix as \f$\mathbf{A} \mathbf{e}\f$ for Mahalanobis norm
- * \f$\Vert \mathbf{e} \Vert_{\boldsymbol{\Sigma}}^2 = \mathbf{e}^T \boldsymbol{\Sigma}^{-1} \mathbf{e} =
- * \mathbf{e}^T \mathbf{A}^T \mathbf{A} \mathbf{e} = (\mathbf{A} \mathbf{e})^T (\mathbf{A} \mathbf{e})\f$
- * preserves the order of the terms in \f$\mathbf{e}\f$.
+ * @brief Compute the stiffness matrix \f$ \mathbf{A} \f$ from the information matrix \f$ \boldsymbol{\Lambda} \f$ such
+ * that \f$ \boldsymbol{\Lambda} = \boldsymbol{\Sigma}^{-1} = \mathbf{A}^T\mathbf{A} \f$, with order preserved so that
+ * computing the cost of a residual with this stiffness matrix as \f$ \mathbf{A} \mathbf{e} \f$ for Mahalanobis norm
+ * \f$ \Vert \mathbf{e} \Vert_{\boldsymbol{\Sigma}}^2 = \mathbf{e}^T \boldsymbol{\Sigma}^{-1} \mathbf{e} = \mathbf{e}^T
+ * \mathbf{A}^T \mathbf{A} \mathbf{e} = (\mathbf{A} \mathbf{e})^T (\mathbf{A} \mathbf{e}) \f$ preserves the order of the
+ * terms in \f$ \mathbf{e} \f$.
  *
  * @tparam Derived
  * @param information
@@ -185,8 +185,8 @@ Scalar stiffness_from_variance(const Scalar variance);
  *
  * I.e., this function lets you compute the new stiffness of the new covariance matrix of a variable with uncertainty
  * \f$ \Sigma^{-1} \f$ that has been passed through a linear function \f$ A \f$, when the stiffness \f$ S \f$ of that
- * original variable is known, without having to compute and decompose the new uncertainty (\f$ A \Sigma A^T \f$)
- * from the original uncertainty (\f$ \Sigma \f$).
+ * original variable is known, without having to compute and decompose the new uncertainty (\f$ A \Sigma A^T \f$) from
+ * the original uncertainty (\f$ \Sigma \f$).
  *
  * @tparam DerivedStiffness
  * @tparam DerivedLinearFunctionInverse

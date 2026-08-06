@@ -67,8 +67,8 @@ bool is_symmetric(const Eigen::DenseBase<Derived>& m,
         const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
 
 /**
- * @brief Compute the relative asymmetry of a square matrix, i.e. \f$ \Vert M - M^T \Vert_F / \Vert M \Vert_F \f$,
- * which is 0 for an exactly symmetric matrix and increases as the matrix deviates from symmetry.
+ * @brief Compute the relative asymmetry of a square matrix, i.e. \f$ \Vert M - M^T \Vert_F / \Vert M \Vert_F \f$, which
+ * is 0 for an exactly symmetric matrix and increases as the matrix deviates from symmetry.
  *
  * Returns 0 if `m` is the zero matrix (which is exactly symmetric), rather than the NaN that would otherwise result
  * from a 0/0 division.

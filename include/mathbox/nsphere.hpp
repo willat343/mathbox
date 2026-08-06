@@ -6,9 +6,9 @@
 namespace math {
 
 /**
- * @brief Convert cartesian coordinates to n-dimensional spherical coordinates, expressed in form \f$\begin{bmatrix}r &
- * \theta_1 & \dots & \theta_{D-1}\end{bmatrix}^T\f$ where \f$r\f$ is the radius, \f$\theta_1, \dots, \theta_{D-2}\f$
- * are angles in range \f$[0, \pi]\f$ and \f$\theta_{D-1}\f$ is in range \f$[-\pi, \pi]\f$, as:
+ * @brief Convert cartesian coordinates to n-dimensional spherical coordinates, expressed in form \f$ \begin{bmatrix}r &
+ * \theta_1 & \dots & \theta_{D-1}\end{bmatrix}^T \f$ where \f$ r \f$ is the radius, \f$ \theta_1, \dots,
+ * \theta_{D-2} \f$ are angles in range \f$ [0, \pi] \f$ and \f$ \theta_{D-1} \f$ is in range \f$ [-\pi, \pi] \f$, as:
  *
  * \f[
  *      \begin{bmatrix}r \\ \theta_1 \\ \vdots \\ \theta_{D-2} \\ \theta_{D-1}\end{bmatrix} = \begin{bmatrix}
@@ -16,20 +16,20 @@ namespace math {
  * \text{atan2}(\sqrt{x_{D-1}^2 + x_D^2}, x_{D-2}) \\ \text{atan2}(x_D, x_{D-1})\end{bmatrix}
  * \f]
  *
- * Note that the `atan2` function here produces angles in the range \f$[-\pi, \pi]\f$.
+ * Note that the `atan2` function here produces angles in the range \f$ [-\pi, \pi] \f$.
  *
  * IMPORTANT: This formula is not the same as polar coordinates for D = 2 or spherical coordinates for D = 3. For D = 2,
- * the angular range is usually specified as \f$[0, 2\pi]\f$, not \f$[-\pi, \pi]\f$ as specified here. For D = 3,
- * mathematics often has \f$r, \theta, \phi\f$ representing radius, azimuthal angle (xy-plane) and polar angle (any
- * plane with the z-axis) respectively, and physics often has \f$r, \theta, \phi\f$ representing radius, polar angle
+ * the angular range is usually specified as \f$ [0, 2\pi] \f$, not \f$ [-\pi, \pi] \f$ as specified here. For D = 3,
+ * mathematics often has \f$ r, \theta, \phi \f$ representing radius, azimuthal angle (xy-plane) and polar angle (any
+ * plane with the z-axis) respectively, and physics often has \f$ r, \theta, \phi \f$ representing radius, polar angle
  * (any plane with the z-axis) and azimuthal angle (xy-plane) respectively. One reason for this is how `atan2` is
  * typically defined. Another reason is because the generalisation to n-dimensions is inconsistent with the mathematics
  * or physics conventions in 3D. If the spherical coordinates are defined on those planes, then the returned cartesian
- * coordinates are \f$\begin{bmatrix}z & x & y\end{bmatrix}^T\f$. Note that the 2D case is consistent with the
- * n-dimensional generalisation, returning \f$\begin{bmatrix}x & y\end{bmatrix}^T\f$.
+ * coordinates are \f$ \begin{bmatrix}z & x & y\end{bmatrix}^T \f$. Note that the 2D case is consistent with the
+ * n-dimensional generalisation, returning \f$ \begin{bmatrix}x & y\end{bmatrix}^T \f$.
  *
- * A dimensionality `D` of 1 is a special case, where the spherical coordinates \f$r\f$ and cartesian coordinates
- * \f$x_1\f$ are the same (no square root is performed), and hence the sign disambiguates direction.
+ * A dimensionality `D` of 1 is a special case, where the spherical coordinates \f$ r \f$ and cartesian coordinates
+ * \f$ x_1 \f$ are the same (no square root is performed), and hence the sign disambiguates direction.
  *
  * @tparam D dimensionality (e.g. 1 = line, 2 = circle, 3 = sphere)
  * @tparam Scalar
@@ -63,9 +63,9 @@ template<int D, typename Scalar = double>
 Eigen::Matrix<Scalar, D, 1> spherical_angles_to_unit_cartesian(const Eigen::Matrix<Scalar, D - 1, 1>& spherical_angles);
 
 /**
- * @brief Convert n-dimensional spherical coordinates expressed in form \f$\begin{bmatrix}r & \theta_1 & \dots &
- * \theta_{D-1}\end{bmatrix}^T\f$ where \f$r\f$ is the radius, \f$\theta_1, \dots, \theta_{D-2}\f$ are angles in range
- * \f$[0, \pi]\f$ and \f$\theta_{D-1}\f$ is in range \f$[-\pi, \pi]\f$, to cartesian coordinates, as:
+ * @brief Convert n-dimensional spherical coordinates expressed in form \f$ \begin{bmatrix}r & \theta_1 & \dots &
+ * \theta_{D-1}\end{bmatrix}^T \f$ where \f$ r \f$ is the radius, \f$ \theta_1, \dots, \theta_{D-2} \f$ are angles in
+ * range \f$ [0, \pi] \f$ and \f$ \theta_{D-1} \f$ is in range \f$ [-\pi, \pi] \f$, to cartesian coordinates, as:
  *
  * \f[
  *      \begin{bmatrix}x_1 \\ x_2 \\ \vdots \\ x_{D-1} \\ x_D\end{bmatrix} = r \begin{bmatrix}\cos(\theta_1)
@@ -75,15 +75,15 @@ Eigen::Matrix<Scalar, D, 1> spherical_angles_to_unit_cartesian(const Eigen::Matr
  * \f]
  *
  * IMPORTANT: This formula does not yield the typical spherical coordinates for D = 3 observed in mathematics, which has
- * \f$r, \theta, \phi\f$ representing radius, azimuthal angle (xy-plane) and polar angle (any plane with the z-axis)
- * respectively, nor in physics, which has \f$r, \theta, \phi\f$ representing radius, polar angle (any plane with the
+ * \f$ r, \theta, \phi \f$ representing radius, azimuthal angle (xy-plane) and polar angle (any plane with the z-axis)
+ * respectively, nor in physics, which has \f$ r, \theta, \phi \f$ representing radius, polar angle (any plane with the
  * z-axis) and azimuthal angle (xy-plane) respectively. This is because the generalisation to n-dimensions is
  * inconsistent with these conventions. If the spherical coordinates are defined on those planes, then the returned
- * cartesian coordinates are \f$\begin{bmatrix}z & x & y\end{bmatrix}^T\f$. Note that the 2D case is consistent with the
- * n-dimensional generalisation, returning \f$\begin{bmatrix}x & y\end{bmatrix}^T\f$.
+ * cartesian coordinates are \f$ \begin{bmatrix}z & x & y\end{bmatrix}^T \f$. Note that the 2D case is consistent with
+ * the n-dimensional generalisation, returning \f$ \begin{bmatrix}x & y\end{bmatrix}^T \f$.
  *
- * A dimensionality `D` of 1 is a special case, where the spherical coordinates \f$r\f$ and cartesian coordinates
- * \f$x_1\f$ are the same (no square root is performed), and hence the sign disambiguates direction.
+ * A dimensionality `D` of 1 is a special case, where the spherical coordinates \f$ r \f$ and cartesian coordinates
+ * \f$ x_1 \f$ are the same (no square root is performed), and hence the sign disambiguates direction.
  *
  * @tparam D dimensionality (e.g. 1 = line, 2 = circle, 3 = sphere)
  * @tparam Scalar

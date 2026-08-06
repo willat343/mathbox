@@ -9,17 +9,17 @@
 namespace math {
 
 /**
- * @brief Perform linear interpolation or extrapolation from \f$\mathbf{y}_0\f$ to \f$\mathbf{y}_1\f$, using the
+ * @brief Perform linear interpolation or extrapolation from \f$ \mathbf{y}_0 \f$ to \f$ \mathbf{y}_1 \f$, using the
  * formula:
  *
  * \f[
  *      \mathbf{y} = (1 - \alpha) \mathbf{y}_0 + \alpha \mathbf{y}_1
  * \f]
  *
- * If \f$\alpha \in [0, 1]\f$, the function performs interpolation, and otherwise it extrapolates.
+ * If \f$ \alpha \in [0, 1] \f$, the function performs interpolation, and otherwise it extrapolates.
  *
- * To reduce floating point inaccuracies ("catastrophic cancellation" when the input
- * values are large), this formula is preferred over:
+ * To reduce floating point inaccuracies ("catastrophic cancellation" when the input values are large), this formula is
+ * preferred over:
  *
  * \f[
  *      \mathbf{y} = \mathbf{y} = \mathbf{y}_0 + \alpha (\mathbf{y}_1 - \mathbf{y}_0)
@@ -30,18 +30,18 @@ namespace math {
  * @tparam T This must be a mathbox arithmetic type (e.g., floating-point scalars and Eigen matrices), a
  * `std::chrono::time_point<Clock, Duration>` or `std::chrono::duration<Rep, Period>` object.
  * @tparam Scalar
- * @param y_0 start point (\f$\alpha = 0\f$) of interpolation \f$\mathbf{y}_0\f$
- * @param y_1 end point (\f$\alpha = 1\f$) of interpolation \f$\mathbf{y}_1\f$
- * @param alpha interpolation or extrapolation factor \f$\alpha\f$
- * @return T interpolation or extrapolation result \f$\mathbf{y}\f$
+ * @param y_0 start point (\f$ \alpha = 0 \f$) of interpolation \f$ \mathbf{y}_0 \f$
+ * @param y_1 end point (\f$ \alpha = 1 \f$) of interpolation \f$ \mathbf{y}_1 \f$
+ * @param alpha interpolation or extrapolation factor \f$ \alpha \f$
+ * @return T interpolation or extrapolation result \f$ \mathbf{y} \f$
  */
 template<typename T, std::floating_point Scalar>
     requires(IsEuclideanType<T> || cppbox::IsTimePointOrDuration<T>)
 T lerp(const T& y_0, const T& y_1, const Scalar alpha);
 
 /**
- * @brief Linear function which passes through \f$(x_0, y_0)\f$ and \f$(x_1, y_1)\f$. The function returns `lerp(y_0,
- * y_1, alpha)` where `alpha` \f$\alpha\f$ is:
+ * @brief Linear function which passes through \f$ (x_0, y_0) \f$ and \f$ (x_1, y_1) \f$. The function returns
+ * `lerp(y_0, y_1, alpha)` where `alpha` \f$ \alpha \f$ is:
  *
  * \f[
  *      \alpha = \frac{x - x_0}{x_1 - x_0}

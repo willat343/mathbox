@@ -31,28 +31,28 @@ inline const std::vector<LLTDecompositionMethod> llt_decomposition_methods = {{C
 
 /**
  * @brief Decompose a hermitian matrix (of valid form, see `LLTDecompositionMethod` documentation) into form
- * \f$\mathbf{L}\mathbf{L}^*\f$ (\f$\mathbf{L}\mathbf{L}^T\f$ for real matrices), and return \f$\mathbf{L}\f$.
+ * \f$ \mathbf{L}\mathbf{L}^* \f$ (\f$ \mathbf{L}\mathbf{L}^T \f$ for real matrices), and return \f$ \mathbf{L} \f$.
  *
- * Note that different LLT decomposition methods will yield different \f$L\f$ matrices.
+ * Note that different LLT decomposition methods will yield different \f$ L \f$ matrices.
  *
  * @tparam Derived
  * @param matrix matrix to decompose
  * @param method the LLT decomposition method
- * @return Derived \f$L\f$ matrix
+ * @return Derived \f$ L \f$ matrix
  */
 template<typename Derived>
 Derived LLT(const Eigen::MatrixBase<Derived>& matrix, const LLTDecompositionMethod method = ROBUST_CHOLESKY);
 
 /**
  * @brief Decompose a hermitian matrix (of valid form, see `LLTDecompositionMethod` documentation) into form
- * \f$\mathbf{U}^*\mathbf{U}\f$ (\f$\mathbf{U}^T\mathbf{U}\f$ for real matrices), and return \f$\mathbf{U}\f$.
+ * \f$ \mathbf{U}^*\mathbf{U} \f$ (\f$ \mathbf{U}^T\mathbf{U} \f$ for real matrices), and return \f$ \mathbf{U} \f$.
  *
- * Note that different LLT decomposition methods will yield different \f$L\f$ matrices.
+ * Note that different LLT decomposition methods will yield different \f$ L \f$ matrices.
  *
  * @tparam Derived
  * @param matrix matrix to decompose
  * @param method the LLT decomposition method
- * @return Derived \f$U\f$ matrix
+ * @return Derived \f$ U \f$ matrix
  */
 template<typename Derived>
 Derived UTU(const Eigen::MatrixBase<Derived>& matrix, const LLTDecompositionMethod method = ROBUST_CHOLESKY);

@@ -85,8 +85,8 @@ template<typename Derived>
 Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eigen::Index boundary);
 
 /**
- * @brief Compute the Schur complement matrix H_p and vector b_p for linear system \f$ H_{p} \delta x_k =
- * b_k \f$ from linear system \f$ H \delta x = b\f$:
+ * @brief Compute the Schur complement matrix H_p and vector b_p for linear system \f$ H_{p} \delta x_k = b_k \f$ from
+ * linear system \f$ H \delta x = b \f$:
  * \f[
  *  H_{p} = H_{kk} - H_{km} H_{mm}^{-1} H_{mk}
  * \f]
@@ -115,7 +115,7 @@ double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen:
         const double symmetry_violation_threshold);
 
 /**
- * @brief Compute the 3D skew-symmetric matrix \f$[\mathbf{x}]_\times\f$ which when multiplied with a vector, is
+ * @brief Compute the 3D skew-symmetric matrix \f$ [\mathbf{x}]_\times \f$ which when multiplied with a vector, is
  * equivalent to the vector cross product.
  *
  * \f[
@@ -128,8 +128,8 @@ double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen:
  *      [\mathbf{x}]_\times = \begin{bmatrix}0 & -x_3 & x_2 \\ x_3 & 0 & -x_1 \\ -x_2 & x_1 & 0\end{bmatrix}
  * \f]
  *
- * Note also that \f$\mathbf{x} \times \mathbf{y} = - \mathbf{y} \times \mathbf{x} = - [\mathbf{y}]_\times \mathbf{x}
- * = [\mathbf{y}]_\times^T \mathbf{x} = [\mathbf{x}]_\times \mathbf{y}\f$.
+ * Note also that \f$ \mathbf{x} \times \mathbf{y} = - \mathbf{y} \times \mathbf{x} = - [\mathbf{y}]_\times \mathbf{x} =
+ * [\mathbf{y}]_\times^T \mathbf{x} = [\mathbf{x}]_\times \mathbf{y} \f$.
  *
  * @tparam Derived a 3x1 vector
  * @param v

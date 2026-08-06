@@ -7,8 +7,8 @@
 namespace math {
 
 /**
- * @brief Generate a linearly spaced dynamically-sized matrix from an interpolation step. The number of points is
- * chosen such that the actual interpolation step is greater than or equal to `step`.
+ * @brief Generate a linearly spaced dynamically-sized matrix from an interpolation step. The number of points is chosen
+ * such that the actual interpolation step is greater than or equal to `step`.
  *
  * The first element will be `start` and the last element will be `end`.
  *

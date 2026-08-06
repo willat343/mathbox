@@ -108,8 +108,8 @@ Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame(const typename Eigen::Mat
  *
  * This function assumes a translation-rotation ordering in the covariance and adjoint.
  *
- * Note: the function computes the adjoint of the transform, so the other function overload should be preferred if
- * using this function multiple times with the same transform.
+ * Note: the function computes the adjoint of the transform, so the other function overload should be preferred if using
+ * this function multiple times with the same transform.
  *
  * @tparam Scalar
  * @param covariance_A \f$ \boldsymbol{\Sigma}_A \f$
@@ -133,8 +133,8 @@ Eigen::Matrix<Scalar, 6, 6> change_tf_covariance_frame_rt(const typename Eigen::
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& transform_B_A);
 
 /**
- * @brief Given a transform \f$ T_A^B \f$ (i.e. frame B w.r.t. frame A) and the twist in reference frame B, compute
- * the twist in reference frame A. Internally, this function calculates and applies the pose adjoint.
+ * @brief Given a transform \f$ T_A^B \f$ (i.e. frame B w.r.t. frame A) and the twist in reference frame B, compute the
+ * twist in reference frame A. Internally, this function calculates and applies the pose adjoint.
  *
  * \f[
  *      V_A = Ad_{T_A^B} V_B
@@ -168,11 +168,11 @@ Eigen::Matrix<Scalar, 6, 1> change_twist_reference_frame_rt(
  * @brief Approximation of the covariance of transform composition.
  *
  * Given the covariance of a (previous) pose \f$ T_A^B \f$, \f$ \boldsymbol{\Sigma}_{AB} \f$, and a relative transform
- * \f$ T_B^C \f$ from that state to a new pose (\f$ T_A^C = T_A^B T_B^C \f$) with covariance \f$
- * \boldsymbol{\Sigma}_{BC} \f$, the covariance of the new state \f$ \boldsymbol{\Sigma}_{AC} \f$ is computed. The cross
- * correlation between the two relative transforms \f$ \boldsymbol{\Sigma}_{AB,BC} \f$ can also be supplied to achieve a
- * better estimate as described in Mangelson et al (2019). Otherwise, the approximation is equal to Barfoot et al's
- * (2013).
+ * \f$ T_B^C \f$ from that state to a new pose (\f$ T_A^C = T_A^B T_B^C \f$) with covariance
+ * \f$ \boldsymbol{\Sigma}_{BC} \f$, the covariance of the new state \f$ \boldsymbol{\Sigma}_{AC} \f$ is computed. The
+ * cross correlation between the two relative transforms \f$ \boldsymbol{\Sigma}_{AB,BC} \f$ can also be supplied to
+ * achieve a better estimate as described in Mangelson et al (2019). Otherwise, the approximation is equal to Barfoot et
+ * al's (2013).
  *
  * This function assumes a translation-rotation ordering in the covariance and adjoint.
  *
@@ -247,8 +247,8 @@ Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform<Scalar
         const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_1, const Scalar alpha);
 
 /**
- * @brief Compute the relative transform \f$ T_B^C = (T_A^B)^{-1} T_A^C \f$ between two poses \f$ T_A^B \f$ and \f$
- * T_A^C \f$.
+ * @brief Compute the relative transform \f$ T_B^C = (T_A^B)^{-1} T_A^C \f$ between two poses \f$ T_A^B \f$ and
+ * \f$ T_A^C \f$.
  *
  * @tparam Scalar
  * @tparam D
@@ -265,8 +265,8 @@ Eigen::Transform<Scalar, D, Eigen::Isometry> relative_transform(
 /**
  * @brief Rotate the covariance of an \f$ \mathbb{R}^3 \f$ point given a rotation matrix.
  *
- * Since points are simply vectors, the application of a rotation matrix means that the returned matrix is
- * \f$ R \Sigma R^T \f$, derived from the definition of variance.
+ * Since points are simply vectors, the application of a rotation matrix means that the returned matrix is \f$ R \Sigma
+ * R^T \f$, derived from the definition of variance.
  *
  * @tparam Derived
  * @param covariance
@@ -392,8 +392,7 @@ Pose<D> to_pose_ND(const Pose<3>& pose, [[maybe_unused]] const Eigen::Vector3d& 
  *
  * This function assumes a translation-rotation [t, r] ordering.
  *
- * References:
- * - Modern Robotics (Lynch & Park)
+ * References: - Modern Robotics (Lynch & Park)
  *
  * @tparam Scalar
  * @tparam D
