@@ -238,3 +238,155 @@ TEST(adjoint_SE, transform) {
     const Eigen::Matrix<double, 6, 6> adjoint_SE = math::adjoint_SE_rt(transform);
     check_adjoint_SE_rt_blocks(adjoint_SE, transform);
 }
+
+TEST(angle_between, parallel_3d) {
+    const Eigen::Vector3d u(1.0, 2.0, 3.0);
+    const Eigen::Vector3d v = 2.0 * u;
+    EXPECT_NEAR(math::angle_between(u, v), 0.0, 1.0e-12);
+}
+
+TEST(angle_between, opposite_3d) {
+    const Eigen::Vector3d u(1.0, 2.0, 3.0);
+    const Eigen::Vector3d v = -u;
+    EXPECT_NEAR(math::angle_between(u, v), std::numbers::pi, 1.0e-12);
+}
+
+TEST(angle_between, orthogonal_3d) {
+    const Eigen::Vector3d u = Eigen::Vector3d::UnitX();
+    const Eigen::Vector3d v = Eigen::Vector3d::UnitY();
+    EXPECT_NEAR(math::angle_between(u, v), std::numbers::pi / 2.0, 1.0e-12);
+}
+
+TEST(angle_between, orthogonal_2d) {
+    const Eigen::Vector2d u(1.0, 0.0);
+    const Eigen::Vector2d v(0.0, 1.0);
+    EXPECT_NEAR(math::angle_between(u, v), std::numbers::pi / 2.0, 1.0e-12);
+}
+
+TEST(deg2rad, 90_degrees) {
+    EXPECT_NEAR(math::deg2rad(90.0), std::numbers::pi / 2.0, 1.0e-12);
+}
+
+TEST(deg2rad, 180_degrees) {
+    EXPECT_NEAR(math::deg2rad(180.0), std::numbers::pi, 1.0e-12);
+}
+
+TEST(rad2deg, pi_over_2) {
+    EXPECT_NEAR(math::rad2deg(std::numbers::pi / 2.0), 90.0, 1.0e-12);
+}
+
+TEST(rad2deg, pi) {
+    EXPECT_NEAR(math::rad2deg(std::numbers::pi), 180.0, 1.0e-12);
+}
+
+TEST(deg2rad, round_trip_with_rad2deg) {
+    const double degrees = 37.5;
+    EXPECT_NEAR(math::rad2deg(math::deg2rad(degrees)), degrees, 1.0e-12);
+}
+
+TEST(rpy, identity) {
+    const Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+    EXPECT_TRUE(math::rpy(q).isApprox(Eigen::Vector3d::Zero(), 1.0e-12));
+}
+
+TEST(rpy, roll_only) {
+    const double roll = 0.4;
+    const Eigen::Quaterniond q(Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()));
+    const Eigen::Vector3d angles = math::rpy(q);
+    EXPECT_NEAR(angles[0], roll, 1.0e-9);
+    EXPECT_NEAR(angles[1], 0.0, 1.0e-9);
+    EXPECT_NEAR(angles[2], 0.0, 1.0e-9);
+}
+
+TEST(rpy, yaw_only) {
+    const double yaw = 0.3;
+    const Eigen::Quaterniond q(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
+    const Eigen::Vector3d angles = math::rpy(q);
+    EXPECT_NEAR(angles[0], 0.0, 1.0e-9);
+    EXPECT_NEAR(angles[1], 0.0, 1.0e-9);
+    EXPECT_NEAR(angles[2], yaw, 1.0e-9);
+}
+
+TEST(so_cross, so2) {
+    const Eigen::Matrix<double, 1, 1> w(2.0);
+    const Eigen::Vector2d v(3.0, 4.0);
+    const Eigen::Vector2d expected(-2.0 * 4.0, 2.0 * 3.0);
+    EXPECT_TRUE(math::so_cross(w, v).isApprox(expected));
+}
+
+TEST(so_cross, so3_matches_eigen_cross) {
+    const Eigen::Vector3d w(1.0, 2.0, 3.0);
+    const Eigen::Vector3d v(4.0, 5.0, 6.0);
+    EXPECT_TRUE(math::so_cross(w, v).isApprox(w.cross(v)));
+}
+
+// Regression test: so_skew's 2D specialization used to build a matrix that was not even skew-symmetric, so
+// so_skew(w) * v did not equal so_cross(w, v).
+TEST(so_skew, so2_matches_so_cross) {
+    const Eigen::Matrix<double, 1, 1> w(2.0);
+    const Eigen::Vector2d v(3.0, 4.0);
+    const Eigen::Matrix2d skew_w = math::so_skew(w);
+    EXPECT_TRUE((skew_w * v).isApprox(math::so_cross(w, v)));
+}
+
+TEST(so_skew, so2_matrix_values) {
+    const Eigen::Matrix<double, 1, 1> w(2.0);
+    Eigen::Matrix2d expected;
+    expected << 0.0, -2.0, 2.0, 0.0;
+    EXPECT_TRUE(math::so_skew(w).isApprox(expected));
+}
+
+TEST(so_skew, so3_matches_skew_symmetric_cross) {
+    const Eigen::Vector3d w(1.0, 2.0, 3.0);
+    EXPECT_TRUE(math::so_skew(w).isApprox(math::skew_symmetric_cross(w)));
+}
+
+// Regression test: so_from_skew's 2D specialization used to read the wrong matrix entry (self-consistent with the
+// buggy so_skew above, but not the true so(2) vee map).
+TEST(so_from_skew, so2_round_trip) {
+    const Eigen::Matrix<double, 1, 1> w(2.0);
+    const Eigen::Matrix2d skew_w = math::so_skew(w);
+    EXPECT_TRUE(math::so_from_skew(skew_w).isApprox(w));
+}
+
+TEST(so_from_skew, so3_round_trip) {
+    const Eigen::Vector3d w(1.0, 2.0, 3.0);
+    const Eigen::Matrix3d skew_w = math::so_skew(w);
+    EXPECT_TRUE(math::so_from_skew(skew_w).isApprox(w));
+}
+
+// Regression test: to_pose_2D used to throw when the axis matched (the valid case) and stay silent when it didn't
+// (the actual error case), due to a missing negation.
+TEST(to_pose_2D, matching_axis_does_not_throw) {
+    const Eigen::Vector3d translation(1.0, 2.0, 3.0);
+    const double angle = 0.7;
+    const math::Pose<3> pose = Eigen::Translation3d(translation) * Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ());
+    const math::Pose<2> pose_2d = math::to_pose_2D(pose, Eigen::Vector3d::UnitZ());
+    EXPECT_NEAR(pose_2d.translation().x(), translation.x(), 1.0e-12);
+    EXPECT_NEAR(pose_2d.translation().y(), translation.y(), 1.0e-12);
+    EXPECT_NEAR(Eigen::Rotation2Dd(pose_2d.rotation()).angle(), angle, 1.0e-12);
+}
+
+TEST(to_pose_2D, mismatched_axis_throws) {
+    const math::Pose<3> pose{Eigen::AngleAxisd(0.7, Eigen::Vector3d::UnitZ())};
+    EXPECT_THROW(math::to_pose_2D(pose, Eigen::Vector3d::UnitX()), std::runtime_error);
+}
+
+TEST(to_pose_2D, default_axis_skips_check) {
+    const math::Pose<3> pose{Eigen::AngleAxisd(0.7, Eigen::Vector3d::UnitX())};
+    EXPECT_NO_THROW(math::to_pose_2D(pose));
+}
+
+TEST(to_pose_ND, D3_is_passthrough) {
+    const math::Pose<3> pose = Eigen::Translation3d(1.0, 2.0, 3.0) * Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitY());
+    EXPECT_TRUE(math::to_pose_ND<3>(pose).isApprox(pose));
+}
+
+TEST(to_pose_ND, D2_matches_to_pose_2D) {
+    const Eigen::Vector3d translation(1.0, 2.0, 3.0);
+    const double angle = 0.7;
+    const math::Pose<3> pose = Eigen::Translation3d(translation) * Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ());
+    const math::Pose<2> pose_nd = math::to_pose_ND<2>(pose, Eigen::Vector3d::UnitZ());
+    const math::Pose<2> pose_2d = math::to_pose_2D(pose, Eigen::Vector3d::UnitZ());
+    EXPECT_TRUE(pose_nd.isApprox(pose_2d));
+}

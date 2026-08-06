@@ -11,6 +11,7 @@ add_executable(${PROJECT_NAME}_tests
     src/matrix_operations.cpp
     src/normal.cpp
     src/nsphere.cpp
+    src/statistics.cpp
     src/stiffness.cpp
     src/traits.cpp
     src/vector_operations.cpp
