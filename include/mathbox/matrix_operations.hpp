@@ -100,12 +100,18 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
  *
  * The input matrix H is assumed symmetric, and output matrix H_p has symmetry enforced.
  *
+ * Damping \f$ \lambda = \text{damping_factor} \cdot \text{tr}(H_{mm}) / \text{rows}(H_{mm}) \f$ is added to the
+ * diagonal of \f$ H_{mm} \f$, which its Cholesky (LLT) decomposition requires to be positive definite. It is only
+ * needed when \f$ H_{mm} \f$ is singular or numerically indefinite. It is not free:
+ * \f$ (H_{mm} + \lambda I)^{-1} \prec H_{mm}^{-1} \f$ under-estimates the subtracted term, so \f$ H_p \f$ is larger
+ * than the true Schur complement. Being trace-scaled, it is never small for a large-magnitude \f$ H_{mm} \f$.
+ *
  * @param H H symmetric matrix
  * @param b b vector
  * @param upper_block_size size of upper block (H_{mm}) or equivalently the index of lower block (H_{kk})
  * @param H_p H_p matrix
  * @param b_p b_p vector
- * @param damping_factor prescaled damping factor to apply to \f$ H_{mm} \f$, typically in [1e-8, 1e-5]
+ * @param damping_factor prescaled damping factor to apply to \f$ H_{mm} \f$, zero unless the decomposition fails
  * @param symmetry_violation_threshold threshold at which numerical symmetry violation is considered an error, compared
  * against the Euclidean norm of the difference of H_p and its transpose
  * @return double the damping applied to H_mm
