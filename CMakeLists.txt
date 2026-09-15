@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(mathbox
-    VERSION 0.8.3
+    VERSION 0.8.4
     DESCRIPTION "Math Toolbox"
     LANGUAGES CXX
 )
