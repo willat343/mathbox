@@ -88,10 +88,10 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
  * @brief Compute the Schur complement matrix H_p and vector b_p for linear system \f$ H_{p} \delta x_k = b_k \f$ from
  * linear system \f$ H \delta x = b \f$:
  * \f[
- *  H_{p} = H_{kk} - H_{km} H_{mm}^{-1} H_{mk}
+ *      H_{p} = H_{kk} - H_{km} H_{mm}^{-1} H_{mk}
  * \f]
  * \f[
- *  b_{p} = b_k - H_{km} H_{mm}^{-1} b_m
+ *      b_{p} = b_k - H_{km} H_{mm}^{-1} b_m
  * \f]
  *
  * This comes from substituting the first line of the linear system \f$ \delta x_m = H_{mm}^{-1} (b_m - H_{mk} \delta
@@ -106,19 +106,44 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
  * \f$ (H_{mm} + \lambda I)^{-1} \prec H_{mm}^{-1} \f$ under-estimates the subtracted term, so \f$ H_p \f$ is larger
  * than the true Schur complement. Being trace-scaled, it is never small for a large-magnitude \f$ H_{mm} \f$.
  *
+ * Jacobi scaling (diagonal equilibration) factorises \f$ \tilde{H}_{mm} = D^{-1} H_{mm} D^{-1} \f$ with
+ * \f$ D = \text{diag}(H_{mm})^{1/2} \f$, which has a unit diagonal. Substituting
+ * \f$ H_{mm}^{-1} = D^{-1} \tilde{H}_{mm}^{-1} D^{-1} \f$ gives:
+ * \f[
+ *      H_{p} = H_{kk} - (H_{km} D^{-1}) \tilde{H}_{mm}^{-1} (D^{-1} H_{mk})
+ * \f]
+ * \f[
+ *      b_{p} = b_k - (H_{km} D^{-1}) \tilde{H}_{mm}^{-1} (D^{-1} b_m)
+ * \f]
+ * Unlike damping this is exact: the \f$ D \f$ factors cancel, \f$ H_{kk} \f$ and \f$ b_k \f$ are untouched, and
+ * \f$ H_p \f$ and \f$ b_p \f$ are produced in the original units. It is therefore purely a change of the
+ * floating-point path, and is also a no-op for any damping, since scaling the damped block is equivalent to adding
+ * \f$ \lambda / H_{mm}(i, i) \f$ to the unit diagonal. It is useful when the variables of \f$ H_{mm} \f$ have widely
+ * differing units, as van der Sluis (1969) showed that scaling to a unit diagonal is within a factor of the matrix
+ * dimension of the optimal diagonal scaling, \f$ \kappa(DAD) \leq n \min_{D'} \kappa(D'AD') \f$. For a positive
+ * semi-definite \f$ H \f$, Cauchy-Schwarz gives \f$ |H_{ij}| \leq \sqrt{H_{ii} H_{jj}} \f$, so the scaled entries
+ * satisfy \f$ |\tilde{H}_{ij}| \leq 1 \f$ and cannot overflow.
+ *
  * @param H H symmetric matrix
  * @param b b vector
  * @param upper_block_size size of upper block (H_{mm}) or equivalently the index of lower block (H_{kk})
  * @param H_p H_p matrix
  * @param b_p b_p vector
- * @param damping_factor prescaled damping factor to apply to \f$ H_{mm} \f$, zero unless the decomposition fails
+ * @param damping_factor prescaled damping factor to apply to \f$ H_{mm} \f$, recommended to be 0.0 unless the
+ * decomposition fails, because it biases \f$ H_p \f$ as described above
  * @param symmetry_violation_threshold threshold at which numerical symmetry violation is considered an error, compared
- * against the Euclidean norm of the difference of H_p and its transpose
+ * against the Euclidean norm of the difference of H_p and its transpose. It is recommended to be a small non-zero
+ * value such as 1.0e-9, since an exactly symmetric H_p is not achievable in floating-point arithmetic, while a
+ * violation far above the round-off indicates an asymmetric H
+ * @param jacobi_scaling scale \f$ H_{mm} \f$ to a unit diagonal before its decomposition, which is exact and only
+ * changes the numerical conditioning of the decomposition. It is recommended to be false, because the Cholesky
+ * backward error is componentwise and therefore already invariant to a diagonal scaling, and empirically it has not
+ * been measured to improve accuracy.
  * @return double the damping applied to H_mm
  */
 double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen::Ref<const Eigen::VectorXd> b,
         const int upper_block_size, Eigen::MatrixXd& H_p, Eigen::VectorXd& b_p, const double damping_factor,
-        const double symmetry_violation_threshold);
+        const double symmetry_violation_threshold, const bool jacobi_scaling);
 
 /**
  * @brief Compute the 3D skew-symmetric matrix \f$ [\mathbf{x}]_\times \f$ which when multiplied with a vector, is

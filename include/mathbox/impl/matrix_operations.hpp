@@ -74,7 +74,7 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
 
 inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen::Ref<const Eigen::VectorXd> b,
         const int upper_block_size, Eigen::MatrixXd& H_p, Eigen::VectorXd& b_p, const double damping_factor,
-        const double symmetry_violation_threshold) {
+        const double symmetry_violation_threshold, const bool jacobi_scaling) {
     assert(H.rows() == H.cols() && H.rows() == b.size());
     assert(upper_block_size > 0 && upper_block_size < b.size());
     const int lower_block_size = b.size() - upper_block_size;
@@ -83,18 +83,35 @@ inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const
     const Eigen::MatrixXd H_mm = H.topLeftCorner(upper_block_size, upper_block_size);
     const double damping = damping_factor * H_mm.trace() / static_cast<double>(H_mm.rows());
 
-    // Create LLT decomposition
-    Eigen::LLT<Eigen::MatrixXd> llt(H_mm + damping * Eigen::MatrixXd::Identity(upper_block_size, upper_block_size));
+    // Jacobi scaling vector \f$ D^{-1} \f$ where \f$ D = \text{diag}(H_{mm})^{1/2} \f$. A non-positive diagonal entry
+    // is replaced by one, leaving it unscaled, so that a non-positive-definite H_mm still fails in the decomposition
+    // below rather than a NaN propagating into it.
+    Eigen::VectorXd D_inv = Eigen::VectorXd::Ones(upper_block_size);
+    if (jacobi_scaling) {
+        const Eigen::ArrayXd H_mm_diagonal = H_mm.diagonal();
+        D_inv = (H_mm_diagonal > 0.0).select(H_mm_diagonal, 1.0).rsqrt().matrix();
+    }
+
+    // Create LLT decomposition of the scaled block, D^{-1} (H_mm + damping I) D^{-1}, noting that scaling the damped
+    // block is equivalent to adding damping / H_mm(i, i) to the unit diagonal, so damping keeps its unscaled meaning.
+    Eigen::LLT<Eigen::MatrixXd> llt(D_inv.asDiagonal() *
+                                    (H_mm + damping * Eigen::MatrixXd::Identity(upper_block_size, upper_block_size)) *
+                                    D_inv.asDiagonal());
     math::check_computation_info(llt.info());
 
-    // Solve for the H_mm inverse terms using LLT
-    const Eigen::MatrixXd H_mm_inv_times_H_mk = llt.solve(H.topRightCorner(upper_block_size, lower_block_size));
-    const Eigen::MatrixXd H_mm_inv_times_b_m = llt.solve(b.head(upper_block_size));
+    // Scale the off-diagonal blocks. They are scaled independently rather than transposing one of them, so that any
+    // asymmetry of H is preserved into H_p and remains detectable by the symmetry check below.
+    const Eigen::MatrixXd H_km_times_D_inv =
+            H.bottomLeftCorner(lower_block_size, upper_block_size) * D_inv.asDiagonal();
+    const Eigen::MatrixXd D_inv_times_H_mk = D_inv.asDiagonal() * H.topRightCorner(upper_block_size, lower_block_size);
+
+    // Solve for the scaled H_mm inverse terms using LLT
+    const Eigen::MatrixXd H_mm_inv_times_H_mk = llt.solve(D_inv_times_H_mk);
+    const Eigen::MatrixXd H_mm_inv_times_b_m = llt.solve(D_inv.asDiagonal() * b.head(upper_block_size));
 
     // Compute H_p and b_p
-    H_p = H.bottomRightCorner(lower_block_size, lower_block_size) -
-          H.bottomLeftCorner(lower_block_size, upper_block_size) * H_mm_inv_times_H_mk;
-    b_p = b.tail(lower_block_size) - H.bottomLeftCorner(lower_block_size, upper_block_size) * H_mm_inv_times_b_m;
+    H_p = H.bottomRightCorner(lower_block_size, lower_block_size) - H_km_times_D_inv * H_mm_inv_times_H_mk;
+    b_p = b.tail(lower_block_size) - H_km_times_D_inv * H_mm_inv_times_b_m;
 
     // H may not be exactly symmetric due to numerical precision, so enforce symmetry
     throw_if(math::relative_asymmetry(H_p) >= symmetry_violation_threshold, "Symmetry threshold violated for H_p.");
