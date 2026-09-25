@@ -132,9 +132,9 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
  * @param damping_factor prescaled damping factor to apply to \f$ H_{mm} \f$, recommended to be 0.0 unless the
  * decomposition fails, because it biases \f$ H_p \f$ as described above
  * @param symmetry_violation_threshold threshold at which numerical symmetry violation is considered an error, compared
- * against the Euclidean norm of the difference of H_p and its transpose. It is recommended to be a small non-zero
- * value such as 1.0e-9, since an exactly symmetric H_p is not achievable in floating-point arithmetic, while a
- * violation far above the round-off indicates an asymmetric H
+ * against the relative asymmetry \f$ \| H_p - H_p^T \| / \| H_p \| \f$ (Frobenius norms). It is recommended to be a
+ * small non-zero value such as 1.0e-9, since an exactly symmetric H_p is not achievable in floating-point arithmetic,
+ * while a violation far above the round-off indicates an asymmetric H
  * @param jacobi_scaling scale \f$ H_{mm} \f$ to a unit diagonal before its decomposition, which is exact and only
  * changes the numerical conditioning of the decomposition. It is recommended to be false, because the Cholesky
  * backward error is componentwise and therefore already invariant to a diagonal scaling, and empirically it has not
