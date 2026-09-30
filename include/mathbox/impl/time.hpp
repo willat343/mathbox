@@ -34,7 +34,7 @@ std::vector<Time> range(const Duration step, const Time start, const Time end) {
     return range_times;
 }
 
-template<class Time, typename Scalar = double>
+template<class Time, typename Scalar>
 std::vector<Time> to_times(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& seconds) {
     const std::size_t size = static_cast<std::size_t>(seconds.size());
     std::vector<Time> times(size);
@@ -44,7 +44,7 @@ std::vector<Time> to_times(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& secon
     return times;
 }
 
-template<class Time, typename Scalar = double>
+template<class Time, typename Scalar>
 std::vector<Time> to_times(const Eigen::Matrix<Scalar, 1, Eigen::Dynamic>& seconds) {
     const std::size_t size = static_cast<std::size_t>(seconds.size());
     std::vector<Time> times(size);
@@ -54,7 +54,7 @@ std::vector<Time> to_times(const Eigen::Matrix<Scalar, 1, Eigen::Dynamic>& secon
     return times;
 }
 
-template<class Time, typename Scalar = double>
+template<class Time, typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& times) {
     const int size = static_cast<int>(times.size());
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector(size, 1);
@@ -64,7 +64,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& tim
     return vector;
 }
 
-template<class Time, typename Scalar = double>
+template<class Time, typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& times, const int start_index) {
     throw_if(start_index > static_cast<int>(times.size()), "Requested times outside of bounds.");
     const int size = static_cast<int>(times.size()) - start_index;
@@ -75,7 +75,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& tim
     return vector;
 }
 
-template<class Time, typename Scalar = double>
+template<class Time, typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& times, const int start_index,
         const int size) {
     throw_if(start_index + size > static_cast<int>(times.size()), "Requested times outside of bounds.");
@@ -86,7 +86,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> from_times(const std::vector<Time>& tim
     return vector;
 }
 
-template<class Time, int Size, typename Scalar = double>
+template<class Time, int Size, typename Scalar>
 Eigen::Matrix<Scalar, Size, 1> from_times(const std::vector<Time>& times) {
     Eigen::Matrix<Scalar, Size, 1> vector;
     for (int i = 0; i < Size; ++i) {
@@ -95,7 +95,7 @@ Eigen::Matrix<Scalar, Size, 1> from_times(const std::vector<Time>& times) {
     return vector;
 }
 
-template<class Time, int Size, typename Scalar = double>
+template<class Time, int Size, typename Scalar>
 Eigen::Matrix<Scalar, Size, 1> from_times(const std::vector<Time>& times, const int start_index) {
     throw_if(start_index + Size > static_cast<int>(times.size()), "Requested times outside of bounds.");
     Eigen::Matrix<Scalar, Size, 1> vector;
