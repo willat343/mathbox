@@ -146,7 +146,7 @@ inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covaria
 template<typename Scalar>
 Eigen::Matrix<Scalar, 6, 1> compute_constant_rates(const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& pose_1,
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& pose_2, const Scalar dt) {
-    throw_if(dt <= 0.0, "dt must be > 0.0");
+    throw_if(dt <= 0.0, "dt must be > 0.0", std::invalid_argument);
     const typename Eigen::Transform<Scalar, 3, Eigen::Isometry> transform = relative_transform(pose_1, pose_2);
     const typename Eigen::AngleAxis<Scalar> rotation{transform.rotation()};
     return (typename Eigen::Matrix<Scalar, 6, 1>() << rotation.axis() * rotation.angle() / dt,
@@ -233,7 +233,8 @@ inline Pose<2> to_pose_2D(const Pose<3>& pose, const Eigen::Vector3d& axis) {
     const Eigen::AngleAxisd orientation{pose.rotation()};
     throw_if(!axis.isZero() && !orientation.axis().isApprox(axis),
             "Orientation must be purely a rotation about a normalized axis argument (e.g. UnitZ) to be convertible to "
-            "Eigen::Rotation2D, or this check can be disabled by passing the default value for axis (zero).");
+            "Eigen::Rotation2D, or this check can be disabled by passing the default value for axis (zero).",
+            std::invalid_argument);
     return Eigen::Translation2d{pose.translation()[0], pose.translation()[1]} * Eigen::Rotation2Dd{orientation.angle()};
 }
 

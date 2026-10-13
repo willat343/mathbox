@@ -45,8 +45,8 @@ template<typename DerivedMatrix, typename DerivedVector>
 Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, DerivedMatrix::ColsAtCompileTime>
 remove_rows_by_threshold(const Eigen::MatrixBase<DerivedMatrix>& m, const Eigen::MatrixBase<DerivedVector>& v,
         const typename DerivedMatrix::Scalar threshold) {
-    throw_if(m.rows() != v.rows(), "Number of rows must match.");
-    throw_if(v.cols() != 1, "Vector must have 1 column.");
+    throw_if(m.rows() != v.rows(), "Number of rows must match.", std::invalid_argument);
+    throw_if(v.cols() != 1, "Vector must have 1 column.", std::invalid_argument);
     Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, DerivedMatrix::ColsAtCompileTime> m_reduced(m.rows(),
             m.cols());
     int m_reduced_rows{0};
@@ -62,10 +62,10 @@ remove_rows_by_threshold(const Eigen::MatrixBase<DerivedMatrix>& m, const Eigen:
 
 template<typename Derived>
 Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eigen::Index boundary) {
-    throw_if(boundary == 0, "Reorder boundary cannot be 0.");
+    throw_if(boundary == 0, "Reorder boundary cannot be 0.", std::invalid_argument);
     const Eigen::Index size = m.rows();
-    throw_if(size != m.cols(), "Matrix must be square.");
-    throw_if(boundary >= size, "Reorder boundary outside of m matrix.");
+    throw_if(size != m.cols(), "Matrix must be square.", std::invalid_argument);
+    throw_if(boundary >= size, "Reorder boundary outside of m matrix.", std::invalid_argument);
     return (Derived(m.rows(), m.cols()) << m.block(boundary, boundary, size - boundary, size - boundary),
             m.block(boundary, 0, size - boundary, boundary), m.block(0, boundary, boundary, size - boundary),
             m.block(0, 0, boundary, boundary))

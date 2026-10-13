@@ -44,13 +44,15 @@ inline void GrvGenerator<Scalar_, Size_>::set_covariance(const Matrix& covarianc
         const int mean_size = mean_.size();
         const int covariance_rows = covariance.rows();
         const int covariance_cols = covariance.cols();
-        throw_if(covariance_rows != covariance_cols, "Covariance matrix must be square but was " +
-                                                             std::to_string(covariance_rows) + " X " +
-                                                             std::to_string(covariance_cols) + ".");
+        throw_if(covariance_rows != covariance_cols,
+                "Covariance matrix must be square but was " + std::to_string(covariance_rows) + " X " +
+                        std::to_string(covariance_cols) + ".",
+                std::invalid_argument);
         throw_if(mean_size != covariance_rows,
                 "Mean vector (" + std::to_string(mean_size) + " X 1) and covariance matrix (" +
                         std::to_string(covariance_rows) + " X " + std::to_string(covariance_cols) +
-                        ") must have the same dimensionality.");
+                        ") must have the same dimensionality.",
+                std::invalid_argument);
     }
     set_covariance_impl(covariance, decomposition_method);
 }
@@ -64,7 +66,8 @@ inline void GrvGenerator<Scalar_, Size_>::set_mean(const Vector& mean) {
         throw_if(mean_size != transform_rows,
                 "Mean vector (" + std::to_string(mean_size) +
                         " X 1) must have the same dimensionality as the covariance matrix (" +
-                        std::to_string(transform_rows) + " X " + std::to_string(transform_rows) + ").");
+                        std::to_string(transform_rows) + " X " + std::to_string(transform_rows) + ").",
+                std::invalid_argument);
     }
     set_mean_impl(mean);
 }
@@ -77,13 +80,15 @@ inline void GrvGenerator<Scalar_, Size_>::set_mean_covariance(const Vector& mean
         const int mean_size = mean.size();
         const int covariance_rows = covariance.rows();
         const int covariance_cols = covariance.cols();
-        throw_if(covariance_rows != covariance_cols, "Covariance matrix must be square but was " +
-                                                             std::to_string(covariance_rows) + " X " +
-                                                             std::to_string(covariance_cols) + ".");
+        throw_if(covariance_rows != covariance_cols,
+                "Covariance matrix must be square but was " + std::to_string(covariance_rows) + " X " +
+                        std::to_string(covariance_cols) + ".",
+                std::invalid_argument);
         throw_if(mean_size != covariance_rows,
                 "Mean vector (" + std::to_string(mean_size) + " X 1) and covariance matrix (" +
                         std::to_string(covariance_rows) + " X " + std::to_string(covariance_cols) +
-                        ") must have the same dimensionality.");
+                        ") must have the same dimensionality.",
+                std::invalid_argument);
     }
     set_mean_impl(mean);
     set_covariance_impl(covariance, decomposition_method);

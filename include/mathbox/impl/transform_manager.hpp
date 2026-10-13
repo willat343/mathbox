@@ -18,9 +18,9 @@ Transform<D_>::Transform(const std::string& parent_frame_, const std::string& ch
     : parent_frame_(parent_frame_),
       child_frame_(child_frame_),
       transform_(transform_) {
-    throw_if(parent_frame_.empty() || child_frame_.empty(), "Empty frames not allowed.");
+    throw_if(parent_frame_.empty() || child_frame_.empty(), "Empty frames not allowed.", std::invalid_argument);
     throw_if(parent_frame_ == child_frame_ && !transform_.matrix().isIdentity(),
-            "Transform has parent_frame == child_frame but is not identity.");
+            "Transform has parent_frame == child_frame but is not identity.", std::invalid_argument);
 }
 
 template<int D_>
@@ -44,7 +44,7 @@ auto Transform<D_>::transform() const -> const Pose<D>& {
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
 bool TransformManager<D_>::has_child_frame(const std::string& frame) const {
-    throw_if(frame.empty(), "Empty frame not allowed.");
+    throw_if(frame.empty(), "Empty frame not allowed.", std::invalid_argument);
 
     for (auto it = roots().cbegin(); it != roots().cend(); ++it) {
         if (it->has_child_frame(frame)) {
@@ -57,7 +57,7 @@ bool TransformManager<D_>::has_child_frame(const std::string& frame) const {
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
 bool TransformManager<D_>::has_frame(const std::string& frame) const {
-    throw_if(frame.empty(), "Empty frame not allowed.");
+    throw_if(frame.empty(), "Empty frame not allowed.", std::invalid_argument);
 
     for (auto it = roots().cbegin(); it != roots().cend(); ++it) {
         if (it->has_frame(frame)) {
@@ -70,7 +70,7 @@ bool TransformManager<D_>::has_frame(const std::string& frame) const {
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
 bool TransformManager<D_>::has_transform(const std::string& parent_frame, const std::string& child_frame) const {
-    throw_if(parent_frame.empty() || child_frame.empty(), "Empty frames not allowed.");
+    throw_if(parent_frame.empty() || child_frame.empty(), "Empty frames not allowed.", std::invalid_argument);
 
     for (auto it = roots().cbegin(); it != roots().cend(); ++it) {
         if (it->has_frame(parent_frame) && it->has_frame(child_frame)) {
@@ -108,11 +108,13 @@ template<int D_>
     requires(math::is_2d_or_3d<D_>)
 void TransformManager<D_>::set_transform(const std::string& parent_frame, const std::string& child_frame,
         const Pose<D>& transform) {
-    throw_if(parent_frame.empty() || child_frame.empty(), "Empty frames not allowed.");
+    throw_if(parent_frame.empty() || child_frame.empty(), "Empty frames not allowed.", std::invalid_argument);
 
     // Throw error if the parent_frame and child_frame are the same:
-    throw_if(parent_frame == child_frame, "TransformManager cannot add transform where parent frame (" + parent_frame +
-                                                  ") and child frame (" + child_frame + ") are the same.");
+    throw_if(parent_frame == child_frame,
+            "TransformManager cannot add transform where parent frame (" + parent_frame + ") and child frame (" +
+                    child_frame + ") are the same.",
+            std::invalid_argument);
 
     // Check if child frame already exists as a child (non-root) frame
     if (has_child_frame(child_frame)) {
@@ -123,7 +125,8 @@ void TransformManager<D_>::set_transform(const std::string& parent_frame, const 
         throw_if(parent_transform->parent_frame().name() != parent_frame,
                 "TransformManager cannot add " + parent_frame + "->" + child_frame + " transform because " +
                         child_frame + " already exists with parent " + parent_transform->parent_frame().name() +
-                        ". Child frames may only have one parent.");
+                        ". Child frames may only have one parent.",
+                std::invalid_argument);
 
         // Overwrite the transform
         parent_transform->transform() = transform;
@@ -164,7 +167,7 @@ inline void TransformManager<D_>::set_transform(const Transform<D>& transform) {
 template<int D_>
     requires(math::is_2d_or_3d<D_>)
 auto TransformManager<D_>::transform(const std::string& parent_frame, const std::string& child_frame) const -> Pose<D> {
-    throw_if(parent_frame.empty() || child_frame.empty(), "Empty frames not allowed.");
+    throw_if(parent_frame.empty() || child_frame.empty(), "Empty frames not allowed.", std::invalid_argument);
 
     // Get root FrameNode, which checks for existence of parent FrameNode
     const FrameNode* current_frame = &get_root_for_frame(parent_frame);

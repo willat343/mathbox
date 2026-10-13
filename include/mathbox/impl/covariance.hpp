@@ -15,7 +15,8 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Eig
     requires(SizeAtCompileTime == 1 || Derived::ColsAtCompileTime != 1)
     : Base(matrix) {
     throw_if(!skip_checks && !math::is_positive_semidefinite(matrix.eval()),
-            "Cannot initialise PositiveSemiDefiniteMatrix with matrix that isn't positive semi-definite.");
+            "Cannot initialise PositiveSemiDefiniteMatrix with matrix that isn't positive semi-definite.",
+            std::invalid_argument);
 }
 
 template<typename Scalar_, int Size_>
@@ -25,7 +26,7 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Eig
     requires(SizeAtCompileTime != 1 && Derived::ColsAtCompileTime == 1)
     : Base(Matrix(diagonal.asDiagonal())) {
     throw_if(!skip_checks && diagonal.minCoeff() < static_cast<Scalar>(0),
-            "Cannot initialise PositiveSemiDefiniteMatrix with any negative diagonal elements.");
+            "Cannot initialise PositiveSemiDefiniteMatrix with any negative diagonal elements.", std::invalid_argument);
 }
 
 template<typename Scalar_, int Size_>
@@ -34,15 +35,18 @@ PositiveSemiDefiniteMatrix<Scalar_, Size_>::PositiveSemiDefiniteMatrix(const Sca
     : Base(Matrix(Vector::Constant(size, diagonal_element).asDiagonal())) {
     if (!skip_checks) {
         throw_if(diagonal_element < static_cast<Scalar>(0),
-                "Cannot initialise PositiveSemiDefiniteMatrix with negative single diagonal element.");
+                "Cannot initialise PositiveSemiDefiniteMatrix with negative single diagonal element.",
+                std::invalid_argument);
         if constexpr (SizeAtCompileTime == Eigen::Dynamic) {
             throw_if(size == Eigen::Dynamic,
                     "Cannot initialise dynamic-size PositiveSemiDefiniteMatrix with single diagonal element without "
-                    "explicitly setting size (size was Eigen::Dynamic).");
+                    "explicitly setting size (size was Eigen::Dynamic).",
+                    std::invalid_argument);
         } else {
             throw_if(size != SizeAtCompileTime,
                     "Cannot initialise fixed-size PositiveSemiDefiniteMatrix with single diagonal "
-                    "element and a size that does not match the fixed size.");
+                    "element and a size that does not match the fixed size.",
+                    std::invalid_argument);
         }
     }
 }
@@ -64,7 +68,7 @@ template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime> covariance_from_sigmas(
         const Eigen::MatrixBase<Derived>& sigmas) {
     if constexpr (Derived::ColsAtCompileTime == Eigen::Dynamic) {
-        throw_if(sigmas.cols() != 1, "Sigmas was not a column vector.");
+        throw_if(sigmas.cols() != 1, "Sigmas was not a column vector.", std::invalid_argument);
     } else {
         static_assert(Derived::ColsAtCompileTime == 1, "Sigmas was not a column vector.");
     }
@@ -85,7 +89,7 @@ inline Eigen::Matrix<Scalar, Rows, Rows> covariance_from_sigma(const Scalar sigm
 
 template<typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> covariance_from_sigma(const Scalar sigma, const int rows) {
-    throw_if(rows < 1, "covariance_from_sigma expected rows to be a positive integer");
+    throw_if(rows < 1, "covariance_from_sigma expected rows to be a positive integer", std::invalid_argument);
     return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, covariance_from_sigma(sigma)).asDiagonal();
 }
 
@@ -98,7 +102,7 @@ template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime>
 covariance_from_variances(const Eigen::MatrixBase<Derived>& variances) {
     if constexpr (Derived::ColsAtCompileTime == Eigen::Dynamic) {
-        throw_if(variances.cols() != 1, "Variances was not a column vector.");
+        throw_if(variances.cols() != 1, "Variances was not a column vector.", std::invalid_argument);
     } else {
         static_assert(Derived::ColsAtCompileTime == 1, "Variances was not a column vector.");
     }
@@ -120,7 +124,7 @@ inline Eigen::Matrix<Scalar, Rows, Rows> covariance_from_variance(const Scalar v
 template<typename Scalar>
 inline Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> covariance_from_variance(const Scalar variance,
         const int rows) {
-    throw_if(rows < 1, "covariance_from_variance expected rows to be a positive integer");
+    throw_if(rows < 1, "covariance_from_variance expected rows to be a positive integer", std::invalid_argument);
     return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, covariance_from_variance(variance)).asDiagonal();
 }
 

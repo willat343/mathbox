@@ -63,7 +63,7 @@ import_Eigen3(
 )
 
 # Dependency: cppbox (Target: cppbox::cppbox)
-dependency_version(CPPBOX MINIMUM_VERSION "0.2.6")
+dependency_version(CPPBOX MINIMUM_VERSION "0.2.9")
 import_dependency(
     cppbox
     TARGET cppbox::cppbox

@@ -23,7 +23,7 @@ inline T lerp(const T& y_0, const T& y_1, const Scalar alpha) {
 template<IsEuclideanType EuclideanType, IsIndependentVariableType IndependentVariableType>
 inline EuclideanType linear_function(const IndependentVariableType x, const IndependentVariableType x_0,
         const IndependentVariableType x_1, const EuclideanType y_0, const EuclideanType y_1) {
-    throw_if(x_0 == x_1, "Divide by zero encountered in linear_function because x_0 == x_1.");
+    throw_if(x_0 == x_1, "Divide by zero encountered in linear_function because x_0 == x_1.", std::invalid_argument);
     return lerp(y_0, y_1, cppbox::to_sec(x - x_0) / cppbox::to_sec(x_1 - x_0));
 }
 

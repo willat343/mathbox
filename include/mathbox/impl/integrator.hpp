@@ -17,7 +17,7 @@ inline auto Integrator<IntegratedType_, IndependentVariableType_, IntegrandType_
         const IntegrandFunction<IntegrandType_, IndependentVariableType_>& integrand) const -> IntegratedType {
     // Error handling and preprocessing
     throw_if(integration_step <= IndependentVariableDifferenceType(0),
-            "Must integrate with a positive integration_step.");
+            "Must integrate with a positive integration_step.", std::invalid_argument);
     const bool forwards = start <= end;
     const IndependentVariableDifferenceType directed_integration_step = forwards ? integration_step : -integration_step;
     // Interval integration bounds

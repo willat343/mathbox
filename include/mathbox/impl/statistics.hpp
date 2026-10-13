@@ -101,15 +101,17 @@ RunningStatistics<Scalar_>::RunningStatistics(const Scalar mean_, const Scalar p
       sum_(static_cast<Scalar>(num_samples_) * mean_),
       sum_of_squares_(static_cast<Scalar>(num_samples_) * mean_ * mean_ + sum_of_square_differences_) {
     throw_if(num_samples_ == 0 && (mean_ != static_cast<Scalar>(0) || population_variance_ != static_cast<Scalar>(0)),
-            "Cannot construct RunningStatistics with zero samples but non-zero mean or non-zero variance");
+            "Cannot construct RunningStatistics with zero samples but non-zero mean or non-zero variance",
+            std::invalid_argument);
     if (num_samples_ == 1) [[unlikely]] {
         throw_if(mean_ != minimum_ || mean_ != maximum_,
-                "Cannot construct RunningStatistics with one sample where minimum or maximum != mean");
+                "Cannot construct RunningStatistics with one sample where minimum or maximum != mean",
+                std::invalid_argument);
         throw_if(population_variance_ != static_cast<Scalar>(0),
-                "Cannot construct RunningStatistics with one sample but non-zero variance");
+                "Cannot construct RunningStatistics with one sample but non-zero variance", std::invalid_argument);
     }
-    throw_if(minimum_ > maximum_, "Cannot construct RunningStatistics with minimum > maximum");
-    throw_if(maximum_ < mean_, "Cannot construct RunningStatistics with maximum < mean");
+    throw_if(minimum_ > maximum_, "Cannot construct RunningStatistics with minimum > maximum", std::invalid_argument);
+    throw_if(maximum_ < mean_, "Cannot construct RunningStatistics with maximum < mean", std::invalid_argument);
 }
 
 template<std::floating_point Scalar_>
@@ -170,7 +172,7 @@ void RunningStatistics<Scalar_>::update(const Scalar sample) {
 
 template<std::floating_point Scalar_>
 void RunningStatistics<Scalar_>::update(const RunningStatistics& statistics) {
-    throw_if(this == &statistics, "RunningStatistics should not be updated with itself.");
+    throw_if(this == &statistics, "RunningStatistics should not be updated with itself.", std::invalid_argument);
     if (statistics.num_samples() == 0) {
         return;
     } else if (num_samples() == 0) {
@@ -296,7 +298,8 @@ inline std::size_t RunningStatisticsVector<Scalar_>::size() const {
 
 template<std::floating_point Scalar_>
 void RunningStatisticsVector<Scalar_>::update(const Eigen::Vector<Scalar, Eigen::Dynamic>& samples) {
-    throw_if(samples.size() != static_cast<int>(size()), "Attempted update with different size vector.");
+    throw_if(samples.size() != static_cast<int>(size()), "Attempted update with different size vector.",
+            std::invalid_argument);
     for (std::size_t i = 0; i < size(); ++i) {
         statistics_[i].update(samples[i]);
     }
@@ -304,7 +307,7 @@ void RunningStatisticsVector<Scalar_>::update(const Eigen::Vector<Scalar, Eigen:
 
 template<std::floating_point Scalar_>
 void RunningStatisticsVector<Scalar_>::update(const std::vector<Scalar>& samples) {
-    throw_if(samples.size() != size(), "Attempted update with different size vector.");
+    throw_if(samples.size() != size(), "Attempted update with different size vector.", std::invalid_argument);
     for (std::size_t i = 0; i < size(); ++i) {
         statistics_[i].update(samples[i]);
     }
@@ -312,7 +315,7 @@ void RunningStatisticsVector<Scalar_>::update(const std::vector<Scalar>& samples
 
 template<std::floating_point Scalar_>
 void RunningStatisticsVector<Scalar_>::update(const std::vector<RunningStatistics<Scalar>>& other_statistics) {
-    throw_if(other_statistics.size() != size(), "Attempted update with different size vector.");
+    throw_if(other_statistics.size() != size(), "Attempted update with different size vector.", std::invalid_argument);
     for (std::size_t i = 0; i < size(); ++i) {
         statistics_[i].update(other_statistics[i]);
     }

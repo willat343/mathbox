@@ -13,7 +13,7 @@ namespace math {
 template<typename Derived>
 inline Derived stiffness_from_covariance(const Eigen::MatrixBase<Derived>& covariance) {
     if constexpr (Derived::RowsAtCompileTime == Eigen::Dynamic || Derived::ColsAtCompileTime == Eigen::Dynamic) {
-        throw_if(covariance.rows() != covariance.cols(), "Covariance is not square.");
+        throw_if(covariance.rows() != covariance.cols(), "Covariance is not square.", std::invalid_argument);
     } else {
         static_assert(Derived::RowsAtCompileTime == Derived::ColsAtCompileTime, "Covariance is not square.");
     }
@@ -29,7 +29,7 @@ Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_covariance(
 template<typename Derived>
 inline Derived stiffness_from_information(const Eigen::MatrixBase<Derived>& information) {
     if constexpr (Derived::RowsAtCompileTime == Eigen::Dynamic || Derived::ColsAtCompileTime == Eigen::Dynamic) {
-        throw_if(information.rows() != information.cols(), "Information is not square.");
+        throw_if(information.rows() != information.cols(), "Information is not square.", std::invalid_argument);
     } else {
         static_assert(Derived::RowsAtCompileTime == Derived::ColsAtCompileTime, "Information is not square.");
     }
@@ -46,7 +46,7 @@ template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime> stiffness_from_sigmas(
         const Eigen::MatrixBase<Derived>& sigmas) {
     if constexpr (Derived::ColsAtCompileTime == Eigen::Dynamic) {
-        throw_if(sigmas.cols() != 1, "Sigmas was not a column vector.");
+        throw_if(sigmas.cols() != 1, "Sigmas was not a column vector.", std::invalid_argument);
     } else {
         static_assert(Derived::ColsAtCompileTime == 1, "Sigmas was not a column vector.");
     }
@@ -67,7 +67,7 @@ inline Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_sigma(const Scalar sigma
 
 template<typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> stiffness_from_sigma(const Scalar sigma, const int rows) {
-    throw_if(rows < 1, "stiffness_from_sigma expected rows to be a positive integer");
+    throw_if(rows < 1, "stiffness_from_sigma expected rows to be a positive integer", std::invalid_argument);
     return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, stiffness_from_sigma(sigma)).asDiagonal();
 }
 
@@ -80,7 +80,7 @@ template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime>
 stiffness_from_variances(const Eigen::MatrixBase<Derived>& variances) {
     if constexpr (Derived::ColsAtCompileTime == Eigen::Dynamic) {
-        throw_if(variances.cols() != 1, "Variances was not a column vector.");
+        throw_if(variances.cols() != 1, "Variances was not a column vector.", std::invalid_argument);
     } else {
         static_assert(Derived::ColsAtCompileTime == 1, "Variances was not a column vector.");
     }
@@ -102,7 +102,7 @@ inline Eigen::Matrix<Scalar, Rows, Rows> stiffness_from_variance(const Scalar va
 template<typename Scalar>
 inline Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> stiffness_from_variance(const Scalar variance,
         const int rows) {
-    throw_if(rows < 1, "stiffness_from_variance expected rows to be a positive integer");
+    throw_if(rows < 1, "stiffness_from_variance expected rows to be a positive integer", std::invalid_argument);
     return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Constant(rows, stiffness_from_variance(variance)).asDiagonal();
 }
 

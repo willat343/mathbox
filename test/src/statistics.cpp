@@ -104,7 +104,7 @@ TEST(RunningStatistics, update_with_other_statistics_matches_merged_dataset) {
 
 TEST(RunningStatistics, update_with_self_throws) {
     math::RunningStatistics<double> statistics(5.0);
-    EXPECT_THROW(statistics.update(statistics), std::runtime_error);
+    EXPECT_THROW(statistics.update(statistics), std::invalid_argument);
 }
 
 TEST(RunningStatistics, update_with_zero_sample_statistics_is_noop) {
@@ -147,7 +147,7 @@ TEST(RunningStatistics, three_arg_reconstruction_sets_minimum_and_maximum_to_mea
 }
 
 TEST(RunningStatistics, zero_samples_with_nonzero_mean_throws) {
-    EXPECT_THROW(math::RunningStatistics<double>(1.0, 0.0, 0), std::runtime_error);
+    EXPECT_THROW(math::RunningStatistics<double>(1.0, 0.0, 0), std::invalid_argument);
 }
 
 TEST(RunningStatistics, zero_samples_with_zero_mean_and_variance_does_not_throw) {
@@ -155,15 +155,15 @@ TEST(RunningStatistics, zero_samples_with_zero_mean_and_variance_does_not_throw)
 }
 
 TEST(RunningStatistics, one_sample_with_mismatched_minimum_throws) {
-    EXPECT_THROW(math::RunningStatistics<double>(5.0, 0.0, 4.0, 5.0, 1), std::runtime_error);
+    EXPECT_THROW(math::RunningStatistics<double>(5.0, 0.0, 4.0, 5.0, 1), std::invalid_argument);
 }
 
 TEST(RunningStatistics, one_sample_with_nonzero_variance_throws) {
-    EXPECT_THROW(math::RunningStatistics<double>(5.0, 1.0, 1), std::runtime_error);
+    EXPECT_THROW(math::RunningStatistics<double>(5.0, 1.0, 1), std::invalid_argument);
 }
 
 TEST(RunningStatistics, minimum_greater_than_maximum_throws) {
-    EXPECT_THROW(math::RunningStatistics<double>(5.0, 0.0, 6.0, 4.0, 2), std::runtime_error);
+    EXPECT_THROW(math::RunningStatistics<double>(5.0, 0.0, 6.0, 4.0, 2), std::invalid_argument);
 }
 
 // Regression test: the maximum-vs-mean invariant check used to compare maximum against the *sum* (num_samples *
@@ -174,7 +174,7 @@ TEST(RunningStatistics, valid_negative_mean_with_large_maximum_does_not_throw) {
 }
 
 TEST(RunningStatistics, maximum_less_than_mean_throws) {
-    EXPECT_THROW(math::RunningStatistics<double>(0.0, 0.0, -2.0, -1.0, 2), std::runtime_error);
+    EXPECT_THROW(math::RunningStatistics<double>(0.0, 0.0, -2.0, -1.0, 2), std::invalid_argument);
 }
 
 TEST(RunningStatisticsVector, default_construction_is_zero) {
@@ -206,8 +206,8 @@ TEST(RunningStatisticsVector, update_with_std_vector) {
 
 TEST(RunningStatisticsVector, update_with_wrong_size_throws) {
     math::RunningStatisticsVector<double> statistics(2);
-    EXPECT_THROW(statistics.update(std::vector<double>{1.0}), std::runtime_error);
-    EXPECT_THROW(statistics.update(Eigen::Vector3d(1.0, 2.0, 3.0)), std::runtime_error);
+    EXPECT_THROW(statistics.update(std::vector<double>{1.0}), std::invalid_argument);
+    EXPECT_THROW(statistics.update(Eigen::Vector3d(1.0, 2.0, 3.0)), std::invalid_argument);
 }
 
 TEST(RunningStatisticsVector, update_with_other_running_statistics_vector) {

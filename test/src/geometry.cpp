@@ -369,7 +369,7 @@ TEST(to_pose_2D, matching_axis_does_not_throw) {
 
 TEST(to_pose_2D, mismatched_axis_throws) {
     const math::Pose<3> pose{Eigen::AngleAxisd(0.7, Eigen::Vector3d::UnitZ())};
-    EXPECT_THROW(math::to_pose_2D(pose, Eigen::Vector3d::UnitX()), std::runtime_error);
+    EXPECT_THROW(math::to_pose_2D(pose, Eigen::Vector3d::UnitX()), std::invalid_argument);
 }
 
 TEST(to_pose_2D, default_axis_skips_check) {
