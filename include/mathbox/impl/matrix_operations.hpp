@@ -1,7 +1,9 @@
 #ifndef MATHBOX_IMPL_MATRIX_OPERATIONS_HPP
 #define MATHBOX_IMPL_MATRIX_OPERATIONS_HPP
 
+#include <algorithm>
 #include <cppbox/exceptions.hpp>
+#include <limits>
 
 #include "mathbox/matrix_diagnostics.hpp"
 #include "mathbox/matrix_operations.hpp"
@@ -120,6 +122,42 @@ inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const
 
     // Return the damping
     return damping;
+}
+
+inline Eigen::Index square_root_schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& J,
+        const Eigen::Ref<const Eigen::VectorXd>& r, const int left_block_size, Eigen::MatrixXd& S_p,
+        Eigen::VectorXd& r_p, Eigen::VectorXd& pivots_mm, Eigen::VectorXd& pivots_p,
+        const double rank_threshold_factor) {
+    assert(J.rows() == r.size());
+    assert(left_block_size > 0 && left_block_size < J.cols());
+    const Eigen::Index right_block_size = J.cols() - left_block_size;
+
+    // Decompose J_m P_m = Q_m R_mm, whose numerical rank p is the number of pivots above the threshold
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_mm(J.leftCols(left_block_size));
+    qr_mm.setThreshold(rank_threshold_factor * std::numeric_limits<double>::epsilon());
+    const Eigen::Index rank = qr_mm.rank();
+    pivots_mm = qr_mm.matrixR().diagonal().cwiseAbs();
+
+    // Rotate [J_k r] by Q_m^T, applied as Householder reflections without forming Q_m, after which the first p rows
+    // are satisfied by dx_m for any dx_k. The remaining (marginal) rows give the marginal 0.5 || J~_k dx_k + r~ ||^2,
+    // their J_m entries being numerically zero (at most the first pivot below the threshold). The reflectors after the
+    // first p only mix the marginal rows, which leaves the marginal unchanged, so they are skipped.
+    const Eigen::MatrixXd J_k_r =
+            qr_mm.householderQ().setLength(rank).adjoint() *
+            (Eigen::MatrixXd(J.rows(), right_block_size + 1) << J.rightCols(right_block_size), r).finished();
+    const Eigen::Index marginal_rows = J.rows() - rank;
+
+    // Decompose J~_k P_p = Q_p R_p, giving S_p = R_p P_p^T and r_p as the leading rows of Q_p^T r~. The matrix R
+    // returned by Eigen also holds Householder vectors below its diagonal, so only its upper triangle is taken.
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_p(J_k_r.bottomLeftCorner(marginal_rows, right_block_size));
+    const Eigen::Index S_p_rows = std::min(marginal_rows, right_block_size);
+    S_p = qr_p.matrixR().topRows(S_p_rows).triangularView<Eigen::Upper>();
+    S_p = S_p * qr_p.colsPermutation().transpose();
+    r_p = (qr_p.householderQ().adjoint() * J_k_r.col(right_block_size).tail(marginal_rows)).head(S_p_rows);
+    pivots_p = qr_p.matrixR().diagonal().cwiseAbs();
+
+    // Return the numerical rank of J_m
+    return rank;
 }
 
 template<typename Derived>

@@ -146,6 +146,70 @@ double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen:
         const double symmetry_violation_threshold, const bool jacobi_scaling);
 
 /**
+ * @brief Compute the square root \f$ S_p \f$, \f$ r_p \f$ of the Schur complement of the linear least squares problem
+ * \f$ \min_{\delta x} \frac{1}{2} \| J \delta x + r \|^2 \f$, with \f$ J = [J_m \; J_k] \f$ and
+ * \f$ \delta x = [\delta x_m^T \; \delta x_k^T]^T \f$, by QR decompositions which never form \f$ J^T J \f$, such that:
+ * \f[
+ *      \min_{\delta x_m} \frac{1}{2} \| J_m \delta x_m + J_k \delta x_k + r \|^2
+ *          = \frac{1}{2} \| S_p \delta x_k + r_p \|^2 + c
+ * \f]
+ * for a constant \f$ c \f$. For the normal equations \f$ H \delta x = b \f$ with \f$ H = J^T J \f$ and
+ * \f$ b = -J^T r \f$, this gives the `schur_complement` \f$ H_p = S_p^T S_p \f$ and \f$ b_p = -S_p^T r_p \f$, but with
+ * an accuracy governed by the condition number \f$ \kappa(J) \f$ rather than \f$ \kappa(H) = \kappa(J)^2 \f$. The
+ * round-off of forming \f$ H \f$ is of order \f$ \epsilon \| H \| \f$, which can exceed the information of weakly
+ * constrained (e.g. gauge) directions, whereas here the error of their square root is of order \f$ \epsilon \| J \|
+ * \f$.
+ *
+ * The column-pivoted QR decomposition \f$ J_m P_m = Q_m R_{mm} \f$ (\f$ P_m \f$ is the permutation matrix, \f$ Q_m \f$
+ * is orthogonal, \f$ R_{mm} \f$ is upper triangular) of numerical rank \f$ p \f$ rotates the system:
+ * \f[
+ *      Q_m^T \begin{bmatrix} J_m P_m & J_k & r \end{bmatrix} =
+ *      \begin{bmatrix} R_{mm} & \tilde{J}_{mk} & \tilde{r}_m \\ 0 & \tilde{J}_k & \tilde{r} \end{bmatrix}
+ * \f]
+ * whose first \f$ p \f$ rows are satisfied by \f$ \delta x_m \f$ for any \f$ \delta x_k \f$, leaving the marginal
+ * \f$ \frac{1}{2} \| \tilde{J}_k \delta x_k + \tilde{r} \|^2 \f$ over the remaining rows. Pivots at or below
+ * \f$ \text{rank_threshold_factor} \cdot \epsilon \cdot \max_i |R_{mm}(i, i)| \f$ are directions of \f$ \delta x_m \f$
+ * unconstrained by \f$ J_m \f$, whose rows stay in the marginal, so a rank-deficient \f$ J_m \f$ needs no damping. The
+ * column-pivoted QR decomposition \f$ \tilde{J}_k P_p = Q_p R_p \f$ then compresses the marginal to at most the columns
+ * of \f$ J_k \f$ as rows:
+ * \f[
+ *      S_p = R_p P_p^T, \quad \begin{bmatrix} r_p \\ r_c \end{bmatrix} = Q_p^T \tilde{r}, \quad
+ *      c = \frac{1}{2} \| r_c \|^2
+ * \f]
+ * Column pivoting bounds each row by its pivot, \f$ |R_p(i, j)| \leq |R_p(i, i)| \f$, so rows with a numerically zero
+ * pivot can be removed, discarding at most that magnitude. The pivots behave like singular values, i.e. the square
+ * roots of the eigenvalues of \f$ H_p \f$.
+ *
+ * @param J Jacobian \f$ [J_m \; J_k] \f$
+ * @param r residual vector
+ * @param left_block_size columns of \f$ J_m \f$, or equivalently the column index of \f$ J_k \f$
+ * @param S_p returned \f$ S_p \f$, with \f$ \min(\text{rows}(J) - p, \text{cols}(J_k)) \f$ rows and columns ordered as
+ * \f$ J_k \f$
+ * @param r_p returned \f$ r_p \f$, aligned with the rows of \f$ S_p \f$
+ * @param pivots_mm returned absolute pivots \f$ |R_{mm}(i, i)| \f$ of \f$ J_m \f$, in non-increasing order
+ * @param pivots_p returned absolute pivots \f$ |R_p(i, i)| \f$, in non-increasing order and aligned with the rows of
+ * \f$ S_p \f$
+ * @param rank_threshold_factor factor scaled by the machine epsilon and the maximum pivot of \f$ J_m \f$, at or below
+ * which a pivot of \f$ J_m \f$ is considered numerically zero. The round-off of a pivot is of order
+ * \f$ \epsilon \max_i |R_{mm}(i, i)| \f$, growing with the dimensions of \f$ J_m \f$, so a factor of the order of the
+ * larger dimension of \f$ J_m \f$ is recommended, as for the conventional numerical rank (NumPy's `matrix_rank` and
+ * MATLAB's `rank` use the larger dimension, while Eigen's default uses the smaller one), or larger if the entries of
+ * \f$ J \f$ are themselves inexact. A much smaller factor risks treating a round-off pivot as genuine, whose direction
+ * of \f$ \delta x_m \f$ then projects a direction out of the marginal on the basis of round-off. A much larger factor
+ * instead treats small but genuine pivots as zero, keeping rows in the marginal that \f$ \delta x_m \f$ would satisfy,
+ * so that \f$ S_p^T S_p \f$ exceeds the exact Schur complement. It should therefore stay well below \f$ \sigma_{\min} /
+ * (\epsilon \sigma_{\max}) \f$ for the smallest genuine singular value \f$ \sigma_{\min} \f$ of \f$ J_m \f$. Pivots
+ * behave like singular values, so the threshold acts on a square-root scale: a factor of 1.0e3 is a relative singular
+ * value of about 2e-13, or 5e-26 in the eigenvalues of \f$ J_m^T J_m \f$. The same factor relative to the maximum of
+ * `pivots_p` is a suitable threshold for removing rows of \f$ S_p \f$.
+ * @return Eigen::Index numerical rank \f$ p \f$ of \f$ J_m \f$
+ */
+Eigen::Index square_root_schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& J,
+        const Eigen::Ref<const Eigen::VectorXd>& r, const int left_block_size, Eigen::MatrixXd& S_p,
+        Eigen::VectorXd& r_p, Eigen::VectorXd& pivots_mm, Eigen::VectorXd& pivots_p,
+        const double rank_threshold_factor);
+
+/**
  * @brief Compute the 3D skew-symmetric matrix \f$ [\mathbf{x}]_\times \f$ which when multiplied with a vector, is
  * equivalent to the vector cross product.
  *

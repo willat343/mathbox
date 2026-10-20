@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <limits>
 
 TEST(cumulative_row_left_sum, 2x2) {
     Eigen::Matrix2d m;
@@ -242,6 +243,140 @@ TEST(schur_complement, jacobi_scaling_asymmetric_input_still_detected) {
         EXPECT_ANY_THROW(math::schur_complement(H, b, 1, H_p, b_p, 0.0, 1.0e-9, jacobi_scaling))
                 << "jacobi_scaling = " << jacobi_scaling;
     }
+}
+
+// Deterministic full-rank matrix with entries sin((i + 1) (j + 1)), unlike sin(a i + b j + c), whose angle sum
+// identity makes any such matrix rank 2
+Eigen::MatrixXd deterministic_matrix(const int rows, const int cols) {
+    Eigen::MatrixXd M(rows, cols);
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            M(i, j) = std::sin(static_cast<double>((i + 1) * (j + 1)));
+        }
+    }
+    return M;
+}
+
+// Exact marginal of 0.5 || J dx + r ||^2 over its first left_block_size variables, for any rank of J_m, by projecting
+// out the range of J_m: H_p = J_k^T (I - J_m J_m^+) J_k and b_p = -J_k^T (I - J_m J_m^+) r
+void projected_marginal(const Eigen::MatrixXd& J, const Eigen::VectorXd& r, const int left_block_size,
+        Eigen::MatrixXd& H_p, Eigen::VectorXd& b_p) {
+    const Eigen::MatrixXd J_m = J.leftCols(left_block_size);
+    const Eigen::MatrixXd J_k = J.rightCols(J.cols() - left_block_size);
+    const Eigen::MatrixXd projector =
+            Eigen::MatrixXd::Identity(J.rows(), J.rows()) - J_m * J_m.completeOrthogonalDecomposition().pseudoInverse();
+    H_p = J_k.transpose() * projector * J_k;
+    b_p = -J_k.transpose() * projector * r;
+}
+
+TEST(square_root_schur_complement, single_variables_analytic) {
+    // H = J^T J = [2, 0; 0, 6] and b = -J^T r = (-3, -5), so marginalising the first variable gives H_p = 6, b_p = -5
+    Eigen::MatrixXd J(3, 2);
+    J << 1.0, 1.0, 1.0, -1.0, 0.0, 2.0;
+    Eigen::VectorXd r(3);
+    r << 1.0, 2.0, 3.0;
+    Eigen::MatrixXd S_p;
+    Eigen::VectorXd r_p, pivots_mm, pivots_p;
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 1, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 1);
+
+    ASSERT_EQ(S_p.rows(), 1);
+    ASSERT_EQ(S_p.cols(), 1);
+    EXPECT_NEAR(S_p(0, 0) * S_p(0, 0), 6.0, 1.0e-12);
+    EXPECT_NEAR(-S_p(0, 0) * r_p(0), -5.0, 1.0e-12);
+    EXPECT_NEAR(pivots_mm(0), std::sqrt(2.0), 1.0e-12);
+    EXPECT_NEAR(pivots_p(0), std::sqrt(6.0), 1.0e-12);
+}
+
+TEST(square_root_schur_complement, equivalent_to_schur_complement) {
+    const Eigen::MatrixXd J = deterministic_matrix(12, 7);
+    const Eigen::VectorXd r = deterministic_vector(12);
+    Eigen::MatrixXd S_p, H_p;
+    Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 3);
+    math::schur_complement(J.transpose() * J, -J.transpose() * r, 3, H_p, b_p, 0.0, 1.0e-9, false);
+
+    ASSERT_EQ(S_p.rows(), 4);
+    ASSERT_EQ(S_p.cols(), 4);
+    EXPECT_TRUE((S_p.transpose() * S_p).isApprox(H_p, 1.0e-12));
+    EXPECT_TRUE((-S_p.transpose() * r_p).isApprox(b_p, 1.0e-12));
+}
+
+TEST(square_root_schur_complement, rank_deficient_left_block_without_damping) {
+    // A duplicated column leaves a direction of dx_m unconstrained, so H_mm is singular
+    Eigen::MatrixXd J = deterministic_matrix(10, 6);
+    J.col(1) = J.col(0);
+    const Eigen::VectorXd r = deterministic_vector(10);
+    Eigen::MatrixXd S_p, H_p;
+    Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 2);
+    projected_marginal(J, r, 3, H_p, b_p);
+
+    EXPECT_TRUE((S_p.transpose() * S_p).isApprox(H_p, 1.0e-12));
+    EXPECT_TRUE((-S_p.transpose() * r_p).isApprox(b_p, 1.0e-12));
+}
+
+TEST(square_root_schur_complement, fewer_rows_than_right_block) {
+    const Eigen::MatrixXd J = deterministic_matrix(5, 6);
+    const Eigen::VectorXd r = deterministic_vector(5);
+    Eigen::MatrixXd S_p, H_p;
+    Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 2, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 2);
+    projected_marginal(J, r, 2, H_p, b_p);
+
+    ASSERT_EQ(S_p.rows(), 3);
+    ASSERT_EQ(S_p.cols(), 4);
+    ASSERT_EQ(pivots_p.size(), 3);
+    EXPECT_TRUE((S_p.transpose() * S_p).isApprox(H_p, 1.0e-12));
+    EXPECT_TRUE((-S_p.transpose() * r_p).isApprox(b_p, 1.0e-12));
+}
+
+TEST(square_root_schur_complement, all_rows_absorbed_by_left_block) {
+    const Eigen::MatrixXd J = deterministic_matrix(2, 3);
+    const Eigen::VectorXd r = deterministic_vector(2);
+    Eigen::MatrixXd S_p;
+    Eigen::VectorXd r_p, pivots_mm, pivots_p;
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 2, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 2);
+
+    EXPECT_EQ(S_p.rows(), 0);
+    EXPECT_EQ(S_p.cols(), 1);
+    EXPECT_EQ(r_p.size(), 0);
+    EXPECT_EQ(pivots_p.size(), 0);
+}
+
+TEST(square_root_schur_complement, nullspace_rows_removed_by_pivot_threshold) {
+    // A duplicated kept column gives the prior a nullspace direction, whose row has a numerically zero pivot
+    Eigen::MatrixXd J = deterministic_matrix(12, 7);
+    J.col(6) = J.col(5);
+    const Eigen::VectorXd r = deterministic_vector(12);
+    Eigen::MatrixXd S_p;
+    Eigen::VectorXd r_p, pivots_mm, pivots_p;
+    math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p, 1.0e3);
+    const double nullspace_threshold = 1.0e3 * std::numeric_limits<double>::epsilon() * pivots_p.maxCoeff();
+    const Eigen::MatrixXd S_p_reduced = math::remove_rows_by_threshold(S_p, pivots_p, nullspace_threshold);
+
+    ASSERT_EQ(S_p.rows(), 4);
+    EXPECT_EQ(S_p_reduced.rows(), 3);
+    EXPECT_TRUE((S_p_reduced.transpose() * S_p_reduced).isApprox(S_p.transpose() * S_p, 1.0e-12));
+}
+
+TEST(square_root_schur_complement, preserves_weak_information_lost_by_normal_equations) {
+    // A stiff relative residual A (x_k - x_m) and a weak absolute residual w x_m, like positions pinned tightly to each
+    // other (e.g. by an accelerometer through a trajectory) but only weakly to the world (a gauge direction). The exact
+    // marginal information of x_k is A^2 w^2 / (A^2 + w^2), but forming J^T J rounds A^2 + w^2 to A^2, so that the
+    // Schur complement of the normal equations loses it entirely.
+    const double A = 1.0e7;
+    const double w = std::sqrt(1.0e-3);
+    Eigen::MatrixXd J(2, 2);
+    J << -A, A, w, 0.0;
+    const Eigen::VectorXd r = Eigen::VectorXd::Zero(2);
+    const double information = A * A * w * w / (A * A + w * w);
+    Eigen::MatrixXd S_p, H_p;
+    Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
+    math::square_root_schur_complement(J, r, 1, S_p, r_p, pivots_mm, pivots_p, 1.0e3);
+    math::schur_complement(J.transpose() * J, -J.transpose() * r, 1, H_p, b_p, 0.0, 1.0e-9, false);
+
+    EXPECT_NEAR(S_p(0, 0) * S_p(0, 0), information, 1.0e-12 * information);
+    EXPECT_LT(H_p(0, 0), 0.5 * information);
 }
 
 TEST(reorder_symmetric_matrix, index_1_3x3) {
