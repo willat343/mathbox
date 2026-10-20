@@ -5,6 +5,8 @@
 #include <cmath>
 #include <limits>
 
+#include "test/helpers.hpp"
+
 TEST(cumulative_row_left_sum, 2x2) {
     Eigen::Matrix2d m;
     m << 1.0, 2.0, 3.0, 4.0;
@@ -104,26 +106,6 @@ TEST(schur_complement, zero_h_p_does_not_produce_nan) {
     EXPECT_NO_THROW(math::schur_complement(H, b, 1, H_p, b_p, 0.0, 1.0e-9, false));
     EXPECT_TRUE(H_p.isApprox(Eigen::MatrixXd::Zero(1, 1)));
     EXPECT_FALSE(std::isnan(H_p(0, 0)));
-}
-
-// Deterministic non-dyadic symmetric positive definite matrix, so that the scaled and unscaled paths round
-// differently and can only be compared approximately.
-Eigen::MatrixXd well_conditioned_spd(const int size) {
-    Eigen::MatrixXd M(size, size);
-    for (int i = 0; i < size; ++i) {
-        for (int j = 0; j < size; ++j) {
-            M(i, j) = std::sin(static_cast<double>(size * i + j + 1));
-        }
-    }
-    return M * M.transpose() + static_cast<double>(size) * Eigen::MatrixXd::Identity(size, size);
-}
-
-Eigen::VectorXd deterministic_vector(const int size) {
-    Eigen::VectorXd v(size);
-    for (int i = 0; i < size; ++i) {
-        v[i] = std::cos(static_cast<double>(i + 1));
-    }
-    return v;
 }
 
 TEST(schur_complement, jacobi_scaling_is_noop_on_well_scaled_matrix) {
@@ -245,22 +227,11 @@ TEST(schur_complement, jacobi_scaling_asymmetric_input_still_detected) {
     }
 }
 
-// Deterministic full-rank matrix with entries sin((i + 1) (j + 1)), unlike sin(a i + b j + c), whose angle sum
-// identity makes any such matrix rank 2
-Eigen::MatrixXd deterministic_matrix(const int rows, const int cols) {
-    Eigen::MatrixXd M(rows, cols);
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            M(i, j) = std::sin(static_cast<double>((i + 1) * (j + 1)));
-        }
-    }
-    return M;
-}
-
-// Exact marginal of 0.5 || J dx + r ||^2 over its first left_block_size variables, for any rank of J_m, by projecting
-// out the range of J_m: H_p = J_k^T (I - J_m J_m^+) J_k and b_p = -J_k^T (I - J_m J_m^+) r
-void projected_marginal(const Eigen::MatrixXd& J, const Eigen::VectorXd& r, const int left_block_size,
-        Eigen::MatrixXd& H_p, Eigen::VectorXd& b_p) {
+// Ground truth for the square_root_schur_complement tests: the exact marginal of 0.5 || J dx + r ||^2 over its first
+// left_block_size variables, for any rank of J_m, by projecting out the range of J_m:
+// H_p = J_k^T (I - J_m J_m^+) J_k and b_p = -J_k^T (I - J_m J_m^+) r
+void square_root_schur_complement_ground_truth_by_projection(const Eigen::MatrixXd& J, const Eigen::VectorXd& r,
+        const int left_block_size, Eigen::MatrixXd& H_p, Eigen::VectorXd& b_p) {
     const Eigen::MatrixXd J_m = J.leftCols(left_block_size);
     const Eigen::MatrixXd J_k = J.rightCols(J.cols() - left_block_size);
     const Eigen::MatrixXd projector =
@@ -309,7 +280,7 @@ TEST(square_root_schur_complement, rank_deficient_left_block_without_damping) {
     Eigen::MatrixXd S_p, H_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
     EXPECT_EQ(math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 2);
-    projected_marginal(J, r, 3, H_p, b_p);
+    square_root_schur_complement_ground_truth_by_projection(J, r, 3, H_p, b_p);
 
     EXPECT_TRUE((S_p.transpose() * S_p).isApprox(H_p, 1.0e-12));
     EXPECT_TRUE((-S_p.transpose() * r_p).isApprox(b_p, 1.0e-12));
@@ -321,7 +292,7 @@ TEST(square_root_schur_complement, fewer_rows_than_right_block) {
     Eigen::MatrixXd S_p, H_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
     EXPECT_EQ(math::square_root_schur_complement(J, r, 2, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 2);
-    projected_marginal(J, r, 2, H_p, b_p);
+    square_root_schur_complement_ground_truth_by_projection(J, r, 2, H_p, b_p);
 
     ASSERT_EQ(S_p.rows(), 3);
     ASSERT_EQ(S_p.cols(), 4);

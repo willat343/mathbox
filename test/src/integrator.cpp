@@ -4,17 +4,7 @@
 
 #include <chrono>
 
-template<math::IsEuclideanType EuclideanType>
-EuclideanType zero_instance() {
-    if constexpr (math::IsMatrix<EuclideanType>) {
-        // Set any dynamic-sized dimensions to 1
-        return math::MathTypeTraits<EuclideanType>::zero(
-                EuclideanType::RowsAtCompileTime == Eigen::Dynamic ? 1 : EuclideanType::RowsAtCompileTime,
-                EuclideanType::ColsAtCompileTime == Eigen::Dynamic ? 1 : EuclideanType::ColsAtCompileTime);
-    } else {
-        return math::MathTypeTraits<EuclideanType>::zero();
-    }
-}
+#include "test/helpers.hpp"
 
 template<typename Integrator>
 void test_integrate_constant(const typename Integrator::IndependentVariableType& start,
