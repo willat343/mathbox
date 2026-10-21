@@ -167,18 +167,20 @@ double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen:
  *      \begin{bmatrix} R_{mm} & \tilde{J}_{mk} & \tilde{r}_m \\ 0 & \tilde{J}_k & \tilde{r} \end{bmatrix}
  * \f]
  * whose first \f$ p \f$ rows are satisfied by \f$ \delta x_m \f$ for any \f$ \delta x_k \f$, leaving the marginal
- * \f$ \frac{1}{2} \| \tilde{J}_k \delta x_k + \tilde{r} \|^2 \f$ over the remaining rows. Pivots at or below
- * \f$ \text{rank_threshold_factor} \cdot \epsilon \cdot \max_i |R_{mm}(i, i)| \f$ are directions of \f$ \delta x_m \f$
- * unconstrained by \f$ J_m \f$, whose rows stay in the marginal, so a rank-deficient \f$ J_m \f$ needs no damping. The
- * column-pivoted QR decomposition \f$ \tilde{J}_k P_p = Q_p R_p \f$ then compresses the marginal to at most the columns
- * of \f$ J_k \f$ as rows:
+ * \f$ \frac{1}{2} \| \tilde{J}_k \delta x_k + \tilde{r} \|^2 \f$ over the remaining rows. With the tolerance
+ * \f$ \tau \f$ of `numerical_rank_tolerance` for the dimensions of \f$ J \f$, pivots at or below
+ * \f$ \tau \max_i |R_{mm}(i, i)| \f$ are directions of \f$ \delta x_m \f$ unconstrained by \f$ J_m \f$, whose rows
+ * stay in the marginal, so a rank-deficient \f$ J_m \f$ needs no damping. The column-pivoted QR decomposition
+ * \f$ \tilde{J}_k P_p = Q_p R_p \f$ then compresses the marginal to at most the columns of \f$ J_k \f$ as rows:
  * \f[
  *      S_p = R_p P_p^T, \quad \begin{bmatrix} r_p \\ r_c \end{bmatrix} = Q_p^T \tilde{r}, \quad
  *      c = \frac{1}{2} \| r_c \|^2
  * \f]
  * Column pivoting bounds each row by its pivot, \f$ |R_p(i, j)| \leq |R_p(i, i)| \f$, so rows with a numerically zero
- * pivot can be removed, discarding at most that magnitude. The pivots behave like singular values, i.e. the square
- * roots of the eigenvalues of \f$ H_p \f$.
+ * pivot, at or below \f$ \tau \max_i |R_p(i, i)| \f$ with the same tolerance, can be removed (e.g. with
+ * `remove_rows_by_threshold`), discarding at most that magnitude. Both decompositions are no larger than \f$ J \f$, so
+ * the tolerance for the dimensions of \f$ J \f$ bounds their round-off. The pivots behave like singular values, i.e.
+ * the square roots of the eigenvalues of \f$ H_p \f$.
  *
  * @param J Jacobian \f$ [J_m \; J_k] \f$
  * @param r residual vector
@@ -189,25 +191,18 @@ double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen:
  * @param pivots_mm returned absolute pivots \f$ |R_{mm}(i, i)| \f$ of \f$ J_m \f$, in non-increasing order
  * @param pivots_p returned absolute pivots \f$ |R_p(i, i)| \f$, in non-increasing order and aligned with the rows of
  * \f$ S_p \f$
- * @param rank_threshold_factor factor scaled by the machine epsilon and the maximum pivot of \f$ J_m \f$, at or below
- * which a pivot of \f$ J_m \f$ is considered numerically zero. The round-off of a pivot is of order
- * \f$ \epsilon \max_i |R_{mm}(i, i)| \f$, growing with the dimensions of \f$ J_m \f$, so a factor of the order of the
- * larger dimension of \f$ J_m \f$ is recommended, as for the conventional numerical rank (NumPy's `matrix_rank` and
- * MATLAB's `rank` use the larger dimension, while Eigen's default uses the smaller one), or larger if the entries of
- * \f$ J \f$ are themselves inexact. A much smaller factor risks treating a round-off pivot as genuine, whose direction
- * of \f$ \delta x_m \f$ then projects a direction out of the marginal on the basis of round-off. A much larger factor
- * instead treats small but genuine pivots as zero, keeping rows in the marginal that \f$ \delta x_m \f$ would satisfy,
- * so that \f$ S_p^T S_p \f$ exceeds the exact Schur complement. It should therefore stay well below \f$ \sigma_{\min} /
- * (\epsilon \sigma_{\max}) \f$ for the smallest genuine singular value \f$ \sigma_{\min} \f$ of \f$ J_m \f$. Pivots
- * behave like singular values, so the threshold acts on a square-root scale: a factor of 1.0e3 is a relative singular
- * value of about 2e-13, or 5e-26 in the eigenvalues of \f$ J_m^T J_m \f$. The same factor relative to the maximum of
- * `pivots_p` is a suitable threshold for removing rows of \f$ S_p \f$.
+ * @param rank_threshold_factor factor of the tolerance \f$ \tau \f$ of `numerical_rank_tolerance`, at or below which
+ * relative to the maximum pivot a pivot of \f$ J_m \f$ is numerically zero. The default of 1 is the conventional
+ * numerical rank tolerance, while a larger factor adds a margin, e.g. when the entries of \f$ J \f$ are inexact. A much
+ * smaller factor risks treating a round-off pivot as genuine, which then projects a direction out of the marginal on
+ * the basis of round-off. A much larger factor instead treats small but genuine pivots as zero, keeping rows in the
+ * marginal that \f$ \delta x_m \f$ would satisfy, so that \f$ S_p^T S_p \f$ exceeds the exact Schur complement.
  * @return Eigen::Index numerical rank \f$ p \f$ of \f$ J_m \f$
  */
 Eigen::Index square_root_schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& J,
         const Eigen::Ref<const Eigen::VectorXd>& r, const int left_block_size, Eigen::MatrixXd& S_p,
         Eigen::VectorXd& r_p, Eigen::VectorXd& pivots_mm, Eigen::VectorXd& pivots_p,
-        const double rank_threshold_factor);
+        const double rank_threshold_factor = 1.0);
 
 /**
  * @brief Compute the 3D skew-symmetric matrix \f$ [\mathbf{x}]_\times \f$ which when multiplied with a vector, is

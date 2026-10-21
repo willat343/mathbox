@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <limits>
 
 TEST(has_positive_diagonals, all_positive) {
     Eigen::Matrix2d m;
@@ -145,4 +146,10 @@ TEST(relative_asymmetry, scale_invariant) {
     Eigen::Matrix2d m;
     m << 1.0, 2.0, 4.0, 3.0;
     EXPECT_NEAR(math::relative_asymmetry(m), math::relative_asymmetry(Eigen::Matrix2d(1000.0 * m)), 1.0e-12);
+}
+
+TEST(numerical_rank_tolerance, larger_dimension_times_epsilon) {
+    EXPECT_DOUBLE_EQ(math::numerical_rank_tolerance(12, 7), 12.0 * std::numeric_limits<double>::epsilon());
+    EXPECT_DOUBLE_EQ(math::numerical_rank_tolerance(5, 6, 10.0), 60.0 * std::numeric_limits<double>::epsilon());
+    EXPECT_FLOAT_EQ(math::numerical_rank_tolerance<float>(3, 2), 3.0f * std::numeric_limits<float>::epsilon());
 }

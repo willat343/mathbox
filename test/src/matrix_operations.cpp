@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
-#include <limits>
 
 #include "test/helpers.hpp"
 
@@ -248,7 +247,7 @@ TEST(square_root_schur_complement, single_variables_analytic) {
     r << 1.0, 2.0, 3.0;
     Eigen::MatrixXd S_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p;
-    EXPECT_EQ(math::square_root_schur_complement(J, r, 1, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 1);
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 1, S_p, r_p, pivots_mm, pivots_p), 1);
 
     ASSERT_EQ(S_p.rows(), 1);
     ASSERT_EQ(S_p.cols(), 1);
@@ -263,7 +262,7 @@ TEST(square_root_schur_complement, equivalent_to_schur_complement) {
     const Eigen::VectorXd r = deterministic_vector(12);
     Eigen::MatrixXd S_p, H_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
-    EXPECT_EQ(math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 3);
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p), 3);
     math::schur_complement(J.transpose() * J, -J.transpose() * r, 3, H_p, b_p, 0.0, 1.0e-9, false);
 
     ASSERT_EQ(S_p.rows(), 4);
@@ -279,7 +278,7 @@ TEST(square_root_schur_complement, rank_deficient_left_block_without_damping) {
     const Eigen::VectorXd r = deterministic_vector(10);
     Eigen::MatrixXd S_p, H_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
-    EXPECT_EQ(math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 2);
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p), 2);
     square_root_schur_complement_ground_truth_by_projection(J, r, 3, H_p, b_p);
 
     EXPECT_TRUE((S_p.transpose() * S_p).isApprox(H_p, 1.0e-12));
@@ -291,7 +290,7 @@ TEST(square_root_schur_complement, fewer_rows_than_right_block) {
     const Eigen::VectorXd r = deterministic_vector(5);
     Eigen::MatrixXd S_p, H_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
-    EXPECT_EQ(math::square_root_schur_complement(J, r, 2, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 2);
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 2, S_p, r_p, pivots_mm, pivots_p), 2);
     square_root_schur_complement_ground_truth_by_projection(J, r, 2, H_p, b_p);
 
     ASSERT_EQ(S_p.rows(), 3);
@@ -306,7 +305,7 @@ TEST(square_root_schur_complement, all_rows_absorbed_by_left_block) {
     const Eigen::VectorXd r = deterministic_vector(2);
     Eigen::MatrixXd S_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p;
-    EXPECT_EQ(math::square_root_schur_complement(J, r, 2, S_p, r_p, pivots_mm, pivots_p, 1.0e3), 2);
+    EXPECT_EQ(math::square_root_schur_complement(J, r, 2, S_p, r_p, pivots_mm, pivots_p), 2);
 
     EXPECT_EQ(S_p.rows(), 0);
     EXPECT_EQ(S_p.cols(), 1);
@@ -321,8 +320,8 @@ TEST(square_root_schur_complement, nullspace_rows_removed_by_pivot_threshold) {
     const Eigen::VectorXd r = deterministic_vector(12);
     Eigen::MatrixXd S_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p;
-    math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p, 1.0e3);
-    const double nullspace_threshold = 1.0e3 * std::numeric_limits<double>::epsilon() * pivots_p.maxCoeff();
+    math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p);
+    const double nullspace_threshold = math::numerical_rank_tolerance(J.rows(), J.cols()) * pivots_p.maxCoeff();
     const Eigen::MatrixXd S_p_reduced = math::remove_rows_by_threshold(S_p, pivots_p, nullspace_threshold);
 
     ASSERT_EQ(S_p.rows(), 4);
@@ -343,7 +342,7 @@ TEST(square_root_schur_complement, preserves_weak_information_lost_by_normal_equ
     const double information = A * A * w * w / (A * A + w * w);
     Eigen::MatrixXd S_p, H_p;
     Eigen::VectorXd r_p, pivots_mm, pivots_p, b_p;
-    math::square_root_schur_complement(J, r, 1, S_p, r_p, pivots_mm, pivots_p, 1.0e3);
+    math::square_root_schur_complement(J, r, 1, S_p, r_p, pivots_mm, pivots_p);
     math::schur_complement(J.transpose() * J, -J.transpose() * r, 1, H_p, b_p, 0.0, 1.0e-9, false);
 
     EXPECT_NEAR(S_p(0, 0) * S_p(0, 0), information, 1.0e-12 * information);

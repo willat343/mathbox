@@ -117,6 +117,26 @@ template<typename Derived>
 int num_zero_rows(const Eigen::MatrixBase<Derived>& m,
         const typename Derived::Scalar precision = std::numeric_limits<typename Derived::Scalar>::epsilon());
 
+/**
+ * @brief Relative tolerance at or below which a pivot or singular value of a matrix of size `rows` by `cols` is
+ * numerically zero, relative to the largest pivot or singular value:
+ * \f[
+ *      \text{factor} \cdot \max(\text{rows}, \text{cols}) \cdot \epsilon
+ * \f]
+ * This is the conventional tolerance of the numerical rank (e.g. NumPy's `matrix_rank` and MATLAB's `rank`), since the
+ * round-off of a decomposition such as a QR or singular value decomposition grows with the dimensions of the matrix. A
+ * factor above 1 adds a margin, e.g. when the entries of the matrix are themselves inexact.
+ *
+ * @tparam Scalar
+ * @param rows
+ * @param cols
+ * @param factor
+ * @return Scalar
+ */
+template<typename Scalar = double>
+constexpr Scalar numerical_rank_tolerance(const Eigen::Index rows, const Eigen::Index cols,
+        const Scalar factor = static_cast<Scalar>(1));
+
 }
 
 #include "mathbox/impl/matrix_properties.hpp"

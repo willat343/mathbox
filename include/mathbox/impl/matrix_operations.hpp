@@ -132,9 +132,10 @@ inline Eigen::Index square_root_schur_complement(const Eigen::Ref<const Eigen::M
     assert(left_block_size > 0 && left_block_size < J.cols());
     const Eigen::Index right_block_size = J.cols() - left_block_size;
 
-    // Decompose J_m P_m = Q_m R_mm, whose numerical rank p is the number of pivots above the threshold
+    // Decompose J_m P_m = Q_m R_mm, whose numerical rank p is the number of pivots above the threshold, relative to the
+    // maximum pivot, of the conventional tolerance for the dimensions of J
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_mm(J.leftCols(left_block_size));
-    qr_mm.setThreshold(rank_threshold_factor * std::numeric_limits<double>::epsilon());
+    qr_mm.setThreshold(numerical_rank_tolerance(J.rows(), J.cols(), rank_threshold_factor));
     const Eigen::Index rank = qr_mm.rank();
     pivots_mm = qr_mm.matrixR().diagonal().cwiseAbs();
 

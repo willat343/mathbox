@@ -1,6 +1,8 @@
 #ifndef MATHBOX_IMPL_MATRIX_PROPERTIES_HPP
 #define MATHBOX_IMPL_MATRIX_PROPERTIES_HPP
 
+#include <algorithm>
+
 #include "mathbox/matrix_properties.hpp"
 
 namespace math {
@@ -83,6 +85,11 @@ int num_zero_rows(const Eigen::MatrixBase<Derived>& m, const typename Derived::S
         num_zero_rows_ += (m.row(i).isZero(precision) ? 1 : 0);
     }
     return num_zero_rows_;
+}
+
+template<typename Scalar>
+constexpr Scalar numerical_rank_tolerance(const Eigen::Index rows, const Eigen::Index cols, const Scalar factor) {
+    return factor * static_cast<Scalar>(std::max(rows, cols)) * std::numeric_limits<Scalar>::epsilon();
 }
 
 }
