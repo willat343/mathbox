@@ -74,42 +74,58 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
             .finished();
 }
 
-inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen::Ref<const Eigen::VectorXd> b,
-        const int upper_block_size, Eigen::MatrixXd& H_p, Eigen::VectorXd& b_p, const double damping_factor,
-        const double symmetry_violation_threshold, const bool jacobi_scaling) {
+template<typename DerivedMatrix, typename DerivedVector>
+    requires(std::is_same_v<typename DerivedMatrix::Scalar, typename DerivedVector::Scalar>)
+typename DerivedMatrix::Scalar schur_complement(const Eigen::MatrixBase<DerivedMatrix>& H,
+        const Eigen::MatrixBase<DerivedVector>& b, const int upper_block_size,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>& H_p,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>& b_p,
+        const typename DerivedMatrix::Scalar damping_factor,
+        const typename DerivedMatrix::Scalar symmetry_violation_threshold, const bool jacobi_scaling) {
     assert(H.rows() == H.cols() && H.rows() == b.size());
     assert(upper_block_size > 0 && upper_block_size < b.size());
     const int lower_block_size = b.size() - upper_block_size;
 
     // Apply damping to H_mm, addressing weakly constrained
-    const Eigen::MatrixXd H_mm = H.topLeftCorner(upper_block_size, upper_block_size);
-    const double damping = damping_factor * H_mm.trace() / static_cast<double>(H_mm.rows());
+    const Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic> H_mm =
+            H.topLeftCorner(upper_block_size, upper_block_size);
+    const typename DerivedMatrix::Scalar damping =
+            damping_factor * H_mm.trace() / static_cast<typename DerivedMatrix::Scalar>(H_mm.rows());
 
     // Jacobi scaling vector \f$ D^{-1} \f$ where \f$ D = \text{diag}(H_{mm})^{1/2} \f$. A non-positive diagonal entry
     // is replaced by one, leaving it unscaled, so that a non-positive-definite H_mm still fails in the decomposition
     // below rather than a NaN propagating into it.
-    Eigen::VectorXd D_inv = Eigen::VectorXd::Ones(upper_block_size);
+    Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1> D_inv =
+            Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>::Ones(upper_block_size);
     if (jacobi_scaling) {
-        const Eigen::ArrayXd H_mm_diagonal = H_mm.diagonal();
-        D_inv = (H_mm_diagonal > 0.0).select(H_mm_diagonal, 1.0).rsqrt().matrix();
+        const Eigen::Array<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1> H_mm_diagonal = H_mm.diagonal();
+        D_inv = (H_mm_diagonal > static_cast<typename DerivedMatrix::Scalar>(0))
+                        .select(H_mm_diagonal, static_cast<typename DerivedMatrix::Scalar>(1))
+                        .rsqrt()
+                        .matrix();
     }
 
     // Create LLT decomposition of the scaled block, D^{-1} (H_mm + damping I) D^{-1}, noting that scaling the damped
     // block is equivalent to adding damping / H_mm(i, i) to the unit diagonal, so damping keeps its unscaled meaning.
-    Eigen::LLT<Eigen::MatrixXd> llt(D_inv.asDiagonal() *
-                                    (H_mm + damping * Eigen::MatrixXd::Identity(upper_block_size, upper_block_size)) *
-                                    D_inv.asDiagonal());
+    Eigen::LLT<Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>> llt(
+            D_inv.asDiagonal() *
+            (H_mm + damping * Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(
+                                      upper_block_size, upper_block_size)) *
+            D_inv.asDiagonal());
     math::check_computation_info(llt.info());
 
     // Scale the off-diagonal blocks. They are scaled independently rather than transposing one of them, so that any
     // asymmetry of H is preserved into H_p and remains detectable by the symmetry check below.
-    const Eigen::MatrixXd H_km_times_D_inv =
+    const Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic> H_km_times_D_inv =
             H.bottomLeftCorner(lower_block_size, upper_block_size) * D_inv.asDiagonal();
-    const Eigen::MatrixXd D_inv_times_H_mk = D_inv.asDiagonal() * H.topRightCorner(upper_block_size, lower_block_size);
+    const Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic> D_inv_times_H_mk =
+            D_inv.asDiagonal() * H.topRightCorner(upper_block_size, lower_block_size);
 
     // Solve for the scaled H_mm inverse terms using LLT
-    const Eigen::MatrixXd H_mm_inv_times_H_mk = llt.solve(D_inv_times_H_mk);
-    const Eigen::MatrixXd H_mm_inv_times_b_m = llt.solve(D_inv.asDiagonal() * b.head(upper_block_size));
+    const Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic> H_mm_inv_times_H_mk =
+            llt.solve(D_inv_times_H_mk);
+    const Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1> H_mm_inv_times_b_m =
+            llt.solve(D_inv.asDiagonal() * b.head(upper_block_size));
 
     // Compute H_p and b_p
     H_p = H.bottomRightCorner(lower_block_size, lower_block_size) - H_km_times_D_inv * H_mm_inv_times_H_mk;
@@ -124,17 +140,23 @@ inline double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const
     return damping;
 }
 
-inline Eigen::Index square_root_schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& J,
-        const Eigen::Ref<const Eigen::VectorXd>& r, const int left_block_size, Eigen::MatrixXd& S_p,
-        Eigen::VectorXd& r_p, Eigen::VectorXd& pivots_mm, Eigen::VectorXd& pivots_p,
-        const double rank_threshold_factor) {
+template<typename DerivedMatrix, typename DerivedVector>
+    requires(std::is_same_v<typename DerivedMatrix::Scalar, typename DerivedVector::Scalar>)
+Eigen::Index square_root_schur_complement(const Eigen::MatrixBase<DerivedMatrix>& J,
+        const Eigen::MatrixBase<DerivedVector>& r, const int left_block_size,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>& S_p,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>& r_p,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>& pivots_mm,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>& pivots_p,
+        const typename DerivedMatrix::Scalar rank_threshold_factor) {
     assert(J.rows() == r.size());
     assert(left_block_size > 0 && left_block_size < J.cols());
     const Eigen::Index right_block_size = J.cols() - left_block_size;
 
     // Decompose J_m P_m = Q_m R_mm, whose numerical rank p is the number of pivots above the threshold, relative to the
     // maximum pivot, of the conventional tolerance for the dimensions of J
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_mm(J.leftCols(left_block_size));
+    Eigen::ColPivHouseholderQR<Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>> qr_mm(
+            J.leftCols(left_block_size));
     qr_mm.setThreshold(numerical_rank_tolerance(J.rows(), J.cols(), rank_threshold_factor));
     const Eigen::Index rank = qr_mm.rank();
     pivots_mm = qr_mm.matrixR().diagonal().cwiseAbs();
@@ -143,16 +165,21 @@ inline Eigen::Index square_root_schur_complement(const Eigen::Ref<const Eigen::M
     // are satisfied by dx_m for any dx_k. The remaining (marginal) rows give the marginal 0.5 || J~_k dx_k + r~ ||^2,
     // their J_m entries being numerically zero (at most the first pivot below the threshold). The reflectors after the
     // first p only mix the marginal rows, which leaves the marginal unchanged, so they are skipped.
-    const Eigen::MatrixXd J_k_r =
+    const Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic> J_k_r =
             qr_mm.householderQ().setLength(rank).adjoint() *
-            (Eigen::MatrixXd(J.rows(), right_block_size + 1) << J.rightCols(right_block_size), r).finished();
+            (Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>(J.rows(),
+                     right_block_size + 1)
+                            << J.rightCols(right_block_size),
+                    r)
+                    .finished();
     const Eigen::Index marginal_rows = J.rows() - rank;
 
     // Decompose J~_k P_p = Q_p R_p, giving S_p = R_p P_p^T and r_p as the leading rows of Q_p^T r~. The matrix R
     // returned by Eigen also holds Householder vectors below its diagonal, so only its upper triangle is taken.
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_p(J_k_r.bottomLeftCorner(marginal_rows, right_block_size));
+    Eigen::ColPivHouseholderQR<Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>> qr_p(
+            J_k_r.bottomLeftCorner(marginal_rows, right_block_size));
     const Eigen::Index S_p_rows = std::min(marginal_rows, right_block_size);
-    S_p = qr_p.matrixR().topRows(S_p_rows).triangularView<Eigen::Upper>();
+    S_p = qr_p.matrixR().topRows(S_p_rows).template triangularView<Eigen::Upper>();
     S_p = S_p * qr_p.colsPermutation().transpose();
     r_p = (qr_p.householderQ().adjoint() * J_k_r.col(right_block_size).tail(marginal_rows)).head(S_p_rows);
     pivots_p = qr_p.matrixR().diagonal().cwiseAbs();

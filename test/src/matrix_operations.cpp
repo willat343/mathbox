@@ -226,6 +226,24 @@ TEST(schur_complement, jacobi_scaling_asymmetric_input_still_detected) {
     }
 }
 
+TEST(schur_complement, long_double_scalar) {
+    // Computed in long double, e.g. as a reference of higher precision, the Schur complement must agree with that in
+    // double
+    const Eigen::MatrixXd J = deterministic_matrix(12, 7);
+    const Eigen::MatrixXd H = J.transpose() * J;
+    const Eigen::VectorXd b = -J.transpose() * deterministic_vector(12);
+    Eigen::MatrixXd H_p;
+    Eigen::VectorXd b_p;
+    math::schur_complement(H, b, 3, H_p, b_p, 0.0, 1.0e-9, false);
+    Eigen::Matrix<long double, Eigen::Dynamic, Eigen::Dynamic> H_p_long_double;
+    Eigen::Matrix<long double, Eigen::Dynamic, 1> b_p_long_double;
+    math::schur_complement(H.cast<long double>(), b.cast<long double>(), 3, H_p_long_double, b_p_long_double, 0.0,
+            1.0e-9, false);
+
+    EXPECT_TRUE(H_p_long_double.cast<double>().isApprox(H_p, 1.0e-12));
+    EXPECT_TRUE(b_p_long_double.cast<double>().isApprox(b_p, 1.0e-12));
+}
+
 // Ground truth for the square_root_schur_complement tests: the exact marginal of 0.5 || J dx + r ||^2 over its first
 // left_block_size variables, for any rank of J_m, by projecting out the range of J_m:
 // H_p = J_k^T (I - J_m J_m^+) J_k and b_p = -J_k^T (I - J_m J_m^+) r
@@ -347,6 +365,27 @@ TEST(square_root_schur_complement, preserves_weak_information_lost_by_normal_equ
 
     EXPECT_NEAR(S_p(0, 0) * S_p(0, 0), information, 1.0e-12 * information);
     EXPECT_LT(H_p(0, 0), 0.5 * information);
+}
+
+TEST(square_root_schur_complement, long_double_scalar) {
+    // Computed in long double, e.g. as a reference of higher precision, the marginal must agree with that in double
+    const Eigen::MatrixXd J = deterministic_matrix(12, 7);
+    const Eigen::VectorXd r = deterministic_vector(12);
+    Eigen::MatrixXd S_p;
+    Eigen::VectorXd r_p, pivots_mm, pivots_p;
+    math::square_root_schur_complement(J, r, 3, S_p, r_p, pivots_mm, pivots_p);
+    Eigen::Matrix<long double, Eigen::Dynamic, Eigen::Dynamic> S_p_long_double;
+    Eigen::Matrix<long double, Eigen::Dynamic, 1> r_p_long_double, pivots_mm_long_double, pivots_p_long_double;
+    EXPECT_EQ(math::square_root_schur_complement(J.cast<long double>(), r.cast<long double>(), 3, S_p_long_double,
+                      r_p_long_double, pivots_mm_long_double, pivots_p_long_double),
+            3);
+
+    EXPECT_TRUE(
+            (S_p_long_double.transpose() * S_p_long_double).cast<double>().isApprox(S_p.transpose() * S_p, 1.0e-12));
+    EXPECT_TRUE(
+            (S_p_long_double.transpose() * r_p_long_double).cast<double>().isApprox(S_p.transpose() * r_p, 1.0e-12));
+    EXPECT_TRUE(pivots_mm_long_double.cast<double>().isApprox(pivots_mm, 1.0e-12));
+    EXPECT_TRUE(pivots_p_long_double.cast<double>().isApprox(pivots_p, 1.0e-12));
 }
 
 TEST(reorder_symmetric_matrix, index_1_3x3) {

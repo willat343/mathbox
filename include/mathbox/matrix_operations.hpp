@@ -124,6 +124,10 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
  * semi-definite \f$ H \f$, Cauchy-Schwarz gives \f$ |H_{ij}| \leq \sqrt{H_{ii} H_{jj}} \f$, so the scaled entries
  * satisfy \f$ |\tilde{H}_{ij}| \leq 1 \f$ and cannot overflow.
  *
+ * The computation is in the scalar type of H, e.g. long double for a reference of higher precision.
+ *
+ * @tparam DerivedMatrix
+ * @tparam DerivedVector
  * @param H H symmetric matrix
  * @param b b vector
  * @param upper_block_size size of upper block (H_{mm}) or equivalently the index of lower block (H_{kk})
@@ -139,11 +143,16 @@ Derived reorder_symmetric_matrix(const Eigen::MatrixBase<Derived>& m, const Eige
  * changes the numerical conditioning of the decomposition. It is recommended to be false, because the Cholesky
  * backward error is componentwise and therefore already invariant to a diagonal scaling, and empirically it has not
  * been measured to improve accuracy.
- * @return double the damping applied to H_mm
+ * @return typename DerivedMatrix::Scalar the damping applied to H_mm
  */
-double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen::Ref<const Eigen::VectorXd> b,
-        const int upper_block_size, Eigen::MatrixXd& H_p, Eigen::VectorXd& b_p, const double damping_factor,
-        const double symmetry_violation_threshold, const bool jacobi_scaling);
+template<typename DerivedMatrix, typename DerivedVector>
+    requires(std::is_same_v<typename DerivedMatrix::Scalar, typename DerivedVector::Scalar>)
+typename DerivedMatrix::Scalar schur_complement(const Eigen::MatrixBase<DerivedMatrix>& H,
+        const Eigen::MatrixBase<DerivedVector>& b, const int upper_block_size,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>& H_p,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>& b_p,
+        const typename DerivedMatrix::Scalar damping_factor,
+        const typename DerivedMatrix::Scalar symmetry_violation_threshold, const bool jacobi_scaling);
 
 /**
  * @brief Compute the square root \f$ S_p \f$, \f$ r_p \f$ of the Schur complement of the linear least squares problem
@@ -182,6 +191,11 @@ double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen:
  * the tolerance for the dimensions of \f$ J \f$ bounds their round-off. The pivots behave like singular values, i.e.
  * the square roots of the eigenvalues of \f$ H_p \f$.
  *
+ * The computation is in the scalar type of \f$ J \f$, so that e.g. `J.cast<long double>()` gives a reference of
+ * higher precision, whose tolerance \f$ \tau \f$ then scales with the machine epsilon of that type.
+ *
+ * @tparam DerivedMatrix
+ * @tparam DerivedVector
  * @param J Jacobian \f$ [J_m \; J_k] \f$
  * @param r residual vector
  * @param left_block_size columns of \f$ J_m \f$, or equivalently the column index of \f$ J_k \f$
@@ -199,10 +213,15 @@ double schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& H, const Eigen:
  * marginal that \f$ \delta x_m \f$ would satisfy, so that \f$ S_p^T S_p \f$ exceeds the exact Schur complement.
  * @return Eigen::Index numerical rank \f$ p \f$ of \f$ J_m \f$
  */
-Eigen::Index square_root_schur_complement(const Eigen::Ref<const Eigen::MatrixXd>& J,
-        const Eigen::Ref<const Eigen::VectorXd>& r, const int left_block_size, Eigen::MatrixXd& S_p,
-        Eigen::VectorXd& r_p, Eigen::VectorXd& pivots_mm, Eigen::VectorXd& pivots_p,
-        const double rank_threshold_factor = 1.0);
+template<typename DerivedMatrix, typename DerivedVector>
+    requires(std::is_same_v<typename DerivedMatrix::Scalar, typename DerivedVector::Scalar>)
+Eigen::Index square_root_schur_complement(const Eigen::MatrixBase<DerivedMatrix>& J,
+        const Eigen::MatrixBase<DerivedVector>& r, const int left_block_size,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, Eigen::Dynamic>& S_p,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>& r_p,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>& pivots_mm,
+        Eigen::Matrix<typename DerivedMatrix::Scalar, Eigen::Dynamic, 1>& pivots_p,
+        const typename DerivedMatrix::Scalar rank_threshold_factor = static_cast<typename DerivedMatrix::Scalar>(1));
 
 /**
  * @brief Compute the 3D skew-symmetric matrix \f$ [\mathbf{x}]_\times \f$ which when multiplied with a vector, is
