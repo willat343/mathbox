@@ -198,12 +198,35 @@ constexpr inline Eigen::Matrix<typename Derived::Scalar, 3, 3> skew_symmetric_cr
             .finished();
 }
 
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime >= 2 && Derived::ColsAtCompileTime == 1)
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime - 1>
+orthonormal_complement(const Eigen::MatrixBase<Derived>& unit_vector) {
+    using Scalar = typename Derived::Scalar;
+    constexpr int N = Derived::RowsAtCompileTime;
+    throw_if(!unit_vector.isUnitary(), "The vector must be normalised.", std::invalid_argument);
+    // k = argmax_i |u_i|
+    Eigen::Index k{0};
+    unit_vector.cwiseAbs().maxCoeff(&k);
+    // w = u + sgn(u_k) e_k
+    Eigen::Vector<Scalar, N> w = unit_vector;
+    w[k] += unit_vector[k] < static_cast<Scalar>(0) ? static_cast<Scalar>(-1) : static_cast<Scalar>(1);
+    // H = I - 2 w w^T / (w^T w)
+    const Eigen::Matrix<Scalar, N, N> H =
+            Eigen::Matrix<Scalar, N, N>::Identity() - (static_cast<Scalar>(2) / w.squaredNorm()) * w * w.transpose();
+    // B = H without its k-th column
+    return (Eigen::Matrix<Scalar, N, N - 1>() << H.leftCols(k), H.rightCols(N - 1 - k)).finished();
+}
+
 }
 
 #if !MATHBOX_HEADER_ONLY
 namespace math {
 
 extern template Eigen::Matrix3d skew_symmetric_cross(const Eigen::MatrixBase<Eigen::Vector3d>& v);
+
+extern template Eigen::Matrix<double, 3, 2> orthonormal_complement(
+        const Eigen::MatrixBase<Eigen::Vector3d>& unit_vector);
 
 }
 #endif

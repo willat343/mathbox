@@ -248,6 +248,33 @@ template<typename Derived>
     requires(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1)
 constexpr Eigen::Matrix<typename Derived::Scalar, 3, 3> skew_symmetric_cross(const Eigen::MatrixBase<Derived>& v);
 
+/**
+ * @brief Compute an orthonormal basis \f$ \mathbf{B} \f$ (N x (N - 1)) of the orthogonal complement of a unit vector
+ * \f$ \mathbf{u} \f$ (N x 1), i.e. of the hyperplane orthogonal to it:
+ * \f[
+ *      \mathbf{B}^T \mathbf{B} = \mathbf{I}_{N-1}, \qquad \mathbf{B}^T \mathbf{u} = \mathbf{0}
+ * \f]
+ *
+ * The basis consists of the columns other than the \f$ k \f$-th of the Householder reflection
+ * \f[
+ *      \mathbf{H} = \mathbf{I} - 2 \frac{\mathbf{w} \mathbf{w}^T}{\mathbf{w}^T \mathbf{w}}, \qquad
+ *      \mathbf{w} = \mathbf{u} + \mathrm{sgn}(u_k) \mathbf{e}_k, \qquad k = \arg\max_i |u_i|
+ * \f]
+ * which maps \f$ \mathbf{e}_k \f$ to \f$ -\mathrm{sgn}(u_k) \mathbf{u} \f$, and is numerically stable since
+ * \f$ |u_k| \geq 1 / \sqrt{N} \f$. For \f$ \mathbf{u} = \pm \mathbf{e}_k \f$, the basis is the other coordinate
+ * axes in order, e.g. \f$ [\mathbf{e}_x, \mathbf{e}_y] \f$ for \f$ \mathbf{u} = \pm \mathbf{e}_z \f$. The basis
+ * and \f$ \mathbf{u} \f$ need not form a right-handed frame.
+ *
+ * @tparam Derived a fixed-size N x 1 vector, N >= 2
+ * @param unit_vector unit vector \f$ \mathbf{u} \f$, normalised (to the dummy precision of the scalar)
+ * @return Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime - 1>
+ * @throws std::invalid_argument if the vector is not normalised
+ */
+template<typename Derived>
+    requires(Derived::RowsAtCompileTime >= 2 && Derived::ColsAtCompileTime == 1)
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::RowsAtCompileTime - 1>
+orthonormal_complement(const Eigen::MatrixBase<Derived>& unit_vector);
+
 }
 
 #include "mathbox/impl/matrix_operations.hpp"

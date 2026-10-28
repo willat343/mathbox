@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <stdexcept>
+#include <vector>
 
 #include "test/helpers.hpp"
 
@@ -460,4 +462,42 @@ TEST(reorder_symmetric_matrix, index_5_6x6) {
             0.016, 0.017, 0.020, 0.005, 0.010, 0.014, 0.017, 0.019;
     Eigen::Matrix<double, 6, 6> reordered_cov = math::reorder_symmetric_matrix(cov, 5);
     EXPECT_TRUE(reordered_cov.isApprox(reordered_cov_truth));
+}
+
+TEST(orthonormal_complement, orthonormal_and_orthogonal_3d) {
+    const std::vector<Eigen::Vector3d> unit_vectors{Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY(),
+            Eigen::Vector3d::UnitZ(), -Eigen::Vector3d::UnitZ(), Eigen::Vector3d{0.1, -0.2, 1.0}.normalized(),
+            Eigen::Vector3d{-0.6, 0.6, 0.2}.normalized(), Eigen::Vector3d{1.0, 1.0, 1.0}.normalized(),
+            Eigen::Vector3d{1.0e-9, -1.0e-9, -1.0}.normalized()};
+    for (const Eigen::Vector3d& u : unit_vectors) {
+        SCOPED_TRACE(u.transpose());
+        const Eigen::Matrix<double, 3, 2> B = math::orthonormal_complement(u);
+        EXPECT_TRUE((B.transpose() * B).isIdentity(1.0e-12));
+        EXPECT_TRUE((B.transpose() * u).isZero(1.0e-12));
+    }
+}
+
+TEST(orthonormal_complement, orthonormal_and_orthogonal_2d_and_6d) {
+    const Eigen::Vector2d u_2d = Eigen::Vector2d{0.3, -0.4}.normalized();
+    const Eigen::Vector2d b_2d = math::orthonormal_complement(u_2d);
+    EXPECT_NEAR(b_2d.norm(), 1.0, 1.0e-12);
+    EXPECT_NEAR(b_2d.dot(u_2d), 0.0, 1.0e-12);
+    const Eigen::Vector<double, 6> u_6d = Eigen::Vector<double, 6>{0.1, -0.2, 0.3, 0.9, -0.5, 0.2}.normalized();
+    const Eigen::Matrix<double, 6, 5> B_6d = math::orthonormal_complement(u_6d);
+    EXPECT_TRUE((B_6d.transpose() * B_6d).isIdentity(1.0e-12));
+    EXPECT_TRUE((B_6d.transpose() * u_6d).isZero(1.0e-12));
+}
+
+TEST(orthonormal_complement, other_coordinate_axes_for_coordinate_axis) {
+    const Eigen::Matrix<double, 3, 2> e_x_e_y =
+            (Eigen::Matrix<double, 3, 2>() << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0).finished();
+    EXPECT_EQ(math::orthonormal_complement(Eigen::Vector3d::UnitZ()), e_x_e_y);
+    EXPECT_EQ(math::orthonormal_complement(Eigen::Vector3d{-Eigen::Vector3d::UnitZ()}), e_x_e_y);
+    const Eigen::Matrix<double, 3, 2> e_x_e_z =
+            (Eigen::Matrix<double, 3, 2>() << 1.0, 0.0, 0.0, 0.0, 0.0, 1.0).finished();
+    EXPECT_EQ(math::orthonormal_complement(Eigen::Vector3d::UnitY()), e_x_e_z);
+}
+
+TEST(orthonormal_complement, throws_for_unnormalised_vector) {
+    EXPECT_THROW(math::orthonormal_complement(Eigen::Vector3d{0.0, 0.0, 2.0}), std::invalid_argument);
 }
