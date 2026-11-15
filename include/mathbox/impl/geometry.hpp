@@ -123,26 +123,26 @@ inline Eigen::Matrix<Scalar, 6, 1> change_twist_reference_frame_rt(
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_tr(
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& previous_covariance,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_covariance,
+inline Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> compose_transform_covariance_tr(
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& previous_covariance,
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_covariance,
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& relative_transform,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance) {
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj = adjoint_SE_tr(relative_transform.inverse());
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj_transpose = adj.transpose();
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_cross_covariance) {
+    const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adj = adjoint_SE_tr(relative_transform.inverse());
+    const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adj_transpose = adj.transpose();
     return adj * previous_covariance * adj_transpose + relative_covariance + relative_cross_covariance * adj_transpose +
            adj * relative_cross_covariance.transpose();
 }
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_rt(
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& previous_covariance,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_covariance,
+inline Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> compose_transform_covariance_rt(
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& previous_covariance,
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_covariance,
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& relative_transform,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance) {
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj = adjoint_SE_rt(relative_transform.inverse());
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj_transpose = adj.transpose();
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_cross_covariance) {
+    const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adj = adjoint_SE_rt(relative_transform.inverse());
+    const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adj_transpose = adj.transpose();
     return adj * previous_covariance * adj_transpose + relative_covariance + relative_cross_covariance * adj_transpose +
            adj * relative_cross_covariance.transpose();
 }
@@ -292,16 +292,16 @@ Pose<D> to_pose_ND(const Pose<3>& pose, [[maybe_unused]] const Eigen::Vector3d& 
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_tr(
+inline Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adjoint_SE_tr(
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform) {
     const Eigen::Matrix<Scalar, D, 1> t = transform.translation();
     const Eigen::Matrix<Scalar, D, D> R = transform.rotation();
     if constexpr (D == 2) {
-        return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, 1>(t[1], -t[0]),
+        return (Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>() << R, Eigen::Matrix<Scalar, D, 1>(t[1], -t[0]),
                 Eigen::Matrix<Scalar, 1, D>::Zero(), 1)
                 .finished();
     } else {
-        return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, skew_symmetric_cross(t) * R,
+        return (Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>() << R, skew_symmetric_cross(t) * R,
                 Eigen::Matrix<Scalar, D, D>::Zero(), R)
                 .finished();
     }
@@ -309,16 +309,16 @@ inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_tr(
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_rt(
+inline Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adjoint_SE_rt(
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform) {
     const Eigen::Matrix<Scalar, D, 1> t = transform.translation();
     const Eigen::Matrix<Scalar, D, D> R = transform.rotation();
     if constexpr (D == 2) {
-        return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, 1>::Zero(),
+        return (Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>() << R, Eigen::Matrix<Scalar, D, 1>::Zero(),
                 Eigen::Matrix<Scalar, 1, D>(t[1], -t[0]), 1)
                 .finished();
     } else {
-        return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, D>::Zero(),
+        return (Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>() << R, Eigen::Matrix<Scalar, D, D>::Zero(),
                 skew_symmetric_cross(t) * R, R)
                 .finished();
     }

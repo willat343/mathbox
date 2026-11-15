@@ -250,11 +250,11 @@ Eigen::Matrix<Scalar, 6, 1> change_twist_reference_frame_rt(
  */
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_tr(
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& previous_covariance,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_covariance,
+Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> compose_transform_covariance_tr(
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& previous_covariance,
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_covariance,
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& relative_transform,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance);
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_cross_covariance);
 
 /**
  * @brief Overload assuming rotation-translation ordering in the covariance and adjoint.
@@ -269,11 +269,11 @@ Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_tr(
  */
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_rt(
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& previous_covariance,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_covariance,
+Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> compose_transform_covariance_rt(
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& previous_covariance,
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_covariance,
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& relative_transform,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance);
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_cross_covariance);
 
 /**
  * @brief Compute the constant twist (angular and linear velocities) required to pose \f$ T_A^B \f$ to \f$ T_A^C \f$ in
@@ -518,8 +518,7 @@ Pose<D> to_pose_ND(const Pose<3>& pose, [[maybe_unused]] const Eigen::Vector3d& 
  */
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_tr(
-        const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform);
+Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adjoint_SE_tr(const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform);
 
 /**
  * @brief Overload assuming rotation-translation [r, t] ordering.
@@ -531,8 +530,7 @@ Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_tr(
  */
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_rt(
-        const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform);
+Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adjoint_SE_rt(const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform);
 
 }
 
