@@ -4,10 +4,68 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <cmath>
+#include <cppbox/enum.hpp>
 #include <mathbox/traits.hpp>
 #include <mathbox/types.hpp>
 
 namespace math {
+
+/**
+ * @brief Degrees of freedom of an orientation in D dimensions, which is the dimension of the tangent space of SO(D).
+ *
+ * @tparam D
+ */
+template<int D>
+    requires(is_2d_or_3d<D>)
+constexpr int SODoF = D * (D - 1) / 2;
+
+/**
+ * @brief Degrees of freedom of a pose in D dimensions, which is the dimension of the tangent space of SE(D).
+ *
+ * @tparam D
+ */
+template<int D>
+    requires(is_2d_or_3d<D>)
+constexpr int SEDoF = D + SODoF<D>;
+
+/**
+ * @brief Side on which an operation is applied to an element, such as the side of a Lie group element on which a
+ * perturbation or another element is composed.
+ *
+ */
+CREATE_SMART_ENUM(ApplicationSide, LEFT, RIGHT)
+
+/**
+ * @brief Pose types.
+ *
+ * JOINT corresponds to SE(n), where the position and orientation are perturbed together.
+ * SPLIT corresponds to SO(n) x R^n, where the position and orientation are perturbed separately.
+ *
+ */
+CREATE_SMART_ENUM(SEType, JOINT, SPLIT)
+
+/**
+ * @brief Perturbation of a pose \f$ \mathbf{T}_{FC} = (\mathbf{R}, \mathbf{p}) \f$ of a child frame C in a frame F by
+ * a tangent vector \f$ \bm{\tau} = (\bm{\rho}, \bm{\theta}) \f$, ordered as position then orientation. The perturbed
+ * position and orientation are:
+ *  - JOINT, LEFT (\f$ \text{Exp}(\bm{\tau}) \mathbf{T} \f$): \f$ \text{Exp}(\bm{\theta}) \mathbf{p} +
+ * \mathbf{V}(\bm{\theta}) \bm{\rho} \f$ and \f$ \text{Exp}(\bm{\theta}) \mathbf{R} \f$
+ *  - JOINT, RIGHT (\f$ \mathbf{T} \text{Exp}(\bm{\tau}) \f$): \f$ \mathbf{p} + \mathbf{R} \mathbf{V}(\bm{\theta})
+ * \bm{\rho} \f$ and \f$ \mathbf{R} \text{Exp}(\bm{\theta}) \f$
+ *  - SPLIT, LEFT: \f$ \mathbf{p} + \bm{\rho} \f$ and \f$ \text{Exp}(\bm{\theta}) \mathbf{R} \f$
+ *  - SPLIT, RIGHT: \f$ \mathbf{p} + \bm{\rho} \f$ and \f$ \mathbf{R} \text{Exp}(\bm{\theta}) \f$
+ *
+ * where \f$ \mathbf{V}(\bm{\theta}) \f$ is the left Jacobian of SO(n). A LEFT orientation perturbation is expressed in
+ * F and a RIGHT orientation perturbation is expressed in C. The position perturbation is expressed in C for JOINT,
+ * RIGHT and in F otherwise.
+ *
+ */
+struct PosePerturbation {
+    SEType type;
+    ApplicationSide side;
+
+    bool operator==(const PosePerturbation& other) const;
+};
 
 /**
  * @brief Compute the angle between two vectors.
@@ -245,6 +303,65 @@ Eigen::Matrix<Scalar, 6, 1> compute_constant_rates(const typename Eigen::Transfo
 template<typename Scalar>
 Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_0,
         const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_1, const Scalar alpha);
+
+/**
+ * @brief Compute the Jacobian \f$ \mathbf{J} = \partial \bm{\tau}_a / \partial \bm{\tau}_b \f$ of the tangent vector
+ * \f$ \bm{\tau}_a \f$ of one perturbation of a pose with respect to the tangent vector \f$ \bm{\tau}_b \f$ of another
+ * perturbation of the same pose \f$ \mathbf{T}_{FC} = (\mathbf{R}, \mathbf{p}) \f$, where both perturbations result
+ * in the same perturbed pose. Tangent vectors \f$ \bm{\tau} = (\bm{\rho}, \bm{\theta}) \f$ are ordered as position
+ * then orientation. The Jacobian converts small perturbations and their covariances between conventions:
+ *
+ * \f[
+ *      \bm{\tau}_a \approx \mathbf{J} \bm{\tau}_b, \qquad
+ *      \bm{\Sigma}_a \approx \mathbf{J} \bm{\Sigma}_b \mathbf{J}^T
+ * \f]
+ *
+ * It is evaluated at zero perturbation, so these are exact to first order in the perturbation.
+ *
+ * To first order, where \f$ \mathbf{V}(\bm{\theta}) \approx \mathbf{I} \f$ and \f$ \text{Exp}(\bm{\theta}) \approx
+ * \mathbf{I} + [\bm{\theta}]_\times \f$, each perturbation (see `PosePerturbation`) changes the position by
+ * \f$ \delta\mathbf{p} \f$ and the orientation by \f$ \mathbf{R} \text{Exp}(\delta\bm{\theta}) \f$, with
+ * \f$ (\delta\mathbf{p}, \delta\bm{\theta}) = \mathbf{A} \bm{\tau} \f$ the tangent vector of the equivalent SPLIT,
+ * RIGHT perturbation:
+ *
+ * \f[
+ *      \mathbf{A}_\text{SPLIT,RIGHT} = \begin{bmatrix} \mathbf{I} & \mathbf{0} \\ \mathbf{0} & \mathbf{I}
+ * \end{bmatrix},
+ *      \quad
+ *      \mathbf{A}_\text{SPLIT,LEFT} = \begin{bmatrix} \mathbf{I} & \mathbf{0} \\ \mathbf{0} & \mathbf{R}^T
+ *      \end{bmatrix}, \quad
+ *      \mathbf{A}_\text{JOINT,RIGHT} = \begin{bmatrix} \mathbf{R} & \mathbf{0} \\ \mathbf{0} & \mathbf{I}
+ *      \end{bmatrix}, \quad
+ *      \mathbf{A}_\text{JOINT,LEFT} = \begin{bmatrix} \mathbf{I} & -[\mathbf{p}]_\times \\ \mathbf{0} & \mathbf{R}^T
+ *      \end{bmatrix}
+ * \f]
+ *
+ * These follow from \f$ \text{Exp}(\bm{\theta}) \mathbf{R} = \mathbf{R} \text{Exp}(\mathbf{R}^T \bm{\theta}) \f$ for
+ * the LEFT orientation perturbations, \f$ \delta\mathbf{p} = \mathbf{R} \bm{\rho} \f$ for JOINT, RIGHT, and
+ * \f$ \delta\mathbf{p} = \bm{\rho} + \bm{\theta} \times \mathbf{p} \f$ for JOINT, LEFT. Equating the equivalent
+ * perturbations \f$ \mathbf{A}_a \bm{\tau}_a = \mathbf{A}_b \bm{\tau}_b \f$ gives the Jacobian:
+ *
+ * \f[
+ *      \mathbf{J} = \mathbf{A}_a^{-1} \mathbf{A}_b
+ * \f]
+ *
+ * For example, the Jacobian of JOINT, LEFT with respect to JOINT, RIGHT is the adjoint of the pose (`adjoint_SE_tr`).
+ *
+ * In 2D the orientation tangent is a scalar \f$ \theta \f$, for which \f$ \mathbf{R}^T \f$ is replaced by 1 and
+ * \f$ -[\mathbf{p}]_\times \f$ by \f$ (-p_y, p_x)^T \f$.
+ *
+ * @tparam Scalar
+ * @tparam D
+ * @param pose pose \f$ \mathbf{T}_{FC} \f$
+ * @param perturbation perturbation \f$ a \f$ of the numerator tangent vector
+ * @param with_respect_to perturbation \f$ b \f$ of the denominator tangent vector
+ * @return Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> \f$ \mathbf{J} \f$
+ */
+template<typename Scalar, int D>
+    requires(math::is_2d_or_3d<D>)
+Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> pose_perturbation_jacobian(
+        const Eigen::Transform<Scalar, D, Eigen::Isometry>& pose, const PosePerturbation& perturbation,
+        const PosePerturbation& with_respect_to);
 
 /**
  * @brief Compute the relative transform \f$ T_B^C = (T_A^B)^{-1} T_A^C \f$ between two poses \f$ T_A^B \f$ and

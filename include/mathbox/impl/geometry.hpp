@@ -11,6 +11,10 @@
 
 namespace math {
 
+inline bool PosePerturbation::operator==(const PosePerturbation& other) const {
+    return type == other.type && side == other.side;
+}
+
 template<IsVector DerivedU, IsVector DerivedV>
     requires(std::is_same_v<typename DerivedU::Scalar, typename DerivedV::Scalar> &&
              DerivedU::SizeAtCompileTime == DerivedV::SizeAtCompileTime)
@@ -166,6 +170,44 @@ inline Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
+Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> pose_perturbation_jacobian(
+        const Eigen::Transform<Scalar, D, Eigen::Isometry>& pose, const PosePerturbation& perturbation,
+        const PosePerturbation& with_respect_to) {
+    using Jacobian = Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>;
+    using Rotation = Eigen::Matrix<Scalar, D, D>;
+    using Position = Eigen::Vector<Scalar, D>;
+
+    // Jacobian A of the tangent vector of the equivalent SPLIT, RIGHT perturbation with respect to that of another
+    // perturbation
+    const auto split_right_jacobian = [](const Rotation& R, const Position& p, const PosePerturbation& other) {
+        Jacobian J = Jacobian::Identity();
+        if constexpr (D == 3) {
+            if (other.side == ApplicationSide::LEFT) {
+                J.template bottomRightCorner<SODoF<D>, SODoF<D>>() = R.transpose();
+            }
+        }
+        if (other.type == SEType::JOINT) {
+            if (other.side == ApplicationSide::LEFT) {
+                // Derivative of Exp(theta) p with respect to theta
+                if constexpr (D == 3) {
+                    J.template topRightCorner<D, SODoF<D>>() = -so_skew(p);
+                } else {
+                    J.template topRightCorner<D, SODoF<D>>() = Position{-p[1], p[0]};
+                }
+            } else {
+                J.template topLeftCorner<D, D>() = R;
+            }
+        }
+        return J;
+    };
+
+    const Rotation R = pose.rotation();
+    const Position p = pose.translation();
+    return split_right_jacobian(R, p, perturbation).inverse() * split_right_jacobian(R, p, with_respect_to);
+}
+
+template<typename Scalar, int D>
+    requires(math::is_2d_or_3d<D>)
 inline Eigen::Transform<Scalar, D, Eigen::Isometry> relative_transform(
         const typename Eigen::Transform<Scalar, D, Eigen::Isometry>& pose_A_B,
         const typename Eigen::Transform<Scalar, D, Eigen::Isometry>& pose_A_C) {
@@ -311,6 +353,11 @@ extern template Eigen::Matrix<double, 6, 1> compute_constant_rates<double>(const
 
 extern template Eigen::Isometry3d glerp<double>(const Eigen::Isometry3d& T_0, const Eigen::Isometry3d& T_1,
         const double alpha);
+
+extern template Eigen::Matrix<double, 3, 3> pose_perturbation_jacobian<double, 2>(const Eigen::Isometry2d&,
+        const PosePerturbation&, const PosePerturbation&);
+extern template Eigen::Matrix<double, 6, 6> pose_perturbation_jacobian<double, 3>(const Eigen::Isometry3d&,
+        const PosePerturbation&, const PosePerturbation&);
 
 extern template Eigen::Isometry2d relative_transform<double, 2>(const typename Eigen::Isometry2d& pose_A_B,
         const typename Eigen::Isometry2d& pose_A_C);

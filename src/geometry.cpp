@@ -23,6 +23,11 @@ template Eigen::Matrix<double, 6, 1> compute_constant_rates<double>(const typena
 
 template Eigen::Isometry3d glerp<double>(const Eigen::Isometry3d& T_0, const Eigen::Isometry3d& T_1, const double);
 
+template Eigen::Matrix<double, 3, 3> pose_perturbation_jacobian<double, 2>(const Eigen::Isometry2d&,
+        const PosePerturbation&, const PosePerturbation&);
+template Eigen::Matrix<double, 6, 6> pose_perturbation_jacobian<double, 3>(const Eigen::Isometry3d&,
+        const PosePerturbation&, const PosePerturbation&);
+
 template Eigen::Isometry2d relative_transform<double, 2>(const typename Eigen::Isometry2d&,
         const typename Eigen::Isometry2d&);
 template Eigen::Isometry3d relative_transform<double, 3>(const typename Eigen::Isometry3d&,

@@ -4,6 +4,7 @@
 
 #include <numbers>
 #include <stdexcept>
+#include <vector>
 
 #include "mathbox/matrix_operations.hpp"
 
@@ -389,4 +390,97 @@ TEST(to_pose_ND, D2_matches_to_pose_2D) {
     const math::Pose<2> pose_nd = math::to_pose_ND<2>(pose, Eigen::Vector3d::UnitZ());
     const math::Pose<2> pose_2d = math::to_pose_2D(pose, Eigen::Vector3d::UnitZ());
     EXPECT_TRUE(pose_nd.isApprox(pose_2d));
+}
+
+/**
+ * @brief Apply a perturbation to a pose, to first order in the position tangent vector.
+ */
+Eigen::Isometry3d perturb_pose(const Eigen::Isometry3d& pose, const math::PosePerturbation& perturbation,
+        const Eigen::Vector<double, 6>& tangent) {
+    const Eigen::Vector3d rho = tangent.head<3>();
+    const Eigen::Vector3d theta = tangent.tail<3>();
+    const Eigen::Matrix3d exp_theta = Eigen::AngleAxisd(theta.norm(), theta.normalized()).toRotationMatrix();
+    const Eigen::Matrix3d R = pose.rotation();
+    const Eigen::Vector3d p = pose.translation();
+    Eigen::Isometry3d perturbed = Eigen::Isometry3d::Identity();
+    perturbed.linear() = perturbation.side == math::ApplicationSide::LEFT ? exp_theta * R : R * exp_theta;
+    if (perturbation.type == math::SEType::SPLIT) {
+        perturbed.translation() = p + rho;
+    } else if (perturbation.side == math::ApplicationSide::LEFT) {
+        perturbed.translation() = exp_theta * p + rho;
+    } else {
+        perturbed.translation() = p + R * rho;
+    }
+    return perturbed;
+}
+
+std::vector<math::PosePerturbation> pose_perturbations() {
+    return {{math::SEType::JOINT, math::ApplicationSide::LEFT}, {math::SEType::JOINT, math::ApplicationSide::RIGHT},
+            {math::SEType::SPLIT, math::ApplicationSide::LEFT}, {math::SEType::SPLIT, math::ApplicationSide::RIGHT}};
+}
+
+Eigen::Isometry3d perturbation_test_pose() {
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.linear() = Eigen::AngleAxisd(0.7, Eigen::Vector3d(1.0, -2.0, 3.0).normalized()).toRotationMatrix();
+    pose.translation() = Eigen::Vector3d(4.0, -5.0, 6.0);
+    return pose;
+}
+
+TEST(PosePerturbation, equality) {
+    const math::PosePerturbation perturbation{math::SEType::SPLIT, math::ApplicationSide::RIGHT};
+    EXPECT_TRUE(perturbation == (math::PosePerturbation{math::SEType::SPLIT, math::ApplicationSide::RIGHT}));
+    EXPECT_FALSE(perturbation == (math::PosePerturbation{math::SEType::SPLIT, math::ApplicationSide::LEFT}));
+    EXPECT_FALSE(perturbation == (math::PosePerturbation{math::SEType::JOINT, math::ApplicationSide::RIGHT}));
+}
+
+TEST(pose_perturbation_jacobian, same_perturbation_is_identity) {
+    for (const math::PosePerturbation& perturbation : pose_perturbations()) {
+        EXPECT_TRUE(math::pose_perturbation_jacobian(perturbation_test_pose(), perturbation, perturbation)
+                        .isIdentity(1.0e-12));
+    }
+}
+
+TEST(pose_perturbation_jacobian, inverse) {
+    for (const math::PosePerturbation& perturbation : pose_perturbations()) {
+        for (const math::PosePerturbation& with_respect_to : pose_perturbations()) {
+            EXPECT_TRUE((math::pose_perturbation_jacobian(perturbation_test_pose(), perturbation, with_respect_to) *
+                         math::pose_perturbation_jacobian(perturbation_test_pose(), with_respect_to, perturbation))
+                            .isIdentity(1.0e-12));
+        }
+    }
+}
+
+TEST(pose_perturbation_jacobian, joint_left_with_respect_to_joint_right_is_adjoint) {
+    EXPECT_TRUE(math::pose_perturbation_jacobian(perturbation_test_pose(),
+            {math::SEType::JOINT, math::ApplicationSide::LEFT}, {math::SEType::JOINT, math::ApplicationSide::RIGHT})
+                    .isApprox(math::adjoint_SE_tr(perturbation_test_pose())));
+}
+
+TEST(pose_perturbation_jacobian, perturbed_poses_match) {
+    const Eigen::Isometry3d pose = perturbation_test_pose();
+    const Eigen::Vector<double, 6> tangent =
+            1.0e-6 * (Eigen::Vector<double, 6>() << 1.0, -2.0, 3.0, -1.5, 2.5, 0.5).finished();
+    for (const math::PosePerturbation& perturbation : pose_perturbations()) {
+        for (const math::PosePerturbation& with_respect_to : pose_perturbations()) {
+            const Eigen::Vector<double, 6> converted_tangent =
+                    math::pose_perturbation_jacobian(pose, perturbation, with_respect_to) * tangent;
+            // Equal to first order, so the difference is of the order of the squared tangent vector
+            EXPECT_TRUE(perturb_pose(pose, perturbation, converted_tangent)
+                            .matrix()
+                            .isApprox(perturb_pose(pose, with_respect_to, tangent).matrix(), 1.0e-10));
+        }
+    }
+}
+
+TEST(pose_perturbation_jacobian, planar) {
+    Eigen::Isometry2d pose = Eigen::Isometry2d::Identity();
+    pose.linear() = Eigen::Rotation2Dd(0.7).toRotationMatrix();
+    pose.translation() = Eigen::Vector2d(4.0, -5.0);
+    // The orientation tangent of a planar pose is the same on both sides
+    EXPECT_TRUE(math::pose_perturbation_jacobian(pose, {math::SEType::SPLIT, math::ApplicationSide::LEFT},
+            {math::SEType::SPLIT, math::ApplicationSide::RIGHT})
+                    .isIdentity(1.0e-12));
+    EXPECT_TRUE(math::pose_perturbation_jacobian(pose, {math::SEType::JOINT, math::ApplicationSide::LEFT},
+            {math::SEType::JOINT, math::ApplicationSide::RIGHT})
+                    .isApprox(math::adjoint_SE_tr(pose)));
 }
