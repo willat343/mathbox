@@ -159,6 +159,21 @@ Eigen::Matrix<Scalar, 6, 1> compute_constant_rates(const typename Eigen::Transfo
 }
 
 template<typename Scalar>
+Eigen::Matrix<Scalar, 3, 3> frame_from_directions(const Eigen::Vector<Scalar, 3>& primary,
+        const Eigen::Vector<Scalar, 3>& secondary) {
+    throw_if(primary.isZero() || secondary.isZero(), "The directions must be non-zero.", std::invalid_argument);
+    Eigen::Matrix<Scalar, 3, 3> M;
+    M.col(2) = primary.normalized();
+    M.col(0) = secondary.normalized();
+    M.col(0) -= M.col(0).dot(M.col(2)) * M.col(2);
+    throw_if(M.col(0).isZero(), "The secondary direction must not be parallel to the primary direction.",
+            std::invalid_argument);
+    M.col(0).normalize();
+    M.col(1) = M.col(2).cross(M.col(0));
+    return M;
+}
+
+template<typename Scalar>
 inline Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_0,
         const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T_1, const Scalar alpha) {
     const Eigen::Translation<Scalar, 3> t_lerp = Eigen::Translation<Scalar, 3>{lerp(
@@ -225,6 +240,13 @@ inline Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
         const Eigen::Matrix<typename Derived::Scalar, 3, 3>& covariance,
         const Eigen::RotationBase<Derived, 3>& rotation) {
     return rotate_point_covariance(covariance, rotation.toRotationMatrix());
+}
+
+template<typename Scalar>
+Eigen::Matrix<Scalar, 3, 3> rotation_from_directions(const Eigen::Vector<Scalar, 3>& primary_A,
+        const Eigen::Vector<Scalar, 3>& secondary_A, const Eigen::Vector<Scalar, 3>& primary_B,
+        const Eigen::Vector<Scalar, 3>& secondary_B) {
+    return frame_from_directions(primary_A, secondary_A) * frame_from_directions(primary_B, secondary_B).transpose();
 }
 
 template<typename DerivedOmega, typename DerivedV>
@@ -351,6 +373,8 @@ extern template Eigen::Matrix<double, 6, 6> compose_transform_covariance_tr<doub
 extern template Eigen::Matrix<double, 6, 1> compute_constant_rates<double>(const typename Eigen::Isometry3d& pose_1,
         const typename Eigen::Isometry3d& pose_2, const double dt);
 
+extern template Eigen::Matrix3d frame_from_directions<double>(const Eigen::Vector3d&, const Eigen::Vector3d&);
+
 extern template Eigen::Isometry3d glerp<double>(const Eigen::Isometry3d& T_0, const Eigen::Isometry3d& T_1,
         const double alpha);
 
@@ -368,6 +392,9 @@ extern template Eigen::Matrix2d rotate_point_covariance<Eigen::Matrix2d>(
         const Eigen::MatrixBase<Eigen::Matrix2d>& covariance, const Eigen::MatrixBase<Eigen::Matrix2d>& rotation);
 extern template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(
         const Eigen::MatrixBase<Eigen::Matrix3d>& covariance, const Eigen::MatrixBase<Eigen::Matrix3d>& rotation);
+
+extern template Eigen::Matrix3d rotation_from_directions<double>(const Eigen::Vector3d&, const Eigen::Vector3d&,
+        const Eigen::Vector3d&, const Eigen::Vector3d&);
 
 #ifndef DOXYGEN_EXCLUDE
 extern template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(

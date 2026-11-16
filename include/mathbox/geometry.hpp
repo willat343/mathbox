@@ -292,6 +292,32 @@ Eigen::Matrix<Scalar, 6, 1> compute_constant_rates(const typename Eigen::Transfo
         const typename Eigen::Transform<Scalar, 3, Eigen::Isometry>& pose_2, const Scalar dt);
 
 /**
+ * @brief Construct a new frame M from two directions given in one frame A, and compute its orientation
+ * \f$ \mathbf{R}_A^M \f$ in A. M is the right-handed orthonormal frame whose z axis is the primary direction and whose
+ * x axis is the component of the secondary direction orthogonal to it (e.g. a frame with z up and x along a heading):
+ * \f[
+ *      \mathbf{R}_A^M = [\hat{\mathbf{s}}_\perp, \ \hat{\mathbf{p}} \times \hat{\mathbf{s}}_\perp, \ \hat{\mathbf{p}}],
+ *      \qquad \mathbf{s}_\perp = \mathbf{s} - (\mathbf{s} \cdot \hat{\mathbf{p}}) \hat{\mathbf{p}}
+ * \f]
+ * so the secondary direction is in the xz half-plane of positive x of M.
+ *
+ * For the rotation between two existing frames in both of which the directions are known, see
+ * `rotation_from_directions`. The axes of M are those of the triad \f$ [\hat{\mathbf{p}}, \ \hat{\mathbf{p}} \times
+ * \hat{\mathbf{s}}, \ \hat{\mathbf{p}} \times (\hat{\mathbf{p}} \times \hat{\mathbf{s}})] \f$ (normalised) of the TRIAD
+ * method referenced there, reordered with the last negated.
+ *
+ * @tparam Scalar
+ * @param primary primary direction \f$ \mathbf{p} \f$, of any non-zero length
+ * @param secondary secondary direction \f$ \mathbf{s} \f$, not parallel to the primary direction
+ * @return Eigen::Matrix<Scalar, 3, 3> rotation matrix \f$ \mathbf{R}_A^M \f$
+ * @throws std::invalid_argument if a direction is zero, or the secondary direction is parallel to the primary
+ * direction (to the dummy precision of the scalar)
+ */
+template<typename Scalar>
+Eigen::Matrix<Scalar, 3, 3> frame_from_directions(const Eigen::Vector<Scalar, 3>& primary,
+        const Eigen::Vector<Scalar, 3>& secondary);
+
+/**
  * @brief Compute the general linear interpolation for an SE(3) pose/transform.
  *
  * @tparam Scalar
@@ -406,6 +432,40 @@ template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> rotate_point_covariance(
         const Eigen::Matrix<typename Derived::Scalar, 3, 3>& covariance,
         const Eigen::RotationBase<Derived, 3>& rotation);
+
+/**
+ * @brief Compute the rotation \f$ \mathbf{R}_A^B \f$ between two existing frames A and B from a primary and a secondary
+ * direction that are each known in both frames (the TRIAD method), e.g. the orientation of a body from gravity and a
+ * heading known in the body and world frames. The primary direction is matched exactly, and the secondary direction
+ * about it:
+ * \f[
+ *      \mathbf{R}_A^B \hat{\mathbf{p}}_B = \hat{\mathbf{p}}_A, \qquad
+ *      \mathbf{R}_A^B \hat{\mathbf{s}}_{B\perp} = \hat{\mathbf{s}}_{A\perp}, \qquad
+ *      \mathbf{s}_\perp = \mathbf{s} - (\mathbf{s} \cdot \hat{\mathbf{p}}) \hat{\mathbf{p}}
+ * \f]
+ * so the angle between the primary and secondary directions may differ between the frames (e.g. from measurement
+ * error), and only the component of the secondary direction orthogonal to the primary one is used. The rotation is
+ * \f$ \mathbf{R}_A^B = \mathbf{R}_A^M (\mathbf{R}_B^M)^T \f$, with M the frame that the directions define (see
+ * `frame_from_directions`), constructed from them in A and in B.
+ *
+ * References:
+ *  - A Passive System for Determining the Attitude of a Satellite, Black (1964), AIAA Journal 2(7), pp. 1350-1351
+ *  - Three-Axis Attitude Determination from Vector Observations, Shuster & Oh (1981), Journal of Guidance and Control
+ * 4(1), pp. 70-77
+ *
+ * @tparam Scalar
+ * @param primary_A primary direction \f$ \mathbf{p}_A \f$ in frame A, of any non-zero length
+ * @param secondary_A secondary direction \f$ \mathbf{s}_A \f$ in frame A, not parallel to the primary direction
+ * @param primary_B primary direction \f$ \mathbf{p}_B \f$ in frame B, of any non-zero length
+ * @param secondary_B secondary direction \f$ \mathbf{s}_B \f$ in frame B, not parallel to the primary direction
+ * @return Eigen::Matrix<Scalar, 3, 3> rotation matrix \f$ \mathbf{R}_A^B \f$
+ * @throws std::invalid_argument if a primary direction is zero, or a secondary direction is zero or parallel to its
+ * primary direction (to the dummy precision of the scalar)
+ */
+template<typename Scalar>
+Eigen::Matrix<Scalar, 3, 3> rotation_from_directions(const Eigen::Vector<Scalar, 3>& primary_A,
+        const Eigen::Vector<Scalar, 3>& secondary_A, const Eigen::Vector<Scalar, 3>& primary_B,
+        const Eigen::Vector<Scalar, 3>& secondary_B);
 
 /**
  * @brief Compute the SO(2) cross product between an angular velocity `w` and a vector `v`.
