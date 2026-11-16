@@ -85,6 +85,7 @@ else()
         src/axis.cpp
         src/covariance.cpp
         src/decompose.cpp
+        src/differentiator.cpp
         src/geometry.cpp
         src/lerp.cpp
         src/matrix_operations.cpp
