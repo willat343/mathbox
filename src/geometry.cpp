@@ -21,6 +21,8 @@ template Eigen::Matrix<double, 6, 6> compose_transform_covariance_tr<double, 3>(
 template Eigen::Matrix<double, 6, 1> compute_constant_rates<double>(const typename Eigen::Isometry3d& pose_1,
         const typename Eigen::Isometry3d&, const double);
 
+template Eigen::Matrix3d frame_from_directions<double>(const Eigen::Vector3d&, const Eigen::Vector3d&);
+
 template Eigen::Isometry3d glerp<double>(const Eigen::Isometry3d& T_0, const Eigen::Isometry3d& T_1, const double);
 
 template Eigen::Isometry2d relative_transform<double, 2>(const typename Eigen::Isometry2d&,
@@ -32,6 +34,9 @@ template Eigen::Matrix2d rotate_point_covariance<Eigen::Matrix2d>(const Eigen::M
         const Eigen::MatrixBase<Eigen::Matrix2d>&);
 template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(const Eigen::MatrixBase<Eigen::Matrix3d>&,
         const Eigen::MatrixBase<Eigen::Matrix3d>&);
+
+template Eigen::Matrix3d rotation_from_directions<double>(const Eigen::Vector3d&, const Eigen::Vector3d&,
+        const Eigen::Vector3d&, const Eigen::Vector3d&);
 
 #ifndef DOXYGEN_EXCLUDE
 template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(

@@ -4,6 +4,7 @@
 
 #include <numbers>
 #include <stdexcept>
+#include <vector>
 
 #include "mathbox/matrix_operations.hpp"
 
@@ -125,6 +126,35 @@ TEST(compute_constant_rates, compute_constant_rates_2) {
     Eigen::Matrix<double, 6, 1> rates_reference;
     rates_reference << Eigen::Vector3d::Zero(), (end_position - start_position) / dt;
     EXPECT_TRUE(rates.isApprox(rates_reference));
+}
+
+TEST(frame_from_directions, z_along_primary_and_x_along_secondary) {
+    const Eigen::Vector3d primary{0.4, -0.2, 2.0};
+    const Eigen::Vector3d secondary{3.0, 1.0, 0.5};
+    const Eigen::Matrix3d M = math::frame_from_directions(primary, secondary);
+    EXPECT_TRUE((M.transpose() * M).isIdentity(1.0e-12));
+    EXPECT_NEAR(M.determinant(), 1.0, 1.0e-12);
+    EXPECT_TRUE(M.col(2).isApprox(primary.normalized(), 1.0e-12));
+    // The secondary direction is in the xz half-plane of positive x
+    const Eigen::Vector3d secondary_M = M.transpose() * secondary;
+    EXPECT_NEAR(secondary_M.y(), 0.0, 1.0e-12);
+    EXPECT_GT(secondary_M.x(), 0.0);
+}
+
+TEST(frame_from_directions, identity_for_z_and_x) {
+    EXPECT_TRUE(
+            math::frame_from_directions(Eigen::Vector3d{2.0 * Eigen::Vector3d::UnitZ()}, Eigen::Vector3d{1.0, 0.0, 5.0})
+                    .isIdentity(1.0e-12));
+}
+
+TEST(frame_from_directions, throws_for_zero_or_parallel_directions) {
+    const Eigen::Vector3d x = Eigen::Vector3d::UnitX();
+    const Eigen::Vector3d z = Eigen::Vector3d::UnitZ();
+    const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+    EXPECT_THROW(math::frame_from_directions(zero, x), std::invalid_argument);
+    EXPECT_THROW(math::frame_from_directions(z, zero), std::invalid_argument);
+    EXPECT_THROW(math::frame_from_directions(z, Eigen::Vector3d{-2.0 * z}), std::invalid_argument);
+    EXPECT_THROW(math::frame_from_directions(z, z), std::invalid_argument);
 }
 
 TEST(glerp, identity_identity) {
@@ -305,6 +335,64 @@ TEST(rpy, yaw_only) {
     EXPECT_NEAR(angles[0], 0.0, 1.0e-9);
     EXPECT_NEAR(angles[1], 0.0, 1.0e-9);
     EXPECT_NEAR(angles[2], yaw, 1.0e-9);
+}
+
+TEST(rotation_from_directions, recovers_rotation_from_consistent_pairs) {
+    const std::vector<Eigen::Quaterniond> rotations{Eigen::Quaterniond::Identity(),
+            Eigen::Quaterniond{Eigen::AngleAxisd{std::numbers::pi, Eigen::Vector3d::UnitX()}},
+            Eigen::Quaterniond{0.8, 0.1, 0.05, 0.2}.normalized(),
+            Eigen::Quaterniond{-0.1, 0.7, -0.6, 0.3}.normalized()};
+    const Eigen::Vector3d primary_B{0.1, -0.2, 3.0};
+    const Eigen::Vector3d secondary_B{2.0, 0.5, -0.4};
+    for (const Eigen::Quaterniond& rotation : rotations) {
+        SCOPED_TRACE(rotation.coeffs().transpose());
+        const Eigen::Matrix3d R_A_B = rotation.toRotationMatrix();
+        // The lengths of the directions do not matter
+        const Eigen::Vector3d primary_A = 0.5 * R_A_B * primary_B;
+        const Eigen::Vector3d secondary_A = 4.0 * R_A_B * secondary_B;
+        EXPECT_TRUE(math::rotation_from_directions(primary_A, secondary_A, primary_B, secondary_B)
+                        .isApprox(R_A_B, 1.0e-12));
+    }
+}
+
+TEST(rotation_from_directions, primary_exact_and_secondary_about_it_for_inconsistent_pairs) {
+    // The angle between the directions differs between the frames
+    const Eigen::Vector3d primary_A = Eigen::Vector3d::UnitZ();
+    const Eigen::Vector3d secondary_A{1.0, 0.0, 0.3};
+    const Eigen::Vector3d primary_B = Eigen::Vector3d{0.2, -0.1, 1.0}.normalized();
+    const Eigen::Vector3d secondary_B{0.0, 1.0, -0.5};
+    const Eigen::Matrix3d R_A_B = math::rotation_from_directions(primary_A, secondary_A, primary_B, secondary_B);
+    EXPECT_TRUE((R_A_B.transpose() * R_A_B).isIdentity(1.0e-12));
+    EXPECT_NEAR(R_A_B.determinant(), 1.0, 1.0e-12);
+    EXPECT_TRUE((R_A_B * primary_B).isApprox(primary_A, 1.0e-12));
+    // The secondary direction is mapped into the half-plane of the primary and secondary directions of A
+    const Eigen::Vector3d secondary = R_A_B * secondary_B;
+    EXPECT_NEAR(secondary.y(), 0.0, 1.0e-12);
+    EXPECT_GT(secondary.x(), 0.0);
+}
+
+TEST(rotation_from_directions, opposite_primary_directions_keep_secondary_heading) {
+    // A primary direction close to z in B and -z in A (e.g. gravity measured in a body frame whose z axis is down,
+    // in a z-up frame): the x axis of B keeps its heading in A, whatever the direction of the small tilt
+    const std::vector<Eigen::Vector3d> primaries_B{Eigen::Vector3d::UnitZ(), Eigen::Vector3d{0.01, 0.02, 1.0},
+            Eigen::Vector3d{-0.02, 0.01, 1.0}, Eigen::Vector3d{0.03, -0.01, 1.0}};
+    for (const Eigen::Vector3d& primary_B : primaries_B) {
+        SCOPED_TRACE(primary_B.transpose());
+        const Eigen::Matrix3d R_A_B = math::rotation_from_directions(Eigen::Vector3d{-Eigen::Vector3d::UnitZ()},
+                Eigen::Vector3d{Eigen::Vector3d::UnitX()}, primary_B, Eigen::Vector3d{Eigen::Vector3d::UnitX()});
+        EXPECT_TRUE((R_A_B * primary_B.normalized()).isApprox(-Eigen::Vector3d::UnitZ(), 1.0e-12));
+        EXPECT_NEAR(R_A_B(1, 0), 0.0, 1.0e-12);
+        EXPECT_GT(R_A_B(0, 0), 0.99);
+        EXPECT_LT(R_A_B(2, 2), -0.99);
+    }
+}
+
+TEST(rotation_from_directions, throws_for_zero_or_parallel_directions) {
+    const Eigen::Vector3d x = Eigen::Vector3d::UnitX();
+    const Eigen::Vector3d z = Eigen::Vector3d::UnitZ();
+    EXPECT_THROW(math::rotation_from_directions(Eigen::Vector3d{Eigen::Vector3d::Zero()}, x, z, x),
+            std::invalid_argument);
+    EXPECT_THROW(math::rotation_from_directions(z, x, z, Eigen::Vector3d{-2.0 * z}), std::invalid_argument);
 }
 
 TEST(so_cross, so2) {
