@@ -28,9 +28,9 @@ namespace math {
  * - The derivative is exact for polynomials of degree up to \f$ p \f$. Finite differences are the case
  *   \f$ N = p + 1 \f$, where the polynomial interpolates the samples.
  * - Windows of more than \f$ p + 1 \f$ samples smooth the derivative, attenuating noise but also fast changes.
- * - Evaluating at a sample at an end of the window gives a noisier derivative than at one inside it, unless
- *   \f$ d = p \f$. The last sample needs no later samples, while the central sample needs half a window of them,
- *   which delays its derivative by half a window when the samples arrive one by one.
+ * - Evaluating at an end of the window gives a noisier derivative than inside it, unless \f$ d = p \f$. The last
+ *   sample needs no later samples, while the central sample needs half a window of them, which delays its derivative
+ *   by half a window when the samples arrive one by one.
  * - Samples within half a window of the start or end of the data, or of a gap in it, have no centred window that
  *   stays within the data, so they are evaluated off centre, e.g. the first sample after a gap with \f$ s = 0 \f$.
  *
@@ -101,28 +101,38 @@ protected:
     static std::size_t central_index(const std::size_t window_size);
 
     /**
-     * @brief Compute the weights of the samples from the offsets of their points from that of the evaluated sample,
-     * \f$ \delta_i = x_i - x_s \f$.
+     * @brief Check that a range has one element for each sample of the window.
+     *
+     * @tparam Range forward range
+     * @param range range of the samples or of their points
+     */
+    template<std::ranges::forward_range Range>
+    void check_range_size(const Range& range) const;
+
+    /**
+     * @brief Compute the weights of the samples from the offsets of their points from the evaluation point,
+     * \f$ \delta_i = x_i - x_e \f$, e.g. the point \f$ x_s \f$ of the evaluated sample.
      *
      * The weights are found in three steps:
      * 1. The offsets are scaled to \f$ \xi_i = \delta_i / h \in [-1, 1] \f$ with \f$ h = \max_i |\delta_i| \f$, or
-     *    \f$ h = 1 \f$ for a single sample, so that their powers are in \f$ [-1, 1] \f$ for any unit of \f$ x \f$.
+     *    \f$ h = 1 \f$ for a single sample at the evaluation point, so that their powers are in \f$ [-1, 1] \f$ for any
+     *    unit of \f$ x \f$.
      * 2. The polynomial \f$ y(\xi) = \sum_{j=0}^{p} c_j \xi^j \f$ is fitted to the samples \f$ y \f$ with the
      *    column-pivoted QR decomposition \f$ A P = Q R \f$ of the Vandermonde matrix \f$ A_{ij} = \xi_i^j \f$, whose
      *    leading \f$ (p + 1) \times (p + 1) \f$ block \f$ R_1 \f$ of \f$ R \f$ is invertible since the offsets are
      *    distinct, which gives the coefficients \f$ c = P R_1^{-1} Q_1^T y \f$.
-     * 3. Since \f$ d/d\delta = h^{-1} d/d\xi \f$, the derivative is \f$ y^{(d)}(x_s) = d! \, c_d / h^d \f$, which is
+     * 3. Since \f$ d/d\delta = h^{-1} d/d\xi \f$, the derivative is \f$ y^{(d)}(x_e) = d! \, c_d / h^d \f$, which is
      *    the weighted sum of the samples with the weights
      *    \f[
      *        w = \frac{d!}{h^d} Q \begin{bmatrix} R_1^{-T} P^T e_d \\ 0 \end{bmatrix},
      *    \f]
      *    where \f$ e_d \f$ is the unit vector of the coefficient \f$ c_d \f$.
      *
-     * The round-off error of the weights grows with the polynomial degree, and it is largest for an evaluated sample at
+     * The round-off error of the weights grows with the polynomial degree, and it is largest for an evaluation point at
      * an end of the window.
      *
-     * @param offsets offsets \f$ \delta_i = x_i - x_s \f$ of the points of the \f$ N \f$ samples from that of the
-     * evaluated sample, finite and strictly increasing
+     * @param offsets offsets \f$ \delta_i = x_i - x_e \f$ of the points of the \f$ N \f$ samples from the evaluation
+     * point, finite and strictly increasing
      * @return Eigen::Matrix<Scalar, Eigen::Dynamic, 1> weights \f$ w_i \f$ of the samples, in the order of the samples
      */
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1> compute_weights(
@@ -158,6 +168,9 @@ private:
  * The weights depend on the sample points of each window, so they are computed for each window by a QR decomposition
  * (see LocalPolynomialDifferentiator::compute_weights), which costs much more than the weighted sum that follows.
  *
+ * The derivative is evaluated at the evaluated sample or, given an evaluation point \f$ x_e \f$, at any point within
+ * the window, e.g. the time of another measurement.
+ *
  * The sample points are floating-point values or time points:
  * - Time points are subtracted before their conversion to seconds, exactly for integer durations such as nanoseconds,
  *   so time points far from their clock's epoch keep their precision, and the derivative is per second to the power
@@ -176,6 +189,9 @@ private:
  * std::deque<std::chrono::steady_clock::time_point> stamps;
  * std::deque<Eigen::Matrix<double, 12, 1>> values;
  * const Eigen::Matrix<double, 12, 1> derivatives = differentiator.differentiate(stamps, values);
+ * // Or at a time within the window, e.g. that of another measurement
+ * const std::chrono::steady_clock::time_point time = stamps[3] + std::chrono::milliseconds(1);
+ * const Eigen::Matrix<double, 12, 1> derivatives_at_time = differentiator.differentiate(stamps, values, time);
  * @endcode
  *
  * @tparam Scalar_ floating-point scalar type
@@ -234,7 +250,31 @@ public:
     Sample differentiate(const SamplePoints& sample_points, const Samples& samples) const;
 
     /**
-     * @brief Compute the weights \f$ w_i \f$ of the samples for their points, in the order of the samples.
+     * @brief Differentiate a window of samples at their points, at an evaluation point within the window,
+     * \f$ y^{(d)}(x_e) = \sum_{i=0}^{N-1} w_i y_i \f$.
+     *
+     * @tparam SamplePoints forward range of sample points
+     * @tparam Samples forward range of samples
+     * @tparam SamplePoint type of the sample points and the evaluation point, a floating-point scalar or a
+     * `std::chrono::time_point`
+     * @tparam Sample type of the samples, deduced from them, a floating-point scalar or an Eigen matrix, differentiated
+     * component-wise
+     * @param sample_points points \f$ x_i \f$ of the \f$ N \f$ samples, strictly increasing
+     * @param samples window of \f$ N \f$ samples, in the order of their points
+     * @param evaluation_point point \f$ x_e \f$ at which the derivative is evaluated, within the window,
+     * \f$ x_0 \leq x_e \leq x_{N-1} \f$
+     * @return Sample derivative at the evaluation point
+     */
+    template<typename SamplePoints, typename Samples,
+            IsIndependentVariableType SamplePoint = std::ranges::range_value_t<SamplePoints>,
+            IsEuclideanType Sample = std::ranges::range_value_t<Samples>>
+        requires(cppbox::ForwardRangeOf<SamplePoints, SamplePoint> && cppbox::ForwardRangeOf<Samples, Sample>)
+    Sample differentiate(const SamplePoints& sample_points, const Samples& samples,
+            const SamplePoint& evaluation_point) const;
+
+    /**
+     * @brief Compute the weights \f$ w_i \f$ of the samples for their points, at the evaluated sample, in the order of
+     * the samples.
      *
      * @tparam SamplePoints forward range of sample points
      * @tparam SamplePoint type of the sample points, deduced from them, a floating-point scalar or a
@@ -245,6 +285,23 @@ public:
     template<typename SamplePoints, IsIndependentVariableType SamplePoint = std::ranges::range_value_t<SamplePoints>>
         requires(cppbox::ForwardRangeOf<SamplePoints, SamplePoint>)
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1> weights(const SamplePoints& sample_points) const;
+
+    /**
+     * @brief Compute the weights \f$ w_i \f$ of the samples for their points, at an evaluation point within the window,
+     * in the order of the samples.
+     *
+     * @tparam SamplePoints forward range of sample points
+     * @tparam SamplePoint type of the sample points and the evaluation point, a floating-point scalar or a
+     * `std::chrono::time_point`
+     * @param sample_points points \f$ x_i \f$ of the \f$ N \f$ samples, strictly increasing
+     * @param evaluation_point point \f$ x_e \f$ at which the derivative is evaluated, within the window,
+     * \f$ x_0 \leq x_e \leq x_{N-1} \f$
+     * @return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
+     */
+    template<typename SamplePoints, IsIndependentVariableType SamplePoint = std::ranges::range_value_t<SamplePoints>>
+        requires(cppbox::ForwardRangeOf<SamplePoints, SamplePoint>)
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> weights(const SamplePoints& sample_points,
+            const SamplePoint& evaluation_point) const;
 };
 
 /**

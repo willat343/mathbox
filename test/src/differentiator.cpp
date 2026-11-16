@@ -148,6 +148,10 @@ TEST(NonUniformLocalPolynomialDifferentiator, time_points) {
                     .isApprox(differentiator.weights(seconds_since_start), 1.0e-6));
     const double expected = differentiator.differentiate(seconds_since_start, samples);
     EXPECT_NEAR(differentiator.differentiate(times, samples), expected, 1.0e-12 * std::abs(expected));
+    // Evaluation at a time point between samples matches evaluation at its seconds since the start
+    const double expected_between_samples = differentiator.differentiate(seconds_since_start, samples, 0.006);
+    EXPECT_NEAR(differentiator.differentiate(times, samples, start_time + std::chrono::nanoseconds(6'000'000)),
+            expected_between_samples, 1.0e-12 * std::abs(expected_between_samples));
 }
 
 TEST(NonUniformLocalPolynomialDifferentiator, exact_for_polynomials) {
@@ -186,6 +190,33 @@ TEST(NonUniformLocalPolynomialDifferentiator, exact_for_polynomials) {
                             << ", s = " << evaluation_index;
                 }
             }
+        }
+    }
+}
+
+TEST(NonUniformLocalPolynomialDifferentiator, evaluation_point) {
+    // Evaluation at the point of the evaluated sample gives its weights, and evaluation at random points within the
+    // window, between the samples, is exact for polynomials of degree up to p
+    const std::vector<double> times{0.0, 0.011, 0.019, 0.032, 0.04, 0.048, 0.061};
+    for (const std::size_t evaluation_index : {std::size_t{0}, std::size_t{3}, std::size_t{6}}) {
+        const math::NonUniformLocalPolynomialDifferentiator<double> differentiator(7, 3, 1, evaluation_index);
+        EXPECT_TRUE(differentiator.weights(times, times[evaluation_index]).isApprox(differentiator.weights(times)));
+    }
+    const std::vector<double> coefficients{0.3, -0.7, 0.5, 0.9};
+    std::vector<double> samples;
+    for (const double time : times) {
+        samples.push_back(polynomial_derivative(coefficients, time, 0));
+    }
+    std::mt19937 generator(0);
+    std::uniform_real_distribution<double> distribution(times.front(), times.back());
+    for (int i = 0; i < 20; ++i) {
+        const double evaluation_point = distribution(generator);
+        for (unsigned int derivative_order = 0; derivative_order <= 3; ++derivative_order) {
+            const double expected = polynomial_derivative(coefficients, evaluation_point, derivative_order);
+            EXPECT_NEAR(math::NonUniformLocalPolynomialDifferentiator<double>(7, 3, derivative_order)
+                                .differentiate(times, samples, evaluation_point),
+                    expected, 1.0e-6 * std::max(1.0, std::abs(expected)))
+                    << "x_e = " << evaluation_point << ", d = " << derivative_order;
         }
     }
 }
@@ -247,6 +278,12 @@ TEST(NonUniformLocalPolynomialDifferentiator, invalid_arguments) {
             std::invalid_argument);
     EXPECT_THROW(differentiator.differentiate(std::vector<double>{0.0, 1.0, std::numeric_limits<double>::infinity()},
                          samples),
+            std::invalid_argument);
+    // Evaluation points outside the window or NaN
+    const std::vector<double> times{0.0, 1.0, 2.0};
+    EXPECT_THROW(differentiator.differentiate(times, samples, -0.5), std::invalid_argument);
+    EXPECT_THROW(differentiator.differentiate(times, samples, 2.5), std::invalid_argument);
+    EXPECT_THROW(differentiator.differentiate(times, samples, std::numeric_limits<double>::quiet_NaN()),
             std::invalid_argument);
     // Integer samples are rejected at compile time, since their weighted sum would be truncated, and so are integer
     // sample points, which are neither floating-point values nor time points

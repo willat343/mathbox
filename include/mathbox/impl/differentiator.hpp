@@ -62,6 +62,15 @@ inline std::size_t LocalPolynomialDifferentiator<Scalar_>::central_index(const s
 }
 
 template<std::floating_point Scalar_>
+template<std::ranges::forward_range Range>
+inline void LocalPolynomialDifferentiator<Scalar_>::check_range_size(const Range& range) const {
+    throw_if(std::cmp_not_equal(std::ranges::distance(range), window_size()),
+            "Range size (" + std::to_string(std::ranges::distance(range)) + ") must equal the window size (" +
+                    std::to_string(window_size()) + ").",
+            std::invalid_argument);
+}
+
+template<std::floating_point Scalar_>
 auto LocalPolynomialDifferentiator<Scalar_>::compute_weights(
         const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& offsets) const -> Eigen::Matrix<Scalar, Eigen::Dynamic, 1> {
     // Check that the offsets are finite and strictly increasing, so distinct, where the window size, polynomial degree
@@ -72,7 +81,7 @@ auto LocalPolynomialDifferentiator<Scalar_>::compute_weights(
 
     // Scale the offsets to xi_i = delta_i / h in [-1, 1] with h = max_i |delta_i|, so that their powers are in [-1, 1]
     // for any unit of x (the accuracy barely depends on it, since Householder QR is insensitive to the scale of the
-    // columns), except for a single sample, the evaluated one, where h = 1 since any scale gives xi_0 = 0
+    // columns), except for a single sample at the evaluation point, where h = 1 since any scale gives xi_0 = 0
     const Scalar max_absolute_offset = offsets.cwiseAbs().maxCoeff();
     const Scalar scale = max_absolute_offset > static_cast<Scalar>(0) ? max_absolute_offset : static_cast<Scalar>(1);
     // Vandermonde matrix of size N x (p + 1), A_ij = xi_i^j, built column by column, A_ij = A_i(j-1) xi_i
@@ -86,8 +95,8 @@ auto LocalPolynomialDifferentiator<Scalar_>::compute_weights(
     // decomposition A P = Q R, c = P R_1^-1 Q_1^T y, where the leading block R_1 of R is invertible since the N > p
     // offsets are distinct
     const Eigen::ColPivHouseholderQR<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> vandermonde_qr(vandermonde);
-    // Since d/ddelta = 1 / h d/dxi, the derivative at the evaluated sample (xi = 0) is y^(d)(x_s) = d! / h^d c_d, which
-    // is linear in the samples, y^(d)(x_s) = sum_i w_i y_i, with the weights w = d! / h^d Q_1 R_1^-T P^T e_d
+    // Since d/ddelta = 1 / h d/dxi, the derivative at the evaluation point (xi = 0) is y^(d)(x_e) = d! / h^d c_d, which
+    // is linear in the samples, y^(d)(x_e) = sum_i w_i y_i, with the weights w = d! / h^d Q_1 R_1^-T P^T e_d
     // = d! / h^d Q [R_1^-T P^T e_d; 0], computed from right to left in place
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1> weights = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(offsets.size());
     weights.head(polynomial_degree() + 1) = vandermonde_qr.matrixR()
@@ -107,10 +116,7 @@ template<typename Samples, IsEuclideanType Sample>
     requires(cppbox::ForwardRangeOf<Samples, Sample>)
 inline Sample LocalPolynomialDifferentiator<Scalar_>::weighted_sum(
         const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& weights, const Samples& samples) const {
-    throw_if(std::cmp_not_equal(std::ranges::distance(samples), window_size()),
-            "Number of samples (" + std::to_string(std::ranges::distance(samples)) + ") must equal the window size (" +
-                    std::to_string(window_size()) + ").",
-            std::invalid_argument);
+    check_range_size(samples);
     // Weighted sum, starting from the first term since a dynamic-size zero would need the sample size
     const auto first_sample = std::ranges::begin(samples);
     return std::inner_product(std::next(weights.begin()), weights.end(), std::next(first_sample),
@@ -138,22 +144,41 @@ inline Sample NonUniformLocalPolynomialDifferentiator<Scalar_>::differentiate(co
 }
 
 template<std::floating_point Scalar_>
+template<typename SamplePoints, typename Samples, IsIndependentVariableType SamplePoint, IsEuclideanType Sample>
+    requires(cppbox::ForwardRangeOf<SamplePoints, SamplePoint> && cppbox::ForwardRangeOf<Samples, Sample>)
+inline Sample NonUniformLocalPolynomialDifferentiator<Scalar_>::differentiate(const SamplePoints& sample_points,
+        const Samples& samples, const SamplePoint& evaluation_point) const {
+    return this->weighted_sum(weights(sample_points, evaluation_point), samples);
+}
+
+template<std::floating_point Scalar_>
 template<typename SamplePoints, IsIndependentVariableType SamplePoint>
     requires(cppbox::ForwardRangeOf<SamplePoints, SamplePoint>)
 inline auto NonUniformLocalPolynomialDifferentiator<Scalar_>::weights(const SamplePoints& sample_points) const
         -> Eigen::Matrix<Scalar, Eigen::Dynamic, 1> {
-    throw_if(std::cmp_not_equal(std::ranges::distance(sample_points), this->window_size()),
-            "Number of sample points (" + std::to_string(std::ranges::distance(sample_points)) +
-                    ") must equal the window size (" + std::to_string(this->window_size()) + ").",
-            std::invalid_argument);
-    // Offsets of the sample points from that of the evaluated sample, x_i - x_s, converted to seconds for time points
-    // after their subtraction, so that time points far from their clock's epoch keep their precision
-    const SamplePoint evaluation_sample_point = *std::ranges::next(std::ranges::begin(sample_points),
-            static_cast<std::ranges::range_difference_t<SamplePoints>>(this->evaluation_index()));
+    // Evaluate at the point of the evaluated sample, x_e = x_s, which exists once the number of points is checked
+    this->check_range_size(sample_points);
+    return weights(sample_points,
+            *std::ranges::next(std::ranges::begin(sample_points),
+                    static_cast<std::ranges::range_difference_t<SamplePoints>>(this->evaluation_index())));
+}
+
+template<std::floating_point Scalar_>
+template<typename SamplePoints, IsIndependentVariableType SamplePoint>
+    requires(cppbox::ForwardRangeOf<SamplePoints, SamplePoint>)
+inline auto NonUniformLocalPolynomialDifferentiator<Scalar_>::weights(const SamplePoints& sample_points,
+        const SamplePoint& evaluation_point) const -> Eigen::Matrix<Scalar, Eigen::Dynamic, 1> {
+    this->check_range_size(sample_points);
+    // Offsets of the sample points from the evaluation point, x_i - x_e, converted to seconds for time points after
+    // their subtraction, so that time points far from their clock's epoch keep their precision
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1> offsets(this->window_size());
-    std::ranges::transform(sample_points, offsets.begin(), [&evaluation_sample_point](const SamplePoint& sample_point) {
-        return cppbox::to_sec<Scalar>(sample_point - evaluation_sample_point);
+    std::ranges::transform(sample_points, offsets.begin(), [&evaluation_point](const SamplePoint& sample_point) {
+        return cppbox::to_sec<Scalar>(sample_point - evaluation_point);
     });
+    // Check that the evaluation point is within the window, with sample points at or before it and at or after it,
+    // which a NaN evaluation point fails
+    throw_if(!((offsets.array() <= static_cast<Scalar>(0)).any() && (offsets.array() >= static_cast<Scalar>(0)).any()),
+            "Evaluation point must be within the window.", std::invalid_argument);
     return this->compute_weights(offsets);
 }
 
