@@ -11,6 +11,10 @@
 
 namespace math {
 
+inline bool PosePerturbation::operator==(const PosePerturbation& other) const {
+    return type == other.type && side == other.side;
+}
+
 template<IsVector DerivedU, IsVector DerivedV>
     requires(std::is_same_v<typename DerivedU::Scalar, typename DerivedV::Scalar> &&
              DerivedU::SizeAtCompileTime == DerivedV::SizeAtCompileTime)
@@ -119,26 +123,26 @@ inline Eigen::Matrix<Scalar, 6, 1> change_twist_reference_frame_rt(
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_tr(
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& previous_covariance,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_covariance,
+inline Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> compose_transform_covariance_tr(
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& previous_covariance,
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_covariance,
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& relative_transform,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance) {
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj = adjoint_SE_tr(relative_transform.inverse());
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj_transpose = adj.transpose();
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_cross_covariance) {
+    const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adj = adjoint_SE_tr(relative_transform.inverse());
+    const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adj_transpose = adj.transpose();
     return adj * previous_covariance * adj_transpose + relative_covariance + relative_cross_covariance * adj_transpose +
            adj * relative_cross_covariance.transpose();
 }
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> compose_transform_covariance_rt(
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& previous_covariance,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_covariance,
+inline Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> compose_transform_covariance_rt(
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& previous_covariance,
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_covariance,
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& relative_transform,
-        const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>& relative_cross_covariance) {
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj = adjoint_SE_rt(relative_transform.inverse());
-    const Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adj_transpose = adj.transpose();
+        const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>& relative_cross_covariance) {
+    const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adj = adjoint_SE_rt(relative_transform.inverse());
+    const Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adj_transpose = adj.transpose();
     return adj * previous_covariance * adj_transpose + relative_covariance + relative_cross_covariance * adj_transpose +
            adj * relative_cross_covariance.transpose();
 }
@@ -162,6 +166,44 @@ inline Eigen::Transform<Scalar, 3, Eigen::Isometry> glerp(const Eigen::Transform
     const Eigen::Quaternion<Scalar> q_lerp =
             Eigen::Quaternion<Scalar>{T_0.rotation()}.slerp(alpha, Eigen::Quaternion<Scalar>{T_1.rotation()});
     return t_lerp * q_lerp;
+}
+
+template<typename Scalar, int D>
+    requires(math::is_2d_or_3d<D>)
+Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> pose_perturbation_jacobian(
+        const Eigen::Transform<Scalar, D, Eigen::Isometry>& pose, const PosePerturbation& perturbation,
+        const PosePerturbation& with_respect_to) {
+    using Jacobian = Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>;
+    using Rotation = Eigen::Matrix<Scalar, D, D>;
+    using Position = Eigen::Vector<Scalar, D>;
+
+    // Jacobian A of the tangent vector of the equivalent SPLIT, RIGHT perturbation with respect to that of another
+    // perturbation
+    const auto split_right_jacobian = [](const Rotation& R, const Position& p, const PosePerturbation& other) {
+        Jacobian J = Jacobian::Identity();
+        if constexpr (D == 3) {
+            if (other.side == ApplicationSide::LEFT) {
+                J.template bottomRightCorner<SODoF<D>, SODoF<D>>() = R.transpose();
+            }
+        }
+        if (other.type == SEType::JOINT) {
+            if (other.side == ApplicationSide::LEFT) {
+                // Derivative of Exp(theta) p with respect to theta
+                if constexpr (D == 3) {
+                    J.template topRightCorner<D, SODoF<D>>() = -so_skew(p);
+                } else {
+                    J.template topRightCorner<D, SODoF<D>>() = Position{-p[1], p[0]};
+                }
+            } else {
+                J.template topLeftCorner<D, D>() = R;
+            }
+        }
+        return J;
+    };
+
+    const Rotation R = pose.rotation();
+    const Position p = pose.translation();
+    return split_right_jacobian(R, p, perturbation).inverse() * split_right_jacobian(R, p, with_respect_to);
 }
 
 template<typename Scalar, int D>
@@ -250,16 +292,16 @@ Pose<D> to_pose_ND(const Pose<3>& pose, [[maybe_unused]] const Eigen::Vector3d& 
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_tr(
+inline Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adjoint_SE_tr(
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform) {
     const Eigen::Matrix<Scalar, D, 1> t = transform.translation();
     const Eigen::Matrix<Scalar, D, D> R = transform.rotation();
     if constexpr (D == 2) {
-        return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, 1>(t[1], -t[0]),
+        return (Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>() << R, Eigen::Matrix<Scalar, D, 1>(t[1], -t[0]),
                 Eigen::Matrix<Scalar, 1, D>::Zero(), 1)
                 .finished();
     } else {
-        return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, skew_symmetric_cross(t) * R,
+        return (Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>() << R, skew_symmetric_cross(t) * R,
                 Eigen::Matrix<Scalar, D, D>::Zero(), R)
                 .finished();
     }
@@ -267,16 +309,16 @@ inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_tr(
 
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
-inline Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3> adjoint_SE_rt(
+inline Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> adjoint_SE_rt(
         const Eigen::Transform<Scalar, D, Eigen::Isometry>& transform) {
     const Eigen::Matrix<Scalar, D, 1> t = transform.translation();
     const Eigen::Matrix<Scalar, D, D> R = transform.rotation();
     if constexpr (D == 2) {
-        return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, 1>::Zero(),
+        return (Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>() << R, Eigen::Matrix<Scalar, D, 1>::Zero(),
                 Eigen::Matrix<Scalar, 1, D>(t[1], -t[0]), 1)
                 .finished();
     } else {
-        return (Eigen::Matrix<Scalar, (D - 1) * 3, (D - 1) * 3>() << R, Eigen::Matrix<Scalar, D, D>::Zero(),
+        return (Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>>() << R, Eigen::Matrix<Scalar, D, D>::Zero(),
                 skew_symmetric_cross(t) * R, R)
                 .finished();
     }
@@ -311,6 +353,11 @@ extern template Eigen::Matrix<double, 6, 1> compute_constant_rates<double>(const
 
 extern template Eigen::Isometry3d glerp<double>(const Eigen::Isometry3d& T_0, const Eigen::Isometry3d& T_1,
         const double alpha);
+
+extern template Eigen::Matrix<double, 3, 3> pose_perturbation_jacobian<double, 2>(const Eigen::Isometry2d&,
+        const PosePerturbation&, const PosePerturbation&);
+extern template Eigen::Matrix<double, 6, 6> pose_perturbation_jacobian<double, 3>(const Eigen::Isometry3d&,
+        const PosePerturbation&, const PosePerturbation&);
 
 extern template Eigen::Isometry2d relative_transform<double, 2>(const typename Eigen::Isometry2d& pose_A_B,
         const typename Eigen::Isometry2d& pose_A_C);
