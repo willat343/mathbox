@@ -5,7 +5,10 @@
 #include <concepts>
 #include <cppbox/ranges.hpp>
 #include <cstddef>
+#include <deque>
+#include <optional>
 #include <ranges>
+#include <vector>
 
 #include "mathbox/traits.hpp"
 
@@ -32,11 +35,14 @@ namespace math {
  *   sample needs no later samples, while the central sample needs half a window of them, which delays its derivative
  *   by half a window when the samples arrive one by one.
  * - Samples within half a window of the start or end of the data, or of a gap in it, have no centred window that
- *   stays within the data, so they are evaluated off centre, e.g. the first sample after a gap with \f$ s = 0 \f$.
+ *   stays within the data. They can be evaluated off centre, e.g. the first sample after a gap with \f$ s = 0 \f$, at
+ *   the cost of noisier derivatives near the ends of the window, as above, while
+ *   BufferedLocalPolynomialDifferentiator gives them no derivative.
  *
  * This base holds and checks \f$ N \f$, \f$ p \f$, \f$ d \f$ and \f$ s \f$. The derived classes provide the weights:
  * UniformLocalPolynomialDifferentiator computes them once for uniformly spaced samples, and
  * NonUniformLocalPolynomialDifferentiator computes them for each window from its sample points.
+ * BufferedLocalPolynomialDifferentiator applies the latter to samples that arrive one by one.
  *
  * @tparam Scalar_ floating-point scalar type
  */
@@ -351,7 +357,7 @@ public:
      * @param evaluation_index_ index \f$ s \f$ of the sample at which the derivative is evaluated, counted from the
      * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$ (e.g. \f$ (N - 1) / 2 \f$ for the centre of an odd
      * window, \f$ N - 1 \f$ for the last sample)
-     * @param sample_spacing_ spacing \f$ \Delta x \f$ of the sample points, positive
+     * @param sample_spacing_ spacing \f$ \Delta x \f$ of the sample points, positive and finite
      */
     explicit UniformLocalPolynomialDifferentiator(const std::size_t window_size_, const unsigned int polynomial_degree_,
             const unsigned int derivative_order_, const std::size_t evaluation_index_, const Scalar sample_spacing_);
@@ -363,7 +369,7 @@ public:
      * @param window_size_ number of samples in the window \f$ N \f$, odd and greater than the polynomial degree
      * @param polynomial_degree_ degree of the fitted polynomial \f$ p \f$, at least the derivative order
      * @param derivative_order_ order of the derivative \f$ d \f$, where order 0 smooths the samples
-     * @param sample_spacing_ spacing \f$ \Delta x \f$ of the sample points, positive
+     * @param sample_spacing_ spacing \f$ \Delta x \f$ of the sample points, positive and finite
      */
     explicit UniformLocalPolynomialDifferentiator(const std::size_t window_size_, const unsigned int polynomial_degree_,
             const unsigned int derivative_order_, const Scalar sample_spacing_);
@@ -400,6 +406,196 @@ private:
     Scalar sample_spacing_;
     // Weights of the samples, in the order of the samples
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1> weights_;
+};
+
+/**
+ * @brief Differentiator of samples that arrive one by one at increasing points, which buffers them and differentiates a
+ * buffered sample by a local polynomial fit over the window of samples centred on it (see
+ * NonUniformLocalPolynomialDifferentiator).
+ *
+ * The samples are added as they arrive, e.g. measurements as they are received, and a buffered sample is
+ * differentiated once the samples after it are buffered:
+ * 1. A sample is differentiated over its centred window: the \f$ N \f$ samples from \f$ (N - 1) / 2 \f$ before it to
+ *    \f$ (N - 1) / 2 \f$ after it, which must all be buffered.
+ * 2. With a maximum sample spacing, a window must not span a gap, i.e. two consecutive samples spaced by more than it.
+ *    The samples within half a window of a gap, or of the first buffered sample, therefore have no derivative.
+ * 3. The window of a sample is final, i.e. its derivatives no longer change as samples are added, once it is buffered,
+ *    or once it cannot be, because it would start before the first buffered sample or span a gap.
+ * 4. Samples that no later window needs are removed explicitly, e.g. after differentiating each sample in turn.
+ *
+ * Choosing the maximum sample spacing:
+ * - A window that spans missing samples is fitted at the actual sample points, so its derivatives remain valid, but
+ *   they become less accurate as the spacing grows, the higher derivatives most. The maximum sample spacing is the
+ *   largest spacing that a window may span, and without one, windows span any spacing.
+ * - Like the sample spacing of UniformLocalPolynomialDifferentiator, it is a floating-point value, in seconds for time
+ *   points, whose spacings are converted to seconds after their subtraction.
+ * - To accept up to \f$ k \f$ missing samples in a row, it lies between \f$ k + 1 \f$ and \f$ k + 2 \f$ sample periods,
+ *   e.g. \f$ k + 1.5 \f$ periods so that jitter does not turn \f$ k \f$ missing samples into a gap.
+ * - Samples near a gap get no derivative rather than one from a window shifted off centre to avoid the gap, as
+ *   LocalPolynomialDifferentiator describes for edges: near an end of a window, the derivatives other than of order
+ *   \f$ d = p \f$ are much less accurate than from a centred window across a short gap.
+ *
+ * Example: the first and second derivatives of 12 values sampled at about 400 Hz, from fitted cubics over 11 samples,
+ * with up to 4 missing samples in a row accepted by a maximum spacing of 5.5 sample periods,
+ * @code{.cpp}
+ * math::BufferedLocalPolynomialDifferentiator<std::chrono::steady_clock::time_point, Eigen::Matrix<double, 12, 1>>
+ *         differentiator(11, 3, 0.01375);
+ * // For each sample, as it arrives
+ * differentiator.add(stamp, values);
+ * // For a buffered sample, e.g. that of the next measurement to process
+ * if (differentiator.is_window_final(sample_stamp)) {
+ *     const std::optional<Eigen::Matrix<double, 12, 1>> derivatives = differentiator.differentiate(sample_stamp, 1);
+ *     const std::optional<Eigen::Matrix<double, 12, 1>> second_derivatives =
+ *             differentiator.differentiate(sample_stamp, 2);
+ *     differentiator.remove_before(sample_stamp);
+ * }
+ * @endcode
+ * where the window of a sample is final once the samples up to 5 samples (12.5 ms) after it are buffered.
+ *
+ * @tparam SamplePoint_ type of the sample points, a floating-point scalar or a `std::chrono::time_point`
+ * @tparam Sample_ type of the samples, a floating-point scalar or an Eigen matrix of floating-point scalars,
+ * differentiated component-wise
+ */
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+class BufferedLocalPolynomialDifferentiator {
+public:
+    /**
+     * @brief Type of the sample points.
+     *
+     */
+    using SamplePoint = SamplePoint_;
+
+    /**
+     * @brief Type of the samples.
+     *
+     */
+    using Sample = Sample_;
+
+    /**
+     * @brief Floating-point scalar type of the samples.
+     *
+     */
+    using Scalar = typename MathTypeTraits<Sample>::Scalar;
+
+    /**
+     * @brief Construct an empty buffer.
+     *
+     * @param window_size_ number of samples in the window \f$ N \f$, odd and greater than the polynomial degree
+     * @param polynomial_degree_ degree of the fitted polynomials \f$ p \f$, the highest order of the derivatives
+     * @param max_sample_spacing_ largest spacing of consecutive sample points that a window may span, positive and
+     * finite, in seconds for time points, or none for windows that span any spacing
+     */
+    explicit BufferedLocalPolynomialDifferentiator(const std::size_t window_size_,
+            const unsigned int polynomial_degree_, const std::optional<Scalar> max_sample_spacing_ = std::nullopt);
+
+    /**
+     * @brief Add a sample after the buffered samples.
+     *
+     * @param sample_point point of the sample, after the points of the buffered samples
+     * @param sample sample, of the size of the buffered samples
+     */
+    void add(const SamplePoint& sample_point, const Sample& sample);
+
+    /**
+     * @brief Differentiate the buffered sample at a point over its centred window,
+     * \f$ y^{(d)}(x_s) = \sum_{i=0}^{N-1} w_i y_i \f$.
+     *
+     * @param sample_point point of a buffered sample
+     * @param derivative_order order of the derivative \f$ d \f$, at most the polynomial degree
+     * @return std::optional<Sample> derivative at the sample, per second to the power \f$ d \f$ for time points, or
+     * `std::nullopt` if its centred window is not buffered or spans a gap
+     */
+    std::optional<Sample> differentiate(const SamplePoint& sample_point, const unsigned int derivative_order) const;
+
+    /**
+     * @brief Check if the centred window of the buffered sample at a point is final, i.e. if its derivatives (see
+     * `differentiate()`) no longer change as samples are added: once its window is buffered, or once it cannot be, with
+     * fewer than half a window of buffered samples before it or with a gap in the part of its window buffered so far.
+     *
+     * @param sample_point point of a buffered sample
+     * @return true
+     * @return false
+     */
+    bool is_window_final(const SamplePoint& sample_point) const;
+
+    /**
+     * @brief Get the largest spacing of consecutive sample points that a window may span, if any, in seconds for time
+     * points.
+     *
+     * @return std::optional<Scalar>
+     */
+    std::optional<Scalar> max_sample_spacing() const;
+
+    /**
+     * @brief Get the degree of the fitted polynomials \f$ p \f$.
+     *
+     * @return unsigned int
+     */
+    unsigned int polynomial_degree() const;
+
+    /**
+     * @brief Remove the buffered samples before a point that the windows of the samples at or after it do not need,
+     * i.e. all but the last half window of them.
+     *
+     * The samples before the point should then no longer be queried: the removed ones throw, and the windows of the
+     * kept ones lack samples, so they are final without derivatives, as if near the first buffered sample.
+     *
+     * @param sample_point point, e.g. that of the last differentiated sample when the samples are differentiated in
+     * increasing order
+     */
+    void remove_before(const SamplePoint& sample_point);
+
+    /**
+     * @brief Get the number of buffered samples.
+     *
+     * @return std::size_t
+     */
+    std::size_t size() const;
+
+    /**
+     * @brief Get the number of samples in the window \f$ N \f$.
+     *
+     * @return std::size_t
+     */
+    std::size_t window_size() const;
+
+private:
+    /**
+     * @brief Find the index of the buffered sample at exactly a point, from the oldest buffered sample.
+     *
+     * @param sample_point point
+     * @return std::size_t index of the sample, or the number of buffered samples if none is at the point
+     */
+    std::size_t find_index(const SamplePoint& sample_point) const;
+
+    /**
+     * @brief Get the number of samples on each side of the centre of a window, \f$ (N - 1) / 2 \f$, i.e. the evaluation
+     * index of the centred differentiators.
+     *
+     * @return std::size_t
+     */
+    std::size_t half_window_size() const;
+
+    /**
+     * @brief Check if the buffered samples with indices from `first` to `last - 1` span a gap, i.e. if there is a
+     * maximum sample spacing and two consecutive ones are spaced by more than it.
+     *
+     * @param first index of the first sample
+     * @param last index after the last sample
+     * @return true
+     * @return false
+     */
+    bool spans_gap(const std::size_t first, const std::size_t last) const;
+
+    // Centred differentiators, indexed by their derivative order, from 0 to the polynomial degree
+    std::vector<NonUniformLocalPolynomialDifferentiator<Scalar>> differentiators_;
+    // Largest spacing of consecutive sample points that a window may span, if any
+    std::optional<Scalar> max_sample_spacing_;
+    // Buffered sample points, increasing
+    std::deque<SamplePoint> sample_points_;
+    // Buffered samples, in the order of their points
+    std::deque<Sample> samples_;
 };
 
 }

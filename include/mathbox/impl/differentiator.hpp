@@ -224,6 +224,144 @@ inline auto UniformLocalPolynomialDifferentiator<Scalar_>::weights() const
     return weights_;
 }
 
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::BufferedLocalPolynomialDifferentiator(
+        const std::size_t window_size_, const unsigned int polynomial_degree_,
+        const std::optional<Scalar> max_sample_spacing_)
+    : max_sample_spacing_(max_sample_spacing_) {
+    // Check that a maximum sample spacing is positive and finite, where the check is negated so that NaN fails it
+    throw_if(max_sample_spacing() &&
+                     !(*max_sample_spacing() > static_cast<Scalar>(0) && std::isfinite(*max_sample_spacing())),
+            "Maximum sample spacing must be positive and finite.", std::invalid_argument);
+    // Centred differentiators of every order up to the polynomial degree, which check the window size and the degree
+    for (unsigned int derivative_order = 0; derivative_order <= polynomial_degree_; ++derivative_order) {
+        differentiators_.emplace_back(window_size_, polynomial_degree_, derivative_order);
+    }
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline void BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::add(const SamplePoint& sample_point,
+        const Sample& sample) {
+    // Check that the sample point is finite, so that a NaN or infinite first point cannot block the buffer, and that it
+    // is after the buffered ones
+    if constexpr (std::floating_point<SamplePoint>) {
+        throw_if(!std::isfinite(sample_point), "Sample points must be finite and strictly increasing.",
+                std::invalid_argument);
+    }
+    throw_if(!sample_points_.empty() && !(sample_point > sample_points_.back()),
+            "Sample points must be finite and strictly increasing.", std::invalid_argument);
+    if constexpr (IsMatrix<Sample>) {
+        throw_if(!samples_.empty() &&
+                         (sample.rows() != samples_.back().rows() || sample.cols() != samples_.back().cols()),
+                "Samples must have the size of the buffered samples.", std::invalid_argument);
+    }
+    sample_points_.push_back(sample_point);
+    samples_.push_back(sample);
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline auto BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::differentiate(const SamplePoint& sample_point,
+        const unsigned int derivative_order) const -> std::optional<Sample> {
+    throw_if(derivative_order > polynomial_degree(), "Derivative order must not exceed the polynomial degree.",
+            std::invalid_argument);
+    const std::size_t index = find_index(sample_point);
+    throw_if(index == size(), "Sample point must be that of a buffered sample.", std::invalid_argument);
+    // No derivative unless the centred window of the sample is buffered and spans no gap
+    if (index < half_window_size() || index + half_window_size() >= size() ||
+            spans_gap(index - half_window_size(), index + half_window_size() + 1)) {
+        return std::nullopt;
+    }
+    // Differentiate over the centred window of the sample points and of the samples
+    return differentiators_[derivative_order].differentiate(
+            sample_points_ | std::views::drop(index - half_window_size()) | std::views::take(window_size()),
+            samples_ | std::views::drop(index - half_window_size()) | std::views::take(window_size()));
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline bool BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::is_window_final(
+        const SamplePoint& sample_point) const {
+    const std::size_t index = find_index(sample_point);
+    throw_if(index == size(), "Sample point must be that of a buffered sample.", std::invalid_argument);
+    // Final once the centred window of the sample is buffered, or once it cannot be: with fewer than half a window of
+    // samples before the sample, or with a gap in the part of its window buffered so far
+    return index + half_window_size() < size() || index < half_window_size() ||
+           spans_gap(index - half_window_size(), size());
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline auto BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::max_sample_spacing() const
+        -> std::optional<Scalar> {
+    return max_sample_spacing_;
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline unsigned int BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::polynomial_degree() const {
+    return differentiators_.front().polynomial_degree();
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline void BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::remove_before(
+        const SamplePoint& sample_point) {
+    // Keep the last half window of samples before the first sample at or after the point, which its window needs
+    const std::size_t first_after = static_cast<std::size_t>(
+            std::ranges::distance(sample_points_.begin(), std::ranges::lower_bound(sample_points_, sample_point)));
+    if (first_after > half_window_size()) {
+        const auto removed = static_cast<std::ptrdiff_t>(first_after - half_window_size());
+        sample_points_.erase(sample_points_.begin(), sample_points_.begin() + removed);
+        samples_.erase(samples_.begin(), samples_.begin() + removed);
+    }
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline std::size_t BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::size() const {
+    return samples_.size();
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline std::size_t BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::window_size() const {
+    return differentiators_.front().window_size();
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline std::size_t BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::find_index(
+        const SamplePoint& sample_point) const {
+    // Binary search, since the sample points are increasing
+    const auto point = std::ranges::lower_bound(sample_points_, sample_point);
+    return point != sample_points_.cend() && *point == sample_point
+                   ? static_cast<std::size_t>(std::ranges::distance(sample_points_.cbegin(), point))
+                   : size();
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline std::size_t BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::half_window_size() const {
+    return differentiators_.front().evaluation_index();
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline bool BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::spans_gap(const std::size_t first,
+        const std::size_t last) const {
+    // Only gaps if maximum sample spacing is set
+    if (max_sample_spacing()) {
+        const auto points = sample_points_ | std::views::drop(first) | std::views::take(last - first);
+        return std::ranges::adjacent_find(points, [this](const SamplePoint& point, const SamplePoint& next_point) {
+            return cppbox::to_sec<Scalar>(next_point - point) > *max_sample_spacing();
+        }) != points.end();
+    }
+    return false;
+}
+
 }
 
 #if !MATHBOX_HEADER_ONLY
