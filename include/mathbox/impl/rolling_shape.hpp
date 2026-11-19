@@ -2,7 +2,12 @@
 #define MATHBOX_IMPL_ROLLING_SHAPE_HPP
 
 #include <cppbox/exceptions.hpp>
+#include <functional>
+#include <iterator>
+#include <numeric>
+#include <ranges>
 #include <stdexcept>
+#include <vector>
 
 #include "mathbox/geometry.hpp"
 #include "mathbox/rolling_shape.hpp"
@@ -87,8 +92,7 @@ inline const Torus<Scalar_>& as_torus(const RollingShape<Scalar_>& shape) {
     return dynamic_cast<const Torus<Scalar_>&>(shape);
 }
 
-template<typename T, typename Shape>
-    requires(IsRollingShape<Shape, T>)
+template<typename T, IsRollingShape Shape>
 Eigen::Vector<T, 3> rolling_displacement(const Shape& shape, const Eigen::Quaternion<T>& start_orientation,
         const Eigen::Quaternion<T>& end_orientation, const Eigen::Vector<T, 3>& normal) {
     // Rotation vector of the increment, Δθ = Log(q'' q'^-1), the shortest rotation
@@ -97,6 +101,21 @@ Eigen::Vector<T, 3> rolling_displacement(const Shape& shape, const Eigen::Quater
     // Δθ × ρ, with ρ at the orientation halfway along the increment, Exp(Δθ / 2) q'
     return increment.cross(shape.template contact_to_centre<T>(
             rotation_vector_to_quaternion<T>(T(0.5) * increment) * start_orientation, normal));
+}
+
+template<typename T, IsRollingShape Shape, cppbox::ForwardRangeOf<Eigen::Quaternion<T>> Orientations>
+Eigen::Vector<T, 3> rolling_displacement(const Shape& shape, const Orientations& orientations,
+        const Eigen::Vector<T, 3>& normal) {
+    throw_if(std::ranges::empty(orientations), "The rolling displacement requires at least one orientation.",
+            std::invalid_argument);
+    // Sum of the displacements from q_{i-1} to q_i, for i = 1, ..., m
+    return std::inner_product(std::ranges::begin(orientations),
+            std::ranges::next(std::ranges::begin(orientations), std::ranges::distance(orientations) - 1),
+            std::ranges::next(std::ranges::begin(orientations)), Eigen::Vector<T, 3>::Zero().eval(), std::plus<>(),
+            [&shape, &normal](const Eigen::Quaternion<T>& start_orientation,
+                    const Eigen::Quaternion<T>& end_orientation) -> Eigen::Vector<T, 3> {
+                return rolling_displacement<T>(shape, start_orientation, end_orientation, normal);
+            });
 }
 
 }
@@ -118,6 +137,11 @@ extern template Eigen::Vector3d rolling_displacement<double, Sphere<double>>(con
         const Eigen::Quaterniond&, const Eigen::Quaterniond&, const Eigen::Vector3d&);
 extern template Eigen::Vector3d rolling_displacement<double, Torus<double>>(const Torus<double>&,
         const Eigen::Quaterniond&, const Eigen::Quaterniond&, const Eigen::Vector3d&);
+
+extern template Eigen::Vector3d rolling_displacement<double, Sphere<double>, std::vector<Eigen::Quaterniond>>(
+        const Sphere<double>&, const std::vector<Eigen::Quaterniond>&, const Eigen::Vector3d&);
+extern template Eigen::Vector3d rolling_displacement<double, Torus<double>, std::vector<Eigen::Quaterniond>>(
+        const Torus<double>&, const std::vector<Eigen::Quaterniond>&, const Eigen::Vector3d&);
 
 }
 #endif

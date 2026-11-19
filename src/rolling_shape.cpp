@@ -17,4 +17,9 @@ template Eigen::Vector3d rolling_displacement<double, Sphere<double>>(const Sphe
 template Eigen::Vector3d rolling_displacement<double, Torus<double>>(const Torus<double>&, const Eigen::Quaterniond&,
         const Eigen::Quaterniond&, const Eigen::Vector3d&);
 
+template Eigen::Vector3d rolling_displacement<double, Sphere<double>, std::vector<Eigen::Quaterniond>>(
+        const Sphere<double>&, const std::vector<Eigen::Quaterniond>&, const Eigen::Vector3d&);
+template Eigen::Vector3d rolling_displacement<double, Torus<double>, std::vector<Eigen::Quaterniond>>(
+        const Torus<double>&, const std::vector<Eigen::Quaterniond>&, const Eigen::Vector3d&);
+
 }

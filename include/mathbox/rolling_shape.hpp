@@ -5,6 +5,7 @@
 #include <Eigen/Geometry>
 #include <concepts>
 #include <cppbox/enum.hpp>
+#include <cppbox/ranges.hpp>
 
 namespace math {
 
@@ -33,7 +34,8 @@ CREATE_SMART_ENUM(RollingShapeType, SPHERE, TORUS)
  * Use:
  * 1. Each shape computes \f$ \boldsymbol{\rho} \f$ with its `contact_to_centre`, templated on the scalar type of the
  *    evaluation, which may be an automatic differentiation type.
- * 2. `rolling_displacement` integrates the rolling of any shape between two orientations.
+ * 2. `rolling_displacement` integrates the rolling of any shape between two orientations, or through a sequence of
+ *    orientations.
  * 3. A shape held as a `RollingShape`, e.g. chosen at run time from a configuration, is recovered with `type()` and
  *    `as_sphere` or `as_torus` before evaluation.
  *
@@ -50,6 +52,8 @@ CREATE_SMART_ENUM(RollingShapeType, SPHERE, TORUS)
 template<std::floating_point Scalar_ = double>
 class RollingShape {
 public:
+    using Scalar = Scalar_;
+
     /**
      * @brief Destroy the rolling shape.
      *
@@ -199,17 +203,12 @@ private:
 };
 
 /**
- * @brief Shape that computes the vector from its contact point on a plane to its centre in the scalar type `T`, as
- * the shapes of `RollingShape` do.
+ * @brief Shape derived from `RollingShape`.
  *
  * @tparam Shape
- * @tparam T scalar type of the evaluation
  */
-template<typename Shape, typename T>
-concept IsRollingShape =
-        requires(const Shape& shape, const Eigen::Quaternion<T>& orientation, const Eigen::Vector<T, 3>& normal) {
-            { shape.template contact_to_centre<T>(orientation, normal) } -> std::same_as<Eigen::Vector<T, 3>>;
-        };
+template<typename Shape>
+concept IsRollingShape = std::derived_from<Shape, RollingShape<typename Shape::Scalar>>;
 
 /**
  * @brief Get a rolling shape as a sphere.
@@ -252,10 +251,27 @@ const Torus<Scalar_>& as_torus(const RollingShape<Scalar_>& shape);
  * @param normal unit normal \f$ \mathbf{n} \f$ of the plane, pointing towards the body
  * @return Eigen::Vector<T, 3>
  */
-template<typename T, typename Shape>
-    requires(IsRollingShape<Shape, T>)
+template<typename T, IsRollingShape Shape>
 Eigen::Vector<T, 3> rolling_displacement(const Shape& shape, const Eigen::Quaternion<T>& start_orientation,
         const Eigen::Quaternion<T>& end_orientation, const Eigen::Vector<T, 3>& normal);
+
+/**
+ * @brief Compute the displacement of the centre of a shape while the body rolls through the orientations
+ * \f$ \mathbf{q}_0, \mathbf{q}_1, \dots, \mathbf{q}_m \f$ in turn, e.g. samples of its orientation over an interval,
+ * as the sum of `rolling_displacement` from each orientation to the next.
+ *
+ * @tparam T scalar type of the evaluation, which may be an automatic differentiation type
+ * @tparam Shape rolling shape, e.g. `Sphere` or `Torus`
+ * @tparam Orientations forward range of `Eigen::Quaternion<T>`
+ * @param shape
+ * @param orientations orientations of the body in order, each less than half a turn from the one before
+ * @param normal unit normal \f$ \mathbf{n} \f$ of the plane, pointing towards the body
+ * @return Eigen::Vector<T, 3> zero for a single orientation
+ * @throws std::invalid_argument if there are no orientations
+ */
+template<typename T, IsRollingShape Shape, cppbox::ForwardRangeOf<Eigen::Quaternion<T>> Orientations>
+Eigen::Vector<T, 3> rolling_displacement(const Shape& shape, const Orientations& orientations,
+        const Eigen::Vector<T, 3>& normal);
 
 }
 

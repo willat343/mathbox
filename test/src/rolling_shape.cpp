@@ -6,11 +6,13 @@
 #include <memory>
 #include <stdexcept>
 #include <typeinfo>
+#include <vector>
 
 /**
  * @brief Check that the rolling displacements of a shape over consecutive 20 ms increments sum to the path integral
  * of \f$ \boldsymbol{\omega} \times \boldsymbol{\rho} \f$, integrated finely while the body rolls with an angular
- * velocity whose axis turns.
+ * velocity whose axis turns, and that the rolling displacement through the orientations at the ends of the increments
+ * is that sum.
  *
  * @tparam Shape
  * @param shape
@@ -27,6 +29,7 @@ void check_increments_follow_the_rolling_path(const Shape& shape) {
     const double duration = 0.4, fine_step = 1.0e-5, increment = 0.02;
     const int steps_per_increment = static_cast<int>(std::round(increment / fine_step));
     Eigen::Quaterniond orientation = rotation(Eigen::Vector3d(0.1, -0.2, 0.3)), increment_start = orientation;
+    std::vector<Eigen::Quaterniond> increment_ends{orientation};
     Eigen::Vector3d path_displacement = Eigen::Vector3d::Zero(), summed_displacement = Eigen::Vector3d::Zero();
     for (int i = 0; i < static_cast<int>(std::round(duration / fine_step)); ++i) {
         // Midpoint rule over each fine step
@@ -37,10 +40,13 @@ void check_increments_follow_the_rolling_path(const Shape& shape) {
         if ((i + 1) % steps_per_increment == 0) {
             summed_displacement += math::rolling_displacement<double>(shape, increment_start, orientation, normal);
             increment_start = orientation;
+            increment_ends.push_back(orientation);
         }
     }
     EXPECT_LT((summed_displacement - path_displacement).norm(), 1.0e-6);
     EXPECT_GT(path_displacement.norm(), 1.0e-2);
+    EXPECT_LT((math::rolling_displacement<double>(shape, increment_ends, normal) - summed_displacement).norm(),
+            1.0e-15);
 }
 
 TEST(rolling_shape, documentation_example) {
@@ -64,6 +70,14 @@ TEST(rolling_shape, type_and_as_shape_recover_the_shape) {
     EXPECT_THROW(math::as_sphere(torus_shape), std::bad_cast);
 }
 
+TEST(rolling_shape, is_rolling_shape) {
+    EXPECT_TRUE(math::IsRollingShape<math::Sphere<double>>);
+    EXPECT_TRUE(math::IsRollingShape<math::Torus<float>>);
+    // A type with a scalar that is not derived from RollingShape, and a type without one
+    EXPECT_FALSE(math::IsRollingShape<Eigen::Vector3d>);
+    EXPECT_FALSE(math::IsRollingShape<double>);
+}
+
 TEST(rolling_shape, rolling_displacement_is_independent_of_the_signs_of_the_orientations) {
     const math::Torus<double> wheel(Eigen::Vector3d(0.1, 1.0, -0.2), 0.1, 0.02);
     const Eigen::Vector3d normal = Eigen::Vector3d(0.1, 0.2, 1.0).normalized();
@@ -79,6 +93,21 @@ TEST(rolling_shape, rolling_displacement_is_independent_of_the_signs_of_the_orie
     EXPECT_TRUE(math::rolling_displacement<double>(wheel, Eigen::Quaterniond(-start_orientation.coeffs()),
             end_orientation, normal)
                     .isApprox(displacement));
+}
+
+TEST(rolling_shape, rolling_displacement_through_orientations) {
+    const math::Sphere<double> sphere(0.033);
+    const Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+    const std::vector<Eigen::Quaterniond> orientations{Eigen::Quaterniond::Identity(),
+            Eigen::Quaterniond(Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitX())),
+            Eigen::Quaterniond(Eigen::AngleAxisd(0.2, Eigen::Vector3d(1.0, 1.0, 0.0).normalized()))};
+    EXPECT_TRUE(math::rolling_displacement<double>(sphere, orientations, normal)
+                    .isApprox(math::rolling_displacement<double>(sphere, orientations[0], orientations[1], normal) +
+                              math::rolling_displacement<double>(sphere, orientations[1], orientations[2], normal)));
+    EXPECT_TRUE(math::rolling_displacement<double>(sphere, std::vector<Eigen::Quaterniond>{orientations[1]}, normal)
+                    .isZero());
+    EXPECT_THROW(math::rolling_displacement<double>(sphere, std::vector<Eigen::Quaterniond>{}, normal),
+            std::invalid_argument);
 }
 
 TEST(sphere, documentation_example) {
