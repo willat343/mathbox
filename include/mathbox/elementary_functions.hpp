@@ -26,6 +26,16 @@ template<typename Scalar>
 Scalar cosh(const Scalar& x);
 
 /**
+ * @brief Exponential of a scalar of any type (see `math::cos`).
+ *
+ * @tparam Scalar
+ * @param x
+ * @return Scalar
+ */
+template<typename Scalar>
+Scalar exp(const Scalar& x);
+
+/**
  * @brief Sine of a scalar of any type (see `math::cos`).
  *
  * @tparam Scalar

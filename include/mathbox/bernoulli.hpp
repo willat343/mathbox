@@ -8,8 +8,9 @@ namespace math::bernoulli {
 
 /**
  * @brief Bernoulli function \f$ B(x) = \frac{x}{e^x - 1} = \sum_{n=0}^{\infty} B_n \frac{x^n}{n!} \f$, the generating
- * function of the Bernoulli numbers \f$ B_n \f$, where \f$ B(0) = 1 \f$. It is evaluated from its quadratic
- * coefficient (`quadratic_coefficient`), which is accurate near zero.
+ * function of the Bernoulli numbers \f$ B_n \f$, where \f$ B(0) = 1 \f$. For \f$ |x| < 1 \f$ it is evaluated from
+ * its quadratic coefficient (`quadratic_coefficient`), which is accurate and differentiable at zero, where the
+ * quotient is \f$ 0 / 0 \f$.
  *
  * @tparam Scalar scalar type, which may be an automatic differentiation type
  * @param x
@@ -26,11 +27,14 @@ Scalar function(const Scalar& x);
  *      B_m = -\frac{1}{m + 1} \sum_{k=0}^{m-1} \binom{m + 1}{k} B_k, \quad B_0 = 1
  * \f]
  *
- * in exact rational arithmetic, so the result is the floating-point number nearest to \f$ B_n \f$.
+ * in exact rational arithmetic, so the only rounding is in the conversion of the numerator and denominator of \f$ B_n
+ * \f$ to the floating-point type and their division (for `double`, the result is the nearest number to \f$ B_n \f$).
+ * The odd Bernoulli numbers after \f$ B_1 \f$ are zero.
  *
  * @tparam Scalar floating-point type of the result
- * @param n at most 30, the largest for which 64-bit integers hold the rational arithmetic
+ * @param n at most 30 (the rational arithmetic overflows 64-bit integers for \f$ B_{32} \f$)
  * @return Scalar
+ * @throws std::out_of_range if `n` is greater than 30
  */
 template<typename Scalar>
     requires(std::is_floating_point_v<Scalar>)
@@ -61,8 +65,11 @@ constexpr Scalar number(const unsigned int n);
  * For a real argument, \f$ q(x^2) = L(x / 2) / (2 x) \f$ with the Langevin function \f$ L(x) = \coth x - \frac{1}{x}
  * \f$.
  *
- * It is evaluated with its power series for \f$ |z| < 1 \f$, and otherwise with the closed forms in the half
- * argument, which have no removable singularity at an angle of \f$ \pi \f$.
+ * It is evaluated with ten terms of its power series for \f$ |z| < 1 \f$, and otherwise with the closed forms above.
+ * They are in the half argument because the form of the angle with \f$ \sin\theta \f$ in its denominator is \f$ 0 /
+ * 0 \f$ at an angle of \f$ \pi \f$. The relative accuracy of \f$ q \f$ and of its first and second derivatives is
+ * lowest near \f$ |z| = 1 \f$, at about \f$ 10^{-15} \f$, \f$ 10^{-13} \f$ and \f$ 10^{-11} \f$ (from the truncation
+ * of the series below, and from cancellation in the closed forms above), and near machine precision away from it.
  *
  * @tparam NumDerivatives number of derivatives (at most 2)
  * @tparam Scalar scalar type, which may be an automatic differentiation type

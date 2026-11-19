@@ -9,6 +9,7 @@ add_executable(${PROJECT_NAME}_tests
     src/covariance.cpp
     src/decompose.cpp
     src/differentiator.cpp
+    src/elementary_functions.cpp
     src/geometry.cpp
     src/integrator.cpp
     src/matrix_operations.cpp

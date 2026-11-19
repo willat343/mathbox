@@ -6,11 +6,26 @@
 #include <cmath>
 #include <stdexcept>
 
+#include "test/dual.hpp"
+
 TEST(bernoulli, function) {
     EXPECT_DOUBLE_EQ(math::bernoulli::function(0.0), 1.0);
-    // Arguments in the series and in the closed form of the quadratic coefficient
-    for (const double x : {-5.0, -1.5, -0.3, 1.0e-6, 0.3, 0.999, 1.001, 4.0, 20.0}) {
-        EXPECT_NEAR(math::bernoulli::function(x), x / std::expm1(x), 1.0e-12 * (1.0 + std::abs(x))) << x;
+    // Arguments near zero, either side of the change from the quadratic coefficient to the quotient, and large
+    for (const double x : {-700.0, -5.0, -1.001, -0.999, -0.3, -1.0e-9, 1.0e-9, 0.3, 0.999, 1.001, 4.0, 20.0, 700.0}) {
+        const double expected = x / std::expm1(x);
+        EXPECT_NEAR(math::bernoulli::function(x), expected, 1.0e-14 * expected) << x;
+    }
+    // No overflow where the exponential overflows
+    EXPECT_EQ(math::bernoulli::function(1000.0), 0.0);
+    EXPECT_EQ(math::bernoulli::function(-1000.0), 1000.0);
+}
+
+TEST(bernoulli, function_derivative) {
+    // dB/dx = B(x) (1 - B(x)) / x - B(x) with an automatic differentiation type, and dB/dx = B_1 at zero
+    EXPECT_DOUBLE_EQ(math::bernoulli::function(dual::Number(0.0, 1.0)).derivative, -0.5);
+    for (const double x : {-5.0, -0.3, 0.3, 4.0}) {
+        const dual::Number B = math::bernoulli::function(dual::Number(x, 1.0));
+        EXPECT_NEAR(B.derivative, B.value * (1.0 - B.value) / x - B.value, 1.0e-13) << x;
     }
 }
 
@@ -23,6 +38,48 @@ TEST(bernoulli, number) {
     EXPECT_EQ(math::bernoulli::number<double>(20), -174611.0 / 330.0);
     EXPECT_EQ(math::bernoulli::number<double>(30), 8615841276005.0 / 14322.0);
     EXPECT_THROW(math::bernoulli::number<double>(31), std::out_of_range);
+    EXPECT_EQ(math::bernoulli::number<float>(4), -1.0f / 30.0f);
+}
+
+TEST(bernoulli, number_from_zeta) {
+    // B_2n = (-1)^(n+1) 2 (2n)! zeta(2n) / (2 pi)^(2n), with the zeta function summed from its smallest terms
+    for (unsigned int n = 2; n <= 15; ++n) {
+        double zeta = 0.0;
+        for (int k = 2000; k >= 1; --k) {
+            zeta += std::pow(static_cast<double>(k), -2.0 * n);
+        }
+        const double expected =
+                (n % 2 == 0 ? -2.0 : 2.0) * std::tgamma(2.0 * n + 1.0) * zeta / std::pow(2.0 * M_PI, 2.0 * n);
+        EXPECT_NEAR(math::bernoulli::number<double>(2 * n), expected, 1.0e-10 * std::abs(expected)) << n;
+    }
+}
+
+TEST(bernoulli, quadratic_coefficient_values) {
+    // Values of the power series in exact rational arithmetic, in the series and in both closed forms
+    const std::array<std::array<double, 4>, 4> expected{{
+            {-4.0, 0.08947684601641732, -0.0016992357303663318, 9.078316894333242e-05},
+            {-0.5, 0.08403614963501425, -0.001422588317696492, 6.868170173101179e-05},
+            {0.5, 0.0826470540331997, -0.0013564298697824133, 6.371874128558917e-05},
+            {4.0, 0.07825882137483282, -0.0011592795770513052, 4.971819862876677e-05},
+    }};
+    for (const std::array<double, 4>& values : expected) {
+        const std::array<double, 3> q = math::bernoulli::quadratic_coefficient<2>(values[0]);
+        EXPECT_NEAR(q[0], values[1], 1.0e-14 * std::abs(values[1])) << values[0];
+        EXPECT_NEAR(q[1], values[2], 1.0e-13 * std::abs(values[2])) << values[0];
+        EXPECT_NEAR(q[2], values[3], 1.0e-12 * std::abs(values[3])) << values[0];
+    }
+}
+
+TEST(bernoulli, quadratic_coefficient_automatic_differentiation) {
+    // With an automatic differentiation type, the derivative of each output is the next output
+    for (const double squared_argument : {-25.0, -1.5, -0.3, 0.0, 0.3, 1.5, 25.0}) {
+        const std::array<double, 3> q = math::bernoulli::quadratic_coefficient<2>(squared_argument);
+        const std::array<dual::Number, 3> dual_q =
+                math::bernoulli::quadratic_coefficient<2>(dual::Number(squared_argument, 1.0));
+        EXPECT_EQ(dual_q[0].value, q[0]);
+        EXPECT_NEAR(dual_q[0].derivative, q[1], 1.0e-12 * std::abs(q[1])) << squared_argument;
+        EXPECT_NEAR(dual_q[1].derivative, q[2], 1.0e-10 * std::abs(q[2])) << squared_argument;
+    }
 }
 
 TEST(bernoulli, quadratic_coefficient_closed_forms) {

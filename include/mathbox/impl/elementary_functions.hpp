@@ -22,6 +22,13 @@ inline Scalar cosh(const Scalar& x) {
 }
 
 template<typename Scalar>
+inline Scalar exp(const Scalar& x) {
+    // The unqualified call finds std::exp, or the function of the namespace of the scalar type
+    using std::exp;
+    return exp(x);
+}
+
+template<typename Scalar>
 inline Scalar sin(const Scalar& x) {
     // The unqualified call finds std::sin, or the function of the namespace of the scalar type
     using std::sin;

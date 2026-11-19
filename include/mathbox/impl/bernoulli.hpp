@@ -14,9 +14,12 @@ namespace math::bernoulli {
 
 template<typename Scalar>
 Scalar function(const Scalar& x) {
-    // B(x) = 1 - x / 2 + x^2 q(x^2)
-    const Scalar x_squared = x * x;
-    return 1.0 - 0.5 * x + x_squared * quadratic_coefficient<0>(x_squared)[0];
+    if (x < 1.0 && x > -1.0) {
+        // B(x) = 1 - x / 2 + x^2 q(x^2), whose terms do not cancel near zero
+        const Scalar x_squared = x * x;
+        return 1.0 - 0.5 * x + x_squared * quadratic_coefficient<0>(x_squared)[0];
+    }
+    return x / (math::exp(x) - 1.0);
 }
 
 template<typename Scalar>
@@ -51,7 +54,7 @@ template<int NumDerivatives, typename Scalar>
 std::array<Scalar, NumDerivatives + 1> quadratic_coefficient(const Scalar& squared_argument) {
     std::array<Scalar, NumDerivatives + 1> q;
     if (squared_argument < 1.0 && squared_argument > -1.0) {
-        // Coefficients B_{2k+2} / (2k+2)! of the power series, whose next term is below 1e-16 of the first at 1
+        // Coefficients B_{2k+2} / (2k+2)! of the power series, whose next term is below 1e-16 of the first at |z| = 1
         static constexpr std::array<double, 10> series = []() {
             std::array<double, 10> coefficients{};
             for (unsigned int k = 0; k < coefficients.size(); ++k) {
