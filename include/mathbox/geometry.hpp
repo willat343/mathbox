@@ -468,6 +468,27 @@ Eigen::Matrix<Scalar, 3, 3> rotation_from_directions(const Eigen::Vector<Scalar,
         const Eigen::Vector<Scalar, 3>& secondary_B);
 
 /**
+ * @brief Compute the rotation vector (the axis scaled by the angle) of the shortest rotation that a unit quaternion
+ * represents, \f$ \boldsymbol{\theta} = \mathrm{Log}(\mathbf{q}) \f$, with an angle of at most \f$ \pi \f$.
+ *
+ * With \f$ \mathbf{q} = (w, \mathbf{v}) \f$, sign-flipped if necessary so that \f$ w \geq 0 \f$, this is the
+ * angle-axis form (`Eigen::AngleAxis`):
+ * \f[
+ *      \boldsymbol{\theta} = \frac{2 \operatorname{atan2}(|\mathbf{v}|, w)}{|\mathbf{v}|} \mathbf{v}
+ * \f]
+ * When \f$ |\mathbf{v}|^2 \f$ is below the machine epsilon, this equals \f$ 2 \mathbf{v} / w \f$ to machine precision,
+ * which is used there instead. At zero rotation, the angle-axis form is 0/0, and `Eigen::AngleAxis` returns a zero
+ * angle about a fixed axis, whose derivatives are zero, whereas the value and derivatives of \f$ 2 \mathbf{v} / w \f$
+ * are exact, e.g. for automatic differentiation.
+ *
+ * @tparam Scalar scalar type, which may be an automatic differentiation type
+ * @param rotation unit quaternion \f$ \mathbf{q} \f$
+ * @return Eigen::Vector<Scalar, 3>
+ */
+template<typename Scalar>
+Eigen::Vector<Scalar, 3> rotation_vector(const Eigen::Quaternion<Scalar>& rotation);
+
+/**
  * @brief Compute the SO(2) cross product between an angular velocity `w` and a vector `v`.
  *
  * @tparam DerivedOmega

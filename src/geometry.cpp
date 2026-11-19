@@ -43,6 +43,8 @@ template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(const Eigen::M
 template Eigen::Matrix3d rotation_from_directions<double>(const Eigen::Vector3d&, const Eigen::Vector3d&,
         const Eigen::Vector3d&, const Eigen::Vector3d&);
 
+template Eigen::Vector3d rotation_vector<double>(const Eigen::Quaterniond&);
+
 #ifndef DOXYGEN_EXCLUDE
 template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(
         const Eigen::MatrixBase<Eigen::Vector<double, 1>>&, const Eigen::MatrixBase<Eigen::Vector2d>&);

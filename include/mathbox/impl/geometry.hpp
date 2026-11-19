@@ -249,6 +249,17 @@ Eigen::Matrix<Scalar, 3, 3> rotation_from_directions(const Eigen::Vector<Scalar,
     return frame_from_directions(primary_A, secondary_A) * frame_from_directions(primary_B, secondary_B).transpose();
 }
 
+template<typename Scalar>
+Eigen::Vector<Scalar, 3> rotation_vector(const Eigen::Quaternion<Scalar>& rotation) {
+    if (rotation.vec().squaredNorm() < Eigen::NumTraits<Scalar>::epsilon()) {
+        // θ = 2 v / w, to machine precision
+        return (Scalar(2) / rotation.w()) * rotation.vec();
+    }
+    // θ = 2 atan2(|v|, w) v / |v|, with the sign of the quaternion that makes w ≥ 0
+    const Eigen::AngleAxis<Scalar> angle_axis(rotation);
+    return angle_axis.angle() * angle_axis.axis();
+}
+
 template<typename DerivedOmega, typename DerivedV>
     requires(DerivedOmega::RowsAtCompileTime == 1 && DerivedOmega::ColsAtCompileTime == 1 &&
              DerivedV::RowsAtCompileTime == 2 && DerivedV::ColsAtCompileTime == 1 &&
@@ -395,6 +406,8 @@ extern template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(
 
 extern template Eigen::Matrix3d rotation_from_directions<double>(const Eigen::Vector3d&, const Eigen::Vector3d&,
         const Eigen::Vector3d&, const Eigen::Vector3d&);
+
+extern template Eigen::Vector3d rotation_vector<double>(const Eigen::Quaterniond&);
 
 #ifndef DOXYGEN_EXCLUDE
 extern template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(
