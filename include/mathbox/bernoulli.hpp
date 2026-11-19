@@ -67,19 +67,20 @@ constexpr Scalar number(const unsigned int n);
  *
  * It is evaluated with ten terms of its power series for \f$ |z| < 1 \f$, and otherwise with the closed forms above.
  * They are in the half argument because the form of the angle with \f$ \sin\theta \f$ in its denominator is \f$ 0 /
- * 0 \f$ at an angle of \f$ \pi \f$. The relative accuracy of \f$ q \f$ and of its first and second derivatives is
- * lowest near \f$ |z| = 1 \f$, at about \f$ 10^{-15} \f$, \f$ 10^{-13} \f$ and \f$ 10^{-11} \f$ (from the truncation
- * of the series below, and from cancellation in the closed forms above), and near machine precision away from it.
+ * 0 \f$ at an angle of \f$ \pi \f$. The relative accuracy of \f$ q \f$ and of its first, second and third derivatives
+ * is lowest near \f$ |z| = 1 \f$, at about \f$ 10^{-15} \f$, \f$ 10^{-13} \f$, \f$ 10^{-11} \f$ and \f$ 10^{-9} \f$
+ * (from the truncation of the series below, and from cancellation in the closed forms above), and near machine
+ * precision away from it.
  *
- * @tparam NumDerivatives number of derivatives (at most 2)
+ * @tparam NumDerivatives number of derivatives (at most 3)
  * @tparam Scalar scalar type, which may be an automatic differentiation type
  * @param squared_argument \f$ z = x^2 \f$, which is negative for an imaginary argument (\f$ -\theta^2 \f$ for an
  * angle)
- * @return std::array<Scalar, NumDerivatives + 1> \f$ q \f$, then \f$ \frac{dq}{dz} \f$ and \f$ \frac{d^2 q}{dz^2}
- * \f$ as requested
+ * @return std::array<Scalar, NumDerivatives + 1> \f$ q \f$, then \f$ \frac{dq}{dz} \f$, \f$ \frac{d^2 q}{dz^2} \f$
+ * and \f$ \frac{d^3 q}{dz^3} \f$ as requested
  */
 template<int NumDerivatives, typename Scalar>
-    requires(NumDerivatives >= 0 && NumDerivatives <= 2)
+    requires(NumDerivatives >= 0 && NumDerivatives <= 3)
 std::array<Scalar, NumDerivatives + 1> quadratic_coefficient(const Scalar& squared_argument);
 
 }

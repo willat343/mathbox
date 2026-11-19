@@ -50,7 +50,7 @@ constexpr Scalar number(const unsigned int n) {
 }
 
 template<int NumDerivatives, typename Scalar>
-    requires(NumDerivatives >= 0 && NumDerivatives <= 2)
+    requires(NumDerivatives >= 0 && NumDerivatives <= 3)
 std::array<Scalar, NumDerivatives + 1> quadratic_coefficient(const Scalar& squared_argument) {
     std::array<Scalar, NumDerivatives + 1> q;
     if (squared_argument < 1.0 && squared_argument > -1.0) {
@@ -74,6 +74,11 @@ std::array<Scalar, NumDerivatives + 1> quadratic_coefficient(const Scalar& squar
             if constexpr (NumDerivatives >= 2) {
                 if (k >= 2) {
                     q[2] = q[2] * squared_argument + k * (k - 1) * series[k];
+                }
+            }
+            if constexpr (NumDerivatives >= 3) {
+                if (k >= 3) {
+                    q[3] = q[3] * squared_argument + k * (k - 1) * (k - 2) * series[k];
                 }
             }
         }
@@ -102,6 +107,18 @@ std::array<Scalar, NumDerivatives + 1> quadratic_coefficient(const Scalar& squar
                                                   1.0 / (2.0 * y_squared * n_squared) + m / (4.0 * y * n_squared * n));
             // d2q/dz2 = (d2q/dy2 - dq/dy / y) / (4 y^2)
             q[2] = (d2q_dy2 - dq_dy / y) / (4.0 * y_squared);
+            if constexpr (NumDerivatives >= 3) {
+                const Scalar n_fourth = n_squared * n_squared;
+                // d3q/dy3 = sign (24 / y^5 - 3 c / y^4 - 3 / (2 y^3 n^2) - 3 m / (4 y^2 n^3) - 3 m^2 / (8 y n^4)) +
+                //           1 / (8 y n^2)
+                const Scalar d3q_dy3 = sign * (24.0 / (y_squared * y_squared * y) - 3.0 * c / (y_squared * y_squared) -
+                                                      3.0 / (2.0 * y * y_squared * n_squared) -
+                                                      3.0 * m / (4.0 * y_squared * n_squared * n) -
+                                                      3.0 * m * m / (8.0 * y * n_fourth)) +
+                                       1.0 / (8.0 * y * n_squared);
+                // d3q/dz3 = sign (d3q/dy3 - 3 d2q/dy2 / y + 3 dq/dy / y^2) / (8 y^3)
+                q[3] = sign * (d3q_dy3 - 3.0 * d2q_dy2 / y + 3.0 * dq_dy / y_squared) / (8.0 * y * y_squared);
+            }
         }
     }
     return q;

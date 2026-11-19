@@ -56,29 +56,33 @@ TEST(bernoulli, number_from_zeta) {
 
 TEST(bernoulli, quadratic_coefficient_values) {
     // Values of the power series in exact rational arithmetic, in the series and in both closed forms
-    const std::array<std::array<double, 4>, 4> expected{{
-            {-4.0, 0.08947684601641732, -0.0016992357303663318, 9.078316894333242e-05},
-            {-0.5, 0.08403614963501425, -0.001422588317696492, 6.868170173101179e-05},
-            {0.5, 0.0826470540331997, -0.0013564298697824133, 6.371874128558917e-05},
-            {4.0, 0.07825882137483282, -0.0011592795770513052, 4.971819862876677e-05},
+    const std::array<std::array<double, 5>, 4> expected{{
+            {-4.0, 0.08947684601641732, -0.0016992357303663318, 9.078316894333242e-05, -7.596247766154036e-06},
+            {-0.5, 0.08403614963501425, -0.001422588317696492, 6.868170173101179e-05, -5.2189701082811556e-06},
+            {0.5, 0.0826470540331997, -0.0013564298697824133, 6.371874128558917e-05, -4.717526284107103e-06},
+            {4.0, 0.07825882137483282, -0.0011592795770513052, 4.971819862876677e-05, -3.3763138915313707e-06},
     }};
-    for (const std::array<double, 4>& values : expected) {
-        const std::array<double, 3> q = math::bernoulli::quadratic_coefficient<2>(values[0]);
+    for (const std::array<double, 5>& values : expected) {
+        const std::array<double, 4> q = math::bernoulli::quadratic_coefficient<3>(values[0]);
         EXPECT_NEAR(q[0], values[1], 1.0e-14 * std::abs(values[1])) << values[0];
         EXPECT_NEAR(q[1], values[2], 1.0e-13 * std::abs(values[2])) << values[0];
         EXPECT_NEAR(q[2], values[3], 1.0e-12 * std::abs(values[3])) << values[0];
+        EXPECT_NEAR(q[3], values[4], 1.0e-11 * std::abs(values[4]))
+                << values[0] << " relative error " << std::abs(q[3] / values[4] - 1.0);
     }
 }
 
 TEST(bernoulli, quadratic_coefficient_automatic_differentiation) {
     // With an automatic differentiation type, the derivative of each output is the next output
     for (const double squared_argument : {-25.0, -1.5, -0.3, 0.0, 0.3, 1.5, 25.0}) {
-        const std::array<double, 3> q = math::bernoulli::quadratic_coefficient<2>(squared_argument);
-        const std::array<dual::Number, 3> dual_q =
-                math::bernoulli::quadratic_coefficient<2>(dual::Number(squared_argument, 1.0));
+        const std::array<double, 4> q = math::bernoulli::quadratic_coefficient<3>(squared_argument);
+        const std::array<dual::Number, 4> dual_q =
+                math::bernoulli::quadratic_coefficient<3>(dual::Number(squared_argument, 1.0));
         EXPECT_EQ(dual_q[0].value, q[0]);
         EXPECT_NEAR(dual_q[0].derivative, q[1], 1.0e-12 * std::abs(q[1])) << squared_argument;
         EXPECT_NEAR(dual_q[1].derivative, q[2], 1.0e-10 * std::abs(q[2])) << squared_argument;
+        EXPECT_NEAR(dual_q[2].derivative, q[3], 1.0e-8 * std::abs(q[3]))
+                << squared_argument << " relative error " << std::abs(dual_q[2].derivative / q[3] - 1.0);
     }
 }
 
@@ -110,16 +114,18 @@ TEST(bernoulli, quadratic_coefficient_partial_fractions) {
 }
 
 TEST(bernoulli, quadratic_coefficient_derivatives) {
-    // Central differences of the function and of its first derivative
+    // Central differences of the function and of its first and second derivatives
     for (const double squared_argument :
             {-25.0, -M_PI * M_PI, -4.0, -1.002, -0.998, -0.3, -1.0e-4, 0.0, 0.3, 0.998, 1.002, 4.0, 25.0}) {
         const double step = 1.0e-5;
-        const std::array<double, 3> q = math::bernoulli::quadratic_coefficient<2>(squared_argument);
-        const std::array<double, 3> q_plus = math::bernoulli::quadratic_coefficient<2>(squared_argument + step);
-        const std::array<double, 3> q_minus = math::bernoulli::quadratic_coefficient<2>(squared_argument - step);
+        const std::array<double, 4> q = math::bernoulli::quadratic_coefficient<3>(squared_argument);
+        const std::array<double, 4> q_plus = math::bernoulli::quadratic_coefficient<3>(squared_argument + step);
+        const std::array<double, 4> q_minus = math::bernoulli::quadratic_coefficient<3>(squared_argument - step);
         EXPECT_NEAR(q[1], (q_plus[0] - q_minus[0]) / (2.0 * step), 1.0e-9) << squared_argument;
         EXPECT_NEAR(q[2], (q_plus[1] - q_minus[1]) / (2.0 * step), 1.0e-9) << squared_argument;
+        EXPECT_NEAR(q[3], (q_plus[2] - q_minus[2]) / (2.0 * step), 1.0e-9) << squared_argument;
         // Fewer derivatives are the same values
+        EXPECT_EQ(math::bernoulli::quadratic_coefficient<2>(squared_argument)[2], q[2]);
         EXPECT_EQ(math::bernoulli::quadratic_coefficient<1>(squared_argument)[1], q[1]);
         EXPECT_EQ(math::bernoulli::quadratic_coefficient<0>(squared_argument)[0], q[0]);
     }
@@ -127,8 +133,8 @@ TEST(bernoulli, quadratic_coefficient_derivatives) {
 
 TEST(bernoulli, quadratic_coefficient_continuous_between_series_and_closed_forms) {
     for (const double squared_argument : {-1.0, 1.0}) {
-        const std::array<double, 3> below = math::bernoulli::quadratic_coefficient<2>(squared_argument - 1.0e-12);
-        const std::array<double, 3> above = math::bernoulli::quadratic_coefficient<2>(squared_argument + 1.0e-12);
+        const std::array<double, 4> below = math::bernoulli::quadratic_coefficient<3>(squared_argument - 1.0e-12);
+        const std::array<double, 4> above = math::bernoulli::quadratic_coefficient<3>(squared_argument + 1.0e-12);
         for (std::size_t i = 0; i < below.size(); ++i) {
             EXPECT_NEAR(below[i], above[i], 1.0e-11);
         }
