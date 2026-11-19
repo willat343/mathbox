@@ -30,6 +30,8 @@ template Eigen::Matrix<double, 3, 3> pose_perturbation_jacobian<double, 2>(const
 template Eigen::Matrix<double, 6, 6> pose_perturbation_jacobian<double, 3>(const Eigen::Isometry3d&,
         const PosePerturbation&, const PosePerturbation&);
 
+template Eigen::Vector3d quaternion_to_rotation_vector<double>(const Eigen::Quaterniond&);
+
 template Eigen::Isometry2d relative_transform<double, 2>(const typename Eigen::Isometry2d&,
         const typename Eigen::Isometry2d&);
 template Eigen::Isometry3d relative_transform<double, 3>(const typename Eigen::Isometry3d&,
@@ -43,7 +45,7 @@ template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(const Eigen::M
 template Eigen::Matrix3d rotation_from_directions<double>(const Eigen::Vector3d&, const Eigen::Vector3d&,
         const Eigen::Vector3d&, const Eigen::Vector3d&);
 
-template Eigen::Vector3d rotation_vector<double>(const Eigen::Quaterniond&);
+template Eigen::Quaterniond rotation_vector_to_quaternion<double>(const Eigen::Vector3d&);
 
 #ifndef DOXYGEN_EXCLUDE
 template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(
