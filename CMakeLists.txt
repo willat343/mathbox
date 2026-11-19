@@ -82,7 +82,6 @@ if (MATHBOX_HEADER_ONLY)
 else()
     # Shared/Static Library (determined by BUILD_SHARED_LIBS)
     add_library(${LIBRARY_NAME}
-        src/axis.cpp
         src/covariance.cpp
         src/decompose.cpp
         src/differentiator.cpp
