@@ -11,7 +11,9 @@
 #include <deque>
 #include <limits>
 #include <list>
+#include <optional>
 #include <random>
+#include <span>
 #include <stdexcept>
 #include <vector>
 
@@ -73,6 +75,101 @@ concept IsNonUniformlyDifferentiable = requires(
 template<class Samples>
 concept IsUniformlyDifferentiable = requires(const math::UniformLocalPolynomialDifferentiator<double>& differentiator,
         const Samples& samples) { differentiator.differentiate(samples); };
+
+/**
+ * @brief Whether samples of a type can be buffered and differentiated by the buffered differentiator.
+ *
+ * @tparam Sample
+ */
+template<class Sample>
+concept IsBufferedDifferentiable = requires { typename math::BufferedLocalPolynomialDifferentiator<double, Sample>; };
+
+/**
+ * @brief Get the point of the first sample of the buffered tests, a time far from its clock's epoch.
+ *
+ * @return std::chrono::sys_time<std::chrono::nanoseconds>
+ */
+std::chrono::sys_time<std::chrono::nanoseconds> start_time() {
+    return std::chrono::sys_time<std::chrono::nanoseconds>{std::chrono::seconds(1'700'000'000)};
+}
+
+/**
+ * @brief Get the derivatives of an order of three cubic polynomials in the time since the start time.
+ *
+ * @param time time of the derivatives
+ * @param derivative_order order of the derivatives, where order 0 gives the values of the polynomials
+ * @return Eigen::Vector3d
+ */
+Eigen::Vector3d cubic_derivatives(const std::chrono::sys_time<std::chrono::nanoseconds> time,
+        const unsigned int derivative_order) {
+    const double t = std::chrono::duration<double>(time - start_time()).count();
+    return Eigen::Vector3d{polynomial_derivative({0.1, 0.5, -2.0, 3.0}, t, derivative_order),
+            polynomial_derivative({-0.2, 1.5, 0.4, -1.0}, t, derivative_order),
+            polynomial_derivative({0.3, -0.8, 5.0, 0.5}, t, derivative_order)};
+}
+
+/**
+ * @brief Get the points of 60 samples 2.5 ms apart from the start time, except for a given spacing between the 30th
+ * and the 31st sample.
+ *
+ * @param spacing spacing of the 30th and the 31st sample
+ * @return std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points of the 60 samples
+ */
+std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points_with_middle_spacing(
+        const std::chrono::nanoseconds spacing) {
+    std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points;
+    for (int i = 0; i < 60; ++i) {
+        points.push_back(start_time() + i * std::chrono::microseconds(2500) +
+                         (i < 30 ? std::chrono::nanoseconds::zero() : spacing - std::chrono::microseconds(2500)));
+    }
+    return points;
+}
+
+/**
+ * @brief Get a buffered differentiator over 11 samples by fitted cubics, with the cubics sampled at some points added.
+ *
+ * @param points points of the samples, increasing
+ * @param max_sample_spacing maximum sample spacing of the differentiator in seconds, if any
+ * @return math::BufferedLocalPolynomialDifferentiator<std::chrono::sys_time<std::chrono::nanoseconds>, Eigen::Vector3d>
+ */
+math::BufferedLocalPolynomialDifferentiator<std::chrono::sys_time<std::chrono::nanoseconds>, Eigen::Vector3d>
+buffered_cubics(const std::span<const std::chrono::sys_time<std::chrono::nanoseconds>> points,
+        const std::optional<double> max_sample_spacing) {
+    math::BufferedLocalPolynomialDifferentiator<std::chrono::sys_time<std::chrono::nanoseconds>, Eigen::Vector3d>
+            differentiator(11, 3, max_sample_spacing);
+    for (const std::chrono::sys_time<std::chrono::nanoseconds> point : points) {
+        differentiator.add(point, cubic_derivatives(point, 0));
+    }
+    return differentiator;
+}
+
+/**
+ * @brief Check that a buffered differentiator over 11 samples, given the cubics sampled at some points, differentiates
+ * every sample that it differentiates exactly, at every order up to 3.
+ *
+ * @param points points of the samples, increasing
+ * @param max_sample_spacing maximum sample spacing of the differentiator in seconds, if any
+ * @return std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points of the differentiated samples
+ */
+std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> check_cubic_differentiation(
+        const std::span<const std::chrono::sys_time<std::chrono::nanoseconds>> points,
+        const std::optional<double> max_sample_spacing) {
+    const auto differentiator = buffered_cubics(points, max_sample_spacing);
+    std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> differentiated_points;
+    for (const std::chrono::sys_time<std::chrono::nanoseconds> point : points) {
+        if (differentiator.differentiate(point, 0)) {
+            differentiated_points.push_back(point);
+            for (unsigned int derivative_order = 0; derivative_order <= 3; ++derivative_order) {
+                const std::optional<Eigen::Vector3d> derivatives =
+                        differentiator.differentiate(point, derivative_order);
+                const Eigen::Vector3d expected = cubic_derivatives(point, derivative_order);
+                EXPECT_TRUE(derivatives && (*derivatives - expected).norm() <= 1.0e-6 * std::max(1.0, expected.norm()))
+                        << "derivative order " << derivative_order << " at sample " << differentiated_points.size();
+            }
+        }
+    }
+    return differentiated_points;
+}
 
 TEST(NonUniformLocalPolynomialDifferentiator, finite_differences) {
     // Interpolating polynomials (N = p + 1) give the non-uniform finite difference stencils, e.g. the first and second
@@ -411,4 +508,283 @@ TEST(UniformLocalPolynomialDifferentiator, invalid_arguments) {
     EXPECT_THROW(differentiator.differentiate(std::vector<double>(4, 0.0)), std::invalid_argument);
     // Integer samples are rejected at compile time, since their weighted sum would be truncated
     static_assert(IsUniformlyDifferentiable<std::vector<double>> && !IsUniformlyDifferentiable<std::vector<int>>);
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, construction) {
+    const math::BufferedLocalPolynomialDifferentiator<std::chrono::sys_time<std::chrono::nanoseconds>, Eigen::Vector3d>
+            differentiator(11, 3, 0.0125);
+    EXPECT_EQ(differentiator.window_size(), 11);
+    EXPECT_EQ(differentiator.polynomial_degree(), 3);
+    EXPECT_EQ(differentiator.max_sample_spacing(), 0.0125);
+    EXPECT_EQ(differentiator.size(), 0);
+    EXPECT_FALSE((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2).max_sample_spacing()));
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, exact_for_cubics) {
+    // Samples of a 400 Hz loop with up to 0.3 ms of jitter, with single missing samples and three missing in a row, all
+    // within the maximum spacing of 12.5 ms: all but the first and last five samples are differentiated, exactly
+    std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points;
+    for (int cycle = 0; cycle < 400; ++cycle) {
+        if (cycle % 37 == 10 || cycle % 53 == 20 || (cycle >= 200 && cycle < 203)) {
+            continue;
+        }
+        points.push_back(start_time() + std::chrono::round<std::chrono::nanoseconds>(std::chrono::duration<double>(
+                                                2.5e-3 * cycle + 0.3e-3 * std::sin(cycle))));
+    }
+    EXPECT_EQ(check_cubic_differentiation(points, 0.0125),
+            std::vector<std::chrono::sys_time<std::chrono::nanoseconds>>(points.begin() + 5, points.end() - 5));
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, final_windows) {
+    // As samples are added, the window of each sample is final once the fifth sample after it is added, and the windows
+    // of the first five samples at once, since they have no centred window
+    const std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points =
+            points_with_middle_spacing(std::chrono::microseconds(2500));
+    auto differentiator = buffered_cubics({}, 0.0125);
+    for (std::size_t i = 0; i < 30; ++i) {
+        differentiator.add(points[i], cubic_derivatives(points[i], 0));
+        for (std::size_t j = 0; j <= i; ++j) {
+            EXPECT_EQ(differentiator.is_window_final(points[j]), j < 5 || j + 5 <= i) << "sample " << j << " of " << i;
+            EXPECT_EQ(differentiator.differentiate(points[j], 1).has_value(), j >= 5 && j + 5 <= i)
+                    << "sample " << j << " of " << i;
+        }
+    }
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, final_windows_up_to) {
+    // As samples with jitter, missing samples and a gap of 13 ms after the 40th are added, the windows of all samples
+    // up to a point, at a sample or between samples, are final exactly when the window of each of them is, so windows
+    // become final in the order of their samples. Without samples up to the point, they are final at once.
+    std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points{start_time()};
+    for (int i = 1; i < 80; ++i) {
+        points.push_back(
+                points.back() + (i == 40 ? std::chrono::microseconds(13000)
+                                         : std::chrono::round<std::chrono::nanoseconds>(std::chrono::duration<double>(
+                                                   (i % 17 == 0 ? 5.0e-3 : 2.5e-3) + 0.3e-3 * std::sin(i)))));
+    }
+    auto differentiator = buffered_cubics({}, 0.0125);
+    EXPECT_TRUE(differentiator.are_windows_final_up_to(points[0]));
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        differentiator.add(points[i], cubic_derivatives(points[i], 0));
+        EXPECT_TRUE(differentiator.are_windows_final_up_to(points[0] - std::chrono::nanoseconds(1)));
+        bool expected{true};
+        for (std::size_t j = 0; j <= i; ++j) {
+            expected = expected && differentiator.is_window_final(points[j]);
+            EXPECT_EQ(differentiator.are_windows_final_up_to(points[j]), expected) << "sample " << j << " of " << i;
+            EXPECT_EQ(differentiator.are_windows_final_up_to(points[j] + std::chrono::nanoseconds(1)), expected)
+                    << "after sample " << j << " of " << i;
+        }
+    }
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, gaps) {
+    // A spacing of 13 ms after the 30th sample, larger than the maximum of 12.5 ms, so a gap: only the samples with
+    // five samples on each side and no gap between them are differentiated
+    const std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points =
+            points_with_middle_spacing(std::chrono::microseconds(13000));
+    std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> expected_points(points.begin() + 5,
+            points.begin() + 25);
+    expected_points.insert(expected_points.end(), points.begin() + 35, points.begin() + 55);
+    EXPECT_EQ(check_cubic_differentiation(points, 0.0125), expected_points);
+
+    // The windows of the last five samples before the gap are final once the first sample after it is added
+    auto differentiator = buffered_cubics(std::span(points).first(30), 0.0125);
+    for (std::size_t i = 25; i < 30; ++i) {
+        EXPECT_FALSE(differentiator.is_window_final(points[i]));
+    }
+    differentiator.add(points[30], cubic_derivatives(points[30], 0));
+    for (std::size_t i = 25; i < 31; ++i) {
+        EXPECT_TRUE(differentiator.is_window_final(points[i]));
+        EXPECT_FALSE(differentiator.differentiate(points[i], 1));
+    }
+
+    // After the gap, the window of a sample is final at once if it spans the gap, and otherwise once half a window of
+    // samples is buffered after it
+    for (std::size_t i = 31; i < 39; ++i) {
+        differentiator.add(points[i], cubic_derivatives(points[i], 0));
+    }
+    EXPECT_TRUE(differentiator.is_window_final(points[34]));
+    EXPECT_FALSE(differentiator.is_window_final(points[35]));
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, spacing_of_the_maximum) {
+    // A spacing of exactly the maximum of 12.5 ms is spanned, so all but the first and last five samples are
+    // differentiated, while a spacing of 1 ns more is a gap
+    const std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> spanned =
+            points_with_middle_spacing(std::chrono::microseconds(12500));
+    EXPECT_EQ(check_cubic_differentiation(spanned, 0.0125),
+            std::vector<std::chrono::sys_time<std::chrono::nanoseconds>>(spanned.begin() + 5, spanned.end() - 5));
+    const std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> split =
+            points_with_middle_spacing(std::chrono::microseconds(12500) + std::chrono::nanoseconds(1));
+    EXPECT_EQ(check_cubic_differentiation(split, 0.0125).size(), 40);
+
+    // So the window of a sample that spans the spacing of the maximum is not final until half a window of samples is
+    // buffered after it
+    const auto differentiator = buffered_cubics(std::span(spanned).first(32), 0.0125);
+    EXPECT_TRUE(differentiator.is_window_final(spanned[26]));
+    EXPECT_FALSE(differentiator.is_window_final(spanned[27]));
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, no_maximum_sample_spacing) {
+    // Without a maximum sample spacing, a spacing of 1 s is spanned, so all but the first and last five samples are
+    // differentiated, exactly since the samples are of cubics
+    const std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points =
+            points_with_middle_spacing(std::chrono::seconds(1));
+    EXPECT_EQ(check_cubic_differentiation(points, std::nullopt),
+            std::vector<std::chrono::sys_time<std::chrono::nanoseconds>>(points.begin() + 5, points.end() - 5));
+
+    // So the windows of the samples before the spacing are not final until half a window of samples is buffered after
+    // them
+    const auto differentiator = buffered_cubics(std::span(points).first(31), std::nullopt);
+    EXPECT_TRUE(differentiator.is_window_final(points[25]));
+    EXPECT_FALSE(differentiator.is_window_final(points[26]));
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, samples_as_they_arrive) {
+    // Samples with jitter and missing samples, and with spacings of the maximum, just above it and well above it, are
+    // added one by one, and each sample is differentiated once its window is final, after which the samples before it
+    // are removed: the derivatives equal those of a buffer of all the samples, and only samples without derivatives
+    // remain pending
+    std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points{start_time()};
+    for (int i = 1; i < 200; ++i) {
+        const std::chrono::nanoseconds spacing = [i]() -> std::chrono::nanoseconds {
+            if (i == 60) {
+                return std::chrono::microseconds(12500);
+            }
+            if (i == 110) {
+                return std::chrono::microseconds(12500) + std::chrono::nanoseconds(1);
+            }
+            if (i == 150) {
+                return std::chrono::milliseconds(50);
+            }
+            return std::chrono::round<std::chrono::nanoseconds>(
+                    std::chrono::duration<double>((i % 23 == 0 ? 5.0e-3 : 2.5e-3) + 0.3e-3 * std::sin(i)));
+        }();
+        points.push_back(points.back() + spacing);
+    }
+    const auto full_buffer = buffered_cubics(points, 0.0125);
+    auto differentiator = buffered_cubics({}, 0.0125);
+    std::size_t next = 0;
+    std::size_t differentiated = 0;
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        differentiator.add(points[i], cubic_derivatives(points[i], 0));
+        for (; next <= i && differentiator.is_window_final(points[next]); ++next) {
+            for (unsigned int derivative_order = 1; derivative_order <= 2; ++derivative_order) {
+                EXPECT_EQ(differentiator.differentiate(points[next], derivative_order),
+                        full_buffer.differentiate(points[next], derivative_order))
+                        << "sample " << next << ", derivative order " << derivative_order;
+            }
+            differentiated += differentiator.differentiate(points[next], 1).has_value();
+            differentiator.remove_before(points[next]);
+        }
+    }
+    // Gaps after the 110th and the 150th sample, so all samples are differentiated except the five on each side of each
+    // gap and at each end, and the last five remain pending
+    EXPECT_EQ(differentiated, 170);
+    EXPECT_EQ(next, 195);
+    for (std::size_t i = next; i < points.size(); ++i) {
+        EXPECT_FALSE(differentiator.is_window_final(points[i]));
+        EXPECT_FALSE(full_buffer.differentiate(points[i], 1));
+    }
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, remove_before) {
+    // Removing the samples before a sample keeps the last half window of them, which its window needs
+    const std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points =
+            points_with_middle_spacing(std::chrono::microseconds(2500));
+    auto differentiator = buffered_cubics(std::span(points).first(30), 0.0125);
+    const std::optional<Eigen::Vector3d> second_derivatives = differentiator.differentiate(points[15], 2);
+    differentiator.remove_before(points[15]);
+    EXPECT_EQ(differentiator.size(), 20);
+    EXPECT_TRUE(differentiator.is_window_final(points[15]));
+    EXPECT_EQ(differentiator.differentiate(points[15], 2), second_derivatives);
+    // Before a point between samples, it keeps the last half window of samples before the next sample
+    differentiator.remove_before(points[20] - std::chrono::nanoseconds(1));
+    EXPECT_EQ(differentiator.size(), 15);
+    // Before a point after the samples, it keeps the last half window of them
+    differentiator.remove_before(points[29] + std::chrono::seconds(1));
+    EXPECT_EQ(differentiator.size(), 5);
+    // Before a point within half a window of the first buffered sample, it keeps them all
+    differentiator.remove_before(points[27]);
+    EXPECT_EQ(differentiator.size(), 5);
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, scalar_samples) {
+    // A quadratic sampled at jittered floating-point points, differentiated by quadratics fitted over 5 samples
+    math::BufferedLocalPolynomialDifferentiator<double, double> differentiator(5, 2, 0.1);
+    const std::vector<double> points{0.0, 0.051, 0.098, 0.152, 0.2, 0.249, 0.301};
+    for (const double point : points) {
+        differentiator.add(point, 1.0 + 2.0 * point - 3.0 * point * point);
+    }
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        const std::optional<double> derivative = differentiator.differentiate(points[i], 1);
+        const std::optional<double> second_derivative = differentiator.differentiate(points[i], 2);
+        ASSERT_EQ(derivative.has_value(), i >= 2 && i < 5);
+        ASSERT_EQ(second_derivative.has_value(), i >= 2 && i < 5);
+        if (derivative) {
+            EXPECT_NEAR(*derivative, 2.0 - 6.0 * points[i], 1.0e-9);
+            EXPECT_NEAR(*second_derivative, -6.0, 1.0e-9);
+        }
+    }
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, matrix_samples) {
+    // Dynamic-size matrices of quadratics sampled at jittered points, differentiated entry by entry by quadratics
+    // fitted over 5 samples, while samples of another number of rows or columns are rejected
+    math::BufferedLocalPolynomialDifferentiator<double, Eigen::MatrixXd> differentiator(5, 2, 0.1);
+    const std::vector<double> points{0.0, 0.051, 0.098, 0.152, 0.2};
+    for (const double t : points) {
+        Eigen::MatrixXd sample(2, 2);
+        sample << 1.0 + t, 2.0 - t * t, 3.0 * t * t, -t + 0.5 * t * t;
+        differentiator.add(t, sample);
+    }
+    const double t = points[2];
+    Eigen::MatrixXd expected_derivatives(2, 2);
+    expected_derivatives << 1.0, -2.0 * t, 6.0 * t, -1.0 + t;
+    Eigen::MatrixXd expected_second_derivatives(2, 2);
+    expected_second_derivatives << 0.0, -2.0, 6.0, 1.0;
+    const std::optional<Eigen::MatrixXd> derivatives = differentiator.differentiate(t, 1);
+    const std::optional<Eigen::MatrixXd> second_derivatives = differentiator.differentiate(t, 2);
+    ASSERT_TRUE(derivatives && second_derivatives);
+    EXPECT_TRUE(derivatives->isApprox(expected_derivatives, 1.0e-9)) << *derivatives;
+    EXPECT_TRUE(second_derivatives->isApprox(expected_second_derivatives, 1.0e-9)) << *second_derivatives;
+    EXPECT_THROW(differentiator.add(0.25, Eigen::MatrixXd::Zero(2, 3)), std::invalid_argument);
+    EXPECT_THROW(differentiator.add(0.25, Eigen::MatrixXd::Zero(3, 2)), std::invalid_argument);
+    EXPECT_EQ(differentiator.size(), 5);
+}
+
+TEST(BufferedLocalPolynomialDifferentiator, invalid_arguments) {
+    // An even window, a window not greater than the polynomial degree, and a maximum sample spacing that is not
+    // positive, infinite or NaN
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(10, 3, 1.0)), std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(3, 3, 1.0)), std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, 0.0)), std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, -1.0)), std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2,
+                         std::numeric_limits<double>::infinity())),
+            std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2,
+                         std::numeric_limits<double>::quiet_NaN())),
+            std::invalid_argument);
+    // A NaN or infinite sample point is rejected, even as the first, which would otherwise block the buffer
+    math::BufferedLocalPolynomialDifferentiator<double, double> scalar_differentiator(5, 2, 1.0);
+    EXPECT_THROW(scalar_differentiator.add(std::numeric_limits<double>::quiet_NaN(), 0.0), std::invalid_argument);
+    EXPECT_THROW(scalar_differentiator.add(std::numeric_limits<double>::infinity(), 0.0), std::invalid_argument);
+    EXPECT_EQ(scalar_differentiator.size(), 0);
+    // A sample at or before the last sample, or of another size, is rejected without changing the buffer
+    math::BufferedLocalPolynomialDifferentiator<double, Eigen::VectorXd> differentiator(5, 2, 1.0);
+    differentiator.add(0.0, Eigen::VectorXd::Zero(3));
+    EXPECT_THROW(differentiator.add(0.0, Eigen::VectorXd::Zero(3)), std::invalid_argument);
+    EXPECT_THROW(differentiator.add(-1.0, Eigen::VectorXd::Zero(3)), std::invalid_argument);
+    EXPECT_THROW(differentiator.add(1.0, Eigen::VectorXd::Zero(4)), std::invalid_argument);
+    EXPECT_EQ(differentiator.size(), 1);
+    // A derivative order above the polynomial degree, and points without a buffered sample
+    EXPECT_THROW(differentiator.differentiate(0.0, 3), std::invalid_argument);
+    EXPECT_THROW(differentiator.differentiate(0.5, 1), std::invalid_argument);
+    EXPECT_THROW(differentiator.differentiate(-0.5, 1), std::invalid_argument);
+    EXPECT_THROW(differentiator.is_window_final(0.5), std::invalid_argument);
+    EXPECT_THROW(differentiator.is_window_final(-0.5), std::invalid_argument);
+    // Samples of integer scalars are rejected at compile time, since their weighted sum would be truncated
+    static_assert(IsBufferedDifferentiable<double> && IsBufferedDifferentiable<Eigen::Vector3d> &&
+                  !IsBufferedDifferentiable<int> && !IsBufferedDifferentiable<Eigen::Vector3i>);
 }
