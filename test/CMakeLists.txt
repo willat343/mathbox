@@ -4,6 +4,7 @@ enable_testing()
 # Build Example
 add_executable(${PROJECT_NAME}_tests
     src/axis.cpp
+    src/bernoulli.cpp
     src/combinatorics.cpp
     src/covariance.cpp
     src/decompose.cpp
