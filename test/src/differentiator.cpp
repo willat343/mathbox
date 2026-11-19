@@ -551,6 +551,32 @@ TEST(BufferedLocalPolynomialDifferentiator, final_windows) {
     }
 }
 
+TEST(BufferedLocalPolynomialDifferentiator, final_windows_up_to) {
+    // As samples with jitter, missing samples and a gap of 13 ms after the 40th are added, the windows of all samples
+    // up to a point, at a sample or between samples, are final exactly when the window of each of them is, so windows
+    // become final in the order of their samples. Without samples up to the point, they are final at once.
+    std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> points{start_time()};
+    for (int i = 1; i < 80; ++i) {
+        points.push_back(
+                points.back() + (i == 40 ? std::chrono::microseconds(13000)
+                                         : std::chrono::round<std::chrono::nanoseconds>(std::chrono::duration<double>(
+                                                   (i % 17 == 0 ? 5.0e-3 : 2.5e-3) + 0.3e-3 * std::sin(i)))));
+    }
+    auto differentiator = buffered_cubics({}, 0.0125);
+    EXPECT_TRUE(differentiator.are_windows_final_up_to(points[0]));
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        differentiator.add(points[i], cubic_derivatives(points[i], 0));
+        EXPECT_TRUE(differentiator.are_windows_final_up_to(points[0] - std::chrono::nanoseconds(1)));
+        bool expected{true};
+        for (std::size_t j = 0; j <= i; ++j) {
+            expected = expected && differentiator.is_window_final(points[j]);
+            EXPECT_EQ(differentiator.are_windows_final_up_to(points[j]), expected) << "sample " << j << " of " << i;
+            EXPECT_EQ(differentiator.are_windows_final_up_to(points[j] + std::chrono::nanoseconds(1)), expected)
+                    << "after sample " << j << " of " << i;
+        }
+    }
+}
+
 TEST(BufferedLocalPolynomialDifferentiator, gaps) {
     // A spacing of 13 ms after the 30th sample, larger than the maximum of 12.5 ms, so a gap: only the samples with
     // five samples on each side and no gap between them are differentiated

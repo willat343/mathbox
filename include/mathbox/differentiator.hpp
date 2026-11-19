@@ -420,7 +420,9 @@ private:
  * 2. With a maximum sample spacing, a window must not span a gap, i.e. two consecutive samples spaced by more than it.
  *    The samples within half a window of a gap, or of the first buffered sample, therefore have no derivative.
  * 3. The window of a sample is final, i.e. its derivatives no longer change as samples are added, once it is buffered,
- *    or once it cannot be, because it would start before the first buffered sample or span a gap.
+ *    or once it cannot be, because it would start before the first buffered sample or span a gap. Windows become final
+ *    in the order of their samples, so all samples up to a point can be differentiated once the window of the last of
+ *    them is final.
  * 4. Samples that no later window needs are removed explicitly, e.g. after differentiating each sample in turn.
  *
  * Choosing the maximum sample spacing:
@@ -496,6 +498,16 @@ public:
      * @param sample sample, of the size of the buffered samples
      */
     void add(const SamplePoint& sample_point, const Sample& sample);
+
+    /**
+     * @brief Check if the centred windows of all the buffered samples at or before a point are final (see
+     * `is_window_final()`), e.g. to wait until all samples up to a point can be differentiated.
+     *
+     * @param sample_point point, of a buffered sample or not
+     * @return true if they are, including if no sample at or before the point is buffered
+     * @return false
+     */
+    bool are_windows_final_up_to(const SamplePoint& sample_point) const;
 
     /**
      * @brief Differentiate the buffered sample at a point over its centred window,

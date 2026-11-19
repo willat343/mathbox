@@ -263,6 +263,15 @@ inline void BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::add(co
 
 template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
     requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
+inline bool BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::are_windows_final_up_to(
+        const SamplePoint& sample_point) const {
+    // Windows become final in the order of their samples, so those up to the point are final with the last of them
+    const auto after_it = std::ranges::upper_bound(sample_points_, sample_point);
+    return after_it == sample_points_.cbegin() || is_window_final(*std::prev(after_it));
+}
+
+template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
+    requires(std::floating_point<typename MathTypeTraits<Sample_>::Scalar>)
 inline auto BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::differentiate(const SamplePoint& sample_point,
         const unsigned int derivative_order) const -> std::optional<Sample> {
     throw_if(derivative_order > polynomial_degree(), "Derivative order must not exceed the polynomial degree.",
@@ -336,9 +345,9 @@ template<IsIndependentVariableType SamplePoint_, IsEuclideanType Sample_>
 inline std::size_t BufferedLocalPolynomialDifferentiator<SamplePoint_, Sample_>::find_index(
         const SamplePoint& sample_point) const {
     // Binary search, since the sample points are increasing
-    const auto point = std::ranges::lower_bound(sample_points_, sample_point);
-    return point != sample_points_.cend() && *point == sample_point
-                   ? static_cast<std::size_t>(std::ranges::distance(sample_points_.cbegin(), point))
+    const auto point_it = std::ranges::lower_bound(sample_points_, sample_point);
+    return point_it != sample_points_.cend() && *point_it == sample_point
+                   ? static_cast<std::size_t>(std::ranges::distance(sample_points_.cbegin(), point_it))
                    : size();
 }
 
