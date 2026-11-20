@@ -221,6 +221,17 @@ Eigen::Matrix<Scalar, SEDoF<D>, SEDoF<D>> pose_perturbation_jacobian(
     return split_right_jacobian(R, p, perturbation).inverse() * split_right_jacobian(R, p, with_respect_to);
 }
 
+template<typename Scalar>
+Eigen::Vector<Scalar, 3> quaternion_to_rotation_vector(const Eigen::Quaternion<Scalar>& rotation) {
+    if (rotation.vec().squaredNorm() < Eigen::NumTraits<Scalar>::epsilon()) {
+        // θ = 2 v / w, to machine precision
+        return (Scalar(2) / rotation.w()) * rotation.vec();
+    }
+    // θ = 2 atan2(|v|, w) v / |v|, with the sign of the quaternion that makes w ≥ 0
+    const Eigen::AngleAxis<Scalar> angle_axis(rotation);
+    return angle_axis.angle() * angle_axis.axis();
+}
+
 template<typename Scalar, int D>
     requires(math::is_2d_or_3d<D>)
 inline Eigen::Transform<Scalar, D, Eigen::Isometry> relative_transform(
@@ -247,6 +258,18 @@ Eigen::Matrix<Scalar, 3, 3> rotation_from_directions(const Eigen::Vector<Scalar,
         const Eigen::Vector<Scalar, 3>& secondary_A, const Eigen::Vector<Scalar, 3>& primary_B,
         const Eigen::Vector<Scalar, 3>& secondary_B) {
     return frame_from_directions(primary_A, secondary_A) * frame_from_directions(primary_B, secondary_B).transpose();
+}
+
+template<typename Scalar>
+Eigen::Quaternion<Scalar> rotation_vector_to_quaternion(const Eigen::Vector<Scalar, 3>& rotation_vector) {
+    if (rotation_vector.squaredNorm() < Eigen::NumTraits<Scalar>::epsilon()) {
+        // q = (1, θ / 2), to machine precision
+        return Eigen::Quaternion<Scalar>(Scalar(1), rotation_vector.x() / Scalar(2), rotation_vector.y() / Scalar(2),
+                rotation_vector.z() / Scalar(2));
+    }
+    // q = (cos(|θ| / 2), sin(|θ| / 2) θ / |θ|)
+    const Scalar angle = rotation_vector.norm();
+    return Eigen::Quaternion<Scalar>(Eigen::AngleAxis<Scalar>(angle, rotation_vector / angle));
 }
 
 template<typename DerivedOmega, typename DerivedV>
@@ -383,6 +406,8 @@ extern template Eigen::Matrix<double, 3, 3> pose_perturbation_jacobian<double, 2
 extern template Eigen::Matrix<double, 6, 6> pose_perturbation_jacobian<double, 3>(const Eigen::Isometry3d&,
         const PosePerturbation&, const PosePerturbation&);
 
+extern template Eigen::Vector3d quaternion_to_rotation_vector<double>(const Eigen::Quaterniond&);
+
 extern template Eigen::Isometry2d relative_transform<double, 2>(const typename Eigen::Isometry2d& pose_A_B,
         const typename Eigen::Isometry2d& pose_A_C);
 extern template Eigen::Isometry3d relative_transform<double, 3>(const typename Eigen::Isometry3d& pose_A_B,
@@ -395,6 +420,8 @@ extern template Eigen::Matrix3d rotate_point_covariance<Eigen::Matrix3d>(
 
 extern template Eigen::Matrix3d rotation_from_directions<double>(const Eigen::Vector3d&, const Eigen::Vector3d&,
         const Eigen::Vector3d&, const Eigen::Vector3d&);
+
+extern template Eigen::Quaterniond rotation_vector_to_quaternion<double>(const Eigen::Vector3d&);
 
 #ifndef DOXYGEN_EXCLUDE
 extern template Eigen::Vector2d so_cross<Eigen::Vector<double, 1>, Eigen::Vector2d>(

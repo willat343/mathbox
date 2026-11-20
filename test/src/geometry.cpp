@@ -395,6 +395,61 @@ TEST(rotation_from_directions, throws_for_zero_or_parallel_directions) {
     EXPECT_THROW(math::rotation_from_directions(z, x, z, Eigen::Vector3d{-2.0 * z}), std::invalid_argument);
 }
 
+TEST(quaternion_to_rotation_vector, matches_angle_axis) {
+    for (const double angle : {0.3, 1.0, 2.5, 3.1}) {
+        SCOPED_TRACE(angle);
+        const Eigen::Vector3d axis = Eigen::Vector3d(0.4, -1.0, 0.7).normalized();
+        EXPECT_TRUE(math::quaternion_to_rotation_vector(Eigen::Quaterniond(Eigen::AngleAxisd(angle, axis)))
+                        .isApprox(angle * axis));
+    }
+}
+
+TEST(quaternion_to_rotation_vector, shortest_rotation_for_either_sign) {
+    const Eigen::Vector3d axis = Eigen::Vector3d(0.4, -1.0, 0.7).normalized();
+    const Eigen::Quaterniond rotation(Eigen::AngleAxisd(0.8, axis));
+    EXPECT_TRUE(math::quaternion_to_rotation_vector(Eigen::Quaterniond(-rotation.coeffs())).isApprox(0.8 * axis));
+    // A rotation by 4 rad is the shortest rotation by 2 pi - 4 rad about the opposite axis
+    EXPECT_TRUE(math::quaternion_to_rotation_vector(Eigen::Quaterniond(Eigen::AngleAxisd(4.0, axis)))
+                    .isApprox((4.0 - 2.0 * std::numbers::pi) * axis));
+}
+
+TEST(quaternion_to_rotation_vector, small_angle) {
+    const Eigen::Vector3d axis = Eigen::Vector3d(0.4, -1.0, 0.7).normalized();
+    const Eigen::Quaterniond rotation(Eigen::AngleAxisd(1.0e-9, axis));
+    EXPECT_TRUE(math::quaternion_to_rotation_vector(rotation).isApprox(1.0e-9 * axis));
+    EXPECT_TRUE(math::quaternion_to_rotation_vector(Eigen::Quaterniond(-rotation.coeffs())).isApprox(1.0e-9 * axis));
+    EXPECT_TRUE(math::quaternion_to_rotation_vector(Eigen::Quaterniond::Identity()).isZero(0.0));
+}
+
+TEST(rotation_vector_to_quaternion, matches_angle_axis) {
+    const Eigen::Vector3d axis = Eigen::Vector3d(0.4, -1.0, 0.7).normalized();
+    for (const double angle : {0.3, 1.0, 2.5, 3.1}) {
+        SCOPED_TRACE(angle);
+        EXPECT_TRUE(math::rotation_vector_to_quaternion<double>(angle * axis)
+                        .coeffs()
+                        .isApprox(Eigen::Quaterniond(Eigen::AngleAxisd(angle, axis)).coeffs()));
+    }
+}
+
+TEST(rotation_vector_to_quaternion, small_angle) {
+    const Eigen::Vector3d axis = Eigen::Vector3d(0.4, -1.0, 0.7).normalized();
+    EXPECT_TRUE(math::rotation_vector_to_quaternion<double>(1.0e-9 * axis)
+                    .coeffs()
+                    .isApprox(Eigen::Quaterniond(Eigen::AngleAxisd(1.0e-9, axis)).coeffs()));
+    EXPECT_TRUE(math::rotation_vector_to_quaternion<double>(Eigen::Vector3d::Zero())
+                    .coeffs()
+                    .isApprox(Eigen::Quaterniond::Identity().coeffs()));
+}
+
+TEST(rotation_vector_to_quaternion, inverts_quaternion_to_rotation_vector) {
+    const Eigen::Vector3d axis = Eigen::Vector3d(0.4, -1.0, 0.7).normalized();
+    for (const double angle : {1.0e-9, 0.3, 3.1}) {
+        SCOPED_TRACE(angle);
+        EXPECT_TRUE(math::quaternion_to_rotation_vector(math::rotation_vector_to_quaternion<double>(angle * axis))
+                        .isApprox(angle * axis));
+    }
+}
+
 TEST(so_cross, so2) {
     const Eigen::Matrix<double, 1, 1> w(2.0);
     const Eigen::Vector2d v(3.0, 4.0);
