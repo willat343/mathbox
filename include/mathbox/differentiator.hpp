@@ -56,6 +56,15 @@ public:
     using Scalar = Scalar_;
 
     /**
+     * @brief Get the index of the central sample of a window, \f$ s = (N - 1) / 2 \f$, the evaluation index when none
+     * is given, checking that the window size is odd so that its centre is a sample.
+     *
+     * @param window_size number of samples in the window \f$ N \f$, odd
+     * @return std::size_t
+     */
+    static std::size_t central_index(const std::size_t window_size);
+
+    /**
      * @brief Get the order of the derivative \f$ d \f$.
      *
      * @return unsigned int
@@ -92,19 +101,11 @@ protected:
      * @param polynomial_degree_ degree of the fitted polynomial \f$ p \f$, at least the derivative order
      * @param derivative_order_ order of the derivative \f$ d \f$, where order 0 smooths the samples
      * @param evaluation_index_ index \f$ s \f$ of the sample at which the derivative is evaluated, counted from the
-     * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$
+     * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$, or none for the centre of an odd window (see
+     * central_index)
      */
     explicit LocalPolynomialDifferentiator(const std::size_t window_size_, const unsigned int polynomial_degree_,
-            const unsigned int derivative_order_, const std::size_t evaluation_index_);
-
-    /**
-     * @brief Get the index of the central sample of a window, \f$ s = (N - 1) / 2 \f$, for the centred constructors,
-     * checking that the window size is odd so that its centre is a sample.
-     *
-     * @param window_size number of samples in the window \f$ N \f$, odd
-     * @return std::size_t
-     */
-    static std::size_t central_index(const std::size_t window_size);
+            const unsigned int derivative_order_, const std::optional<std::size_t> evaluation_index_);
 
     /**
      * @brief Check that a range has one element for each sample of the window.
@@ -218,23 +219,12 @@ public:
      * @param polynomial_degree_ degree of the fitted polynomial \f$ p \f$, at least the derivative order
      * @param derivative_order_ order of the derivative \f$ d \f$, where order 0 smooths the samples
      * @param evaluation_index_ index \f$ s \f$ of the sample at which the derivative is evaluated, counted from the
-     * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$ (e.g. \f$ (N - 1) / 2 \f$ for the centre of an odd
-     * window, \f$ N - 1 \f$ for the last sample)
+     * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$ (e.g. \f$ N - 1 \f$ for the last sample), or none
+     * for the centre \f$ (N - 1) / 2 \f$ of an odd window
      */
     explicit NonUniformLocalPolynomialDifferentiator(const std::size_t window_size_,
             const unsigned int polynomial_degree_, const unsigned int derivative_order_,
-            const std::size_t evaluation_index_);
-
-    /**
-     * @brief Construct the differentiator evaluating at the centre of the window, \f$ s = (N - 1) / 2 \f$, where the
-     * window size must be odd so that its centre is a sample.
-     *
-     * @param window_size_ number of samples in the window \f$ N \f$, odd and greater than the polynomial degree
-     * @param polynomial_degree_ degree of the fitted polynomial \f$ p \f$, at least the derivative order
-     * @param derivative_order_ order of the derivative \f$ d \f$, where order 0 smooths the samples
-     */
-    explicit NonUniformLocalPolynomialDifferentiator(const std::size_t window_size_,
-            const unsigned int polynomial_degree_, const unsigned int derivative_order_);
+            const std::optional<std::size_t> evaluation_index_ = std::nullopt);
 
     /**
      * @brief Differentiate a window of samples at their points, \f$ y^{(d)}(x_s) = \sum_{i=0}^{N-1} w_i y_i \f$.
@@ -330,7 +320,7 @@ public:
  * Example: the second derivatives of 12 values sampled at 400 Hz, at the central one of 11 samples, each from a fitted
  * cubic,
  * @code{.cpp}
- * const math::UniformLocalPolynomialDifferentiator<double> differentiator(11, 3, 2, 0.0025);
+ * const math::UniformLocalPolynomialDifferentiator<double> differentiator(11, 3, 2, std::nullopt, 0.0025);
  * // Values of the latest 11 samples, from the oldest
  * std::deque<Eigen::Matrix<double, 12, 1>> values;
  * const Eigen::Matrix<double, 12, 1> second_derivatives = differentiator.differentiate(values);
@@ -355,24 +345,13 @@ public:
      * @param polynomial_degree_ degree of the fitted polynomial \f$ p \f$, at least the derivative order
      * @param derivative_order_ order of the derivative \f$ d \f$, where order 0 smooths the samples
      * @param evaluation_index_ index \f$ s \f$ of the sample at which the derivative is evaluated, counted from the
-     * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$ (e.g. \f$ (N - 1) / 2 \f$ for the centre of an odd
-     * window, \f$ N - 1 \f$ for the last sample)
+     * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$ (e.g. \f$ N - 1 \f$ for the last sample), or none
+     * for the centre \f$ (N - 1) / 2 \f$ of an odd window
      * @param sample_spacing_ spacing \f$ \Delta x \f$ of the sample points, positive and finite
      */
     explicit UniformLocalPolynomialDifferentiator(const std::size_t window_size_, const unsigned int polynomial_degree_,
-            const unsigned int derivative_order_, const std::size_t evaluation_index_, const Scalar sample_spacing_);
-
-    /**
-     * @brief Construct the differentiator evaluating at the centre of the window, \f$ s = (N - 1) / 2 \f$, computing
-     * its weights, where the window size must be odd so that its centre is a sample.
-     *
-     * @param window_size_ number of samples in the window \f$ N \f$, odd and greater than the polynomial degree
-     * @param polynomial_degree_ degree of the fitted polynomial \f$ p \f$, at least the derivative order
-     * @param derivative_order_ order of the derivative \f$ d \f$, where order 0 smooths the samples
-     * @param sample_spacing_ spacing \f$ \Delta x \f$ of the sample points, positive and finite
-     */
-    explicit UniformLocalPolynomialDifferentiator(const std::size_t window_size_, const unsigned int polynomial_degree_,
-            const unsigned int derivative_order_, const Scalar sample_spacing_);
+            const unsigned int derivative_order_, const std::optional<std::size_t> evaluation_index_,
+            const Scalar sample_spacing_);
 
     /**
      * @brief Differentiate a window of samples, \f$ y^{(d)}(x_s) = \sum_{i=0}^{N-1} w_i y_i \f$.
@@ -454,7 +433,7 @@ private:
  * with up to 4 missing samples in a row accepted by a maximum spacing of 5.5 sample periods,
  * @code{.cpp}
  * math::BufferedLocalPolynomialDifferentiator<std::chrono::steady_clock::time_point, Eigen::Matrix<double, 12, 1>>
- *         differentiator(11, 3, 0.01375);
+ *         differentiator(11, 3, std::nullopt, 0.01375);
  * // For each sample, as it arrives
  * differentiator.add(stamp, values);
  * // For a buffered sample, e.g. that of the next measurement to process, once its derivatives are final
@@ -504,25 +483,14 @@ public:
      * @param window_size_ number of samples in the window \f$ N \f$, greater than the polynomial degree
      * @param polynomial_degree_ degree of the fitted polynomials \f$ p \f$, the highest order of the derivatives
      * @param evaluation_index_ index \f$ s \f$ of the differentiated sample in its window, counted from the first
-     * sample of the window, in \f$ \{0, \dots, N - 1\} \f$ (e.g. \f$ N - 1 \f$ for windows ending at the sample)
+     * sample of the window, in \f$ \{0, \dots, N - 1\} \f$ (e.g. \f$ N - 1 \f$ for windows ending at the sample), or
+     * none for windows centred on the sample, \f$ s = (N - 1) / 2 \f$ for odd \f$ N \f$
      * @param max_sample_spacing_ largest spacing of consecutive sample points that a window may span, positive and
      * finite, in seconds for time points, or none for windows that span any spacing
      */
     explicit BufferedLocalPolynomialDifferentiator(const std::size_t window_size_,
-            const unsigned int polynomial_degree_, const std::size_t evaluation_index_,
+            const unsigned int polynomial_degree_, const std::optional<std::size_t> evaluation_index_,
             const std::optional<Scalar> max_sample_spacing_);
-
-    /**
-     * @brief Construct an empty buffer that differentiates each sample over the window centred on it,
-     * \f$ s = (N - 1) / 2 \f$, where the window size must be odd so that its centre is a sample.
-     *
-     * @param window_size_ number of samples in the window \f$ N \f$, odd and greater than the polynomial degree
-     * @param polynomial_degree_ degree of the fitted polynomials \f$ p \f$, the highest order of the derivatives
-     * @param max_sample_spacing_ largest spacing of consecutive sample points that a window may span, positive and
-     * finite, in seconds for time points, or none for windows that span any spacing
-     */
-    explicit BufferedLocalPolynomialDifferentiator(const std::size_t window_size_,
-            const unsigned int polynomial_degree_, const std::optional<Scalar> max_sample_spacing_);
 
     /**
      * @brief Add a sample after the buffered samples.
@@ -639,14 +607,6 @@ public:
 
 private:
     /**
-     * @brief Find the index of the buffered sample at exactly a point, from the oldest buffered sample.
-     *
-     * @param sample_point point
-     * @return std::optional<std::size_t> index of the sample, or `std::nullopt` if none is at the point
-     */
-    std::optional<std::size_t> find_index(const SamplePoint& sample_point) const;
-
-    /**
      * @brief Window over which the derivatives of a buffered sample are computed: its configured window, or, if
      * incomplete, that window shifted or shortened to fit the sample's run of samples without a gap.
      *
@@ -669,6 +629,14 @@ private:
      * @return DerivativeWindow
      */
     DerivativeWindow derivative_window(const std::size_t index) const;
+
+    /**
+     * @brief Find the index of the buffered sample at exactly a point, from the oldest buffered sample.
+     *
+     * @param sample_point point
+     * @return std::optional<std::size_t> index of the sample, or `std::nullopt` if none is at the point
+     */
+    std::optional<std::size_t> find_index(const SamplePoint& sample_point) const;
 
     /**
      * @brief Get the number of samples after the differentiated sample in its window, \f$ N - 1 - s \f$, e.g.
