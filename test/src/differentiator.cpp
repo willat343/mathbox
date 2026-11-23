@@ -173,6 +173,14 @@ std::vector<std::chrono::sys_time<std::chrono::nanoseconds>> check_cubic_differe
     return complete_points;
 }
 
+TEST(LocalPolynomialDifferentiator, central_index) {
+    // The central sample of an odd window, the evaluation index when none is given, and none for an even window
+    EXPECT_EQ(math::LocalPolynomialDifferentiator<double>::central_index(1), 0);
+    EXPECT_EQ(math::LocalPolynomialDifferentiator<double>::central_index(11), 5);
+    EXPECT_EQ(math::NonUniformLocalPolynomialDifferentiator<double>(11, 3, 1).evaluation_index(), 5);
+    EXPECT_THROW(math::LocalPolynomialDifferentiator<double>::central_index(10), std::invalid_argument);
+}
+
 TEST(NonUniformLocalPolynomialDifferentiator, finite_differences) {
     // Interpolating polynomials (N = p + 1) give the non-uniform finite difference stencils, e.g. the first and second
     // derivatives at the middle of three samples with spacings h_1 and h_2, [-h_2^2, h_2^2 - h_1^2, h_1^2] / (h_1 h_2
@@ -418,7 +426,7 @@ TEST(UniformLocalPolynomialDifferentiator, savitzky_golay) {
 }
 
 TEST(UniformLocalPolynomialDifferentiator, centred) {
-    const math::UniformLocalPolynomialDifferentiator<double> differentiator(7, 3, 2, 0.01);
+    const math::UniformLocalPolynomialDifferentiator<double> differentiator(7, 3, 2, std::nullopt, 0.01);
     EXPECT_EQ(differentiator.window_size(), 7);
     EXPECT_EQ(differentiator.polynomial_degree(), 3);
     EXPECT_EQ(differentiator.derivative_order(), 2);
@@ -475,7 +483,7 @@ TEST(UniformLocalPolynomialDifferentiator, exact_for_polynomials) {
 
 TEST(UniformLocalPolynomialDifferentiator, vector_samples) {
     // Vector samples are differentiated component-wise
-    const math::UniformLocalPolynomialDifferentiator<double> differentiator(7, 3, 1, 0.01);
+    const math::UniformLocalPolynomialDifferentiator<double> differentiator(7, 3, 1, std::nullopt, 0.01);
     std::vector<Eigen::Vector3d> samples;
     std::vector<double> first_components;
     for (int i = 0; i < 7; ++i) {
@@ -503,10 +511,12 @@ TEST(UniformLocalPolynomialDifferentiator, invalid_arguments) {
     EXPECT_THROW(
             math::UniformLocalPolynomialDifferentiator<double>(5, 2, 1, 2, std::numeric_limits<double>::infinity()),
             std::invalid_argument);
-    EXPECT_THROW(math::UniformLocalPolynomialDifferentiator<double>(0, 0, 0, 0.01), std::invalid_argument);
-    EXPECT_THROW(math::UniformLocalPolynomialDifferentiator<double>(6, 2, 1, 0.01), std::invalid_argument);
+    EXPECT_THROW(math::UniformLocalPolynomialDifferentiator<double>(0, 0, 0, std::nullopt, 0.01),
+            std::invalid_argument);
+    EXPECT_THROW(math::UniformLocalPolynomialDifferentiator<double>(6, 2, 1, std::nullopt, 0.01),
+            std::invalid_argument);
     // Number of samples different from the window size
-    const math::UniformLocalPolynomialDifferentiator<double> differentiator(5, 2, 1, 0.01);
+    const math::UniformLocalPolynomialDifferentiator<double> differentiator(5, 2, 1, std::nullopt, 0.01);
     EXPECT_THROW(differentiator.differentiate(std::vector<double>(4, 0.0)), std::invalid_argument);
     // Integer samples are rejected at compile time, since their weighted sum would be truncated
     static_assert(IsUniformlyDifferentiable<std::vector<double>> && !IsUniformlyDifferentiable<std::vector<int>>);
@@ -514,14 +524,14 @@ TEST(UniformLocalPolynomialDifferentiator, invalid_arguments) {
 
 TEST(BufferedLocalPolynomialDifferentiator, construction) {
     const math::BufferedLocalPolynomialDifferentiator<std::chrono::sys_time<std::chrono::nanoseconds>, Eigen::Vector3d>
-            differentiator(11, 3, 0.0125);
+            differentiator(11, 3, std::nullopt, 0.0125);
     EXPECT_EQ(differentiator.window_size(), 11);
     EXPECT_EQ(differentiator.polynomial_degree(), 3);
     EXPECT_EQ(differentiator.evaluation_index(), 5);
     EXPECT_EQ(differentiator.max_sample_spacing(), 0.0125);
     EXPECT_EQ(differentiator.size(), 0);
-    EXPECT_FALSE(
-            (math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, std::nullopt).max_sample_spacing()));
+    EXPECT_FALSE((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, std::nullopt, std::nullopt)
+                    .max_sample_spacing()));
     // With an evaluation index, e.g. at the end of an even window
     const math::BufferedLocalPolynomialDifferentiator<double, double> last_sample_differentiator(10, 3, 9, 1.0);
     EXPECT_EQ(last_sample_differentiator.window_size(), 10);
@@ -843,7 +853,7 @@ TEST(BufferedLocalPolynomialDifferentiator, short_runs) {
 
 TEST(BufferedLocalPolynomialDifferentiator, scalar_samples) {
     // A quadratic sampled at jittered floating-point points, differentiated by quadratics fitted over 5 samples
-    math::BufferedLocalPolynomialDifferentiator<double, double> differentiator(5, 2, 0.1);
+    math::BufferedLocalPolynomialDifferentiator<double, double> differentiator(5, 2, std::nullopt, 0.1);
     const std::vector<double> points{0.0, 0.051, 0.098, 0.152, 0.2, 0.249, 0.301};
     for (const double point : points) {
         differentiator.add(point, 1.0 + 2.0 * point - 3.0 * point * point);
@@ -861,7 +871,7 @@ TEST(BufferedLocalPolynomialDifferentiator, scalar_samples) {
 TEST(BufferedLocalPolynomialDifferentiator, matrix_samples) {
     // Dynamic-size matrices of quadratics sampled at jittered points, differentiated entry by entry by quadratics
     // fitted over 5 samples, while samples of another number of rows or columns are rejected
-    math::BufferedLocalPolynomialDifferentiator<double, Eigen::MatrixXd> differentiator(5, 2, 0.1);
+    math::BufferedLocalPolynomialDifferentiator<double, Eigen::MatrixXd> differentiator(5, 2, std::nullopt, 0.1);
     const std::vector<double> points{0.0, 0.051, 0.098, 0.152, 0.2};
     for (const double t : points) {
         Eigen::MatrixXd sample(2, 2);
@@ -886,24 +896,28 @@ TEST(BufferedLocalPolynomialDifferentiator, matrix_samples) {
 TEST(BufferedLocalPolynomialDifferentiator, invalid_arguments) {
     // An even centred window, an evaluation index outside the window, a window not greater than the polynomial degree,
     // and a maximum sample spacing that is not positive, infinite or NaN
-    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(10, 3, 1.0)), std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(10, 3, std::nullopt, 1.0)),
+            std::invalid_argument);
     EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(11, 3, 11, 1.0)), std::invalid_argument);
-    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(3, 3, 1.0)), std::invalid_argument);
-    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, 0.0)), std::invalid_argument);
-    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, -1.0)), std::invalid_argument);
-    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2,
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(3, 3, std::nullopt, 1.0)),
+            std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, std::nullopt, 0.0)),
+            std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, std::nullopt, -1.0)),
+            std::invalid_argument);
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, std::nullopt,
                          std::numeric_limits<double>::infinity())),
             std::invalid_argument);
-    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2,
+    EXPECT_THROW((math::BufferedLocalPolynomialDifferentiator<double, double>(5, 2, std::nullopt,
                          std::numeric_limits<double>::quiet_NaN())),
             std::invalid_argument);
     // A NaN or infinite sample point is rejected, even as the first, which would otherwise block the buffer
-    math::BufferedLocalPolynomialDifferentiator<double, double> scalar_differentiator(5, 2, 1.0);
+    math::BufferedLocalPolynomialDifferentiator<double, double> scalar_differentiator(5, 2, std::nullopt, 1.0);
     EXPECT_THROW(scalar_differentiator.add(std::numeric_limits<double>::quiet_NaN(), 0.0), std::invalid_argument);
     EXPECT_THROW(scalar_differentiator.add(std::numeric_limits<double>::infinity(), 0.0), std::invalid_argument);
     EXPECT_EQ(scalar_differentiator.size(), 0);
     // A sample at or before the last sample, or of another size, is rejected without changing the buffer
-    math::BufferedLocalPolynomialDifferentiator<double, Eigen::VectorXd> differentiator(5, 2, 1.0);
+    math::BufferedLocalPolynomialDifferentiator<double, Eigen::VectorXd> differentiator(5, 2, std::nullopt, 1.0);
     differentiator.add(0.0, Eigen::VectorXd::Zero(3));
     EXPECT_THROW(differentiator.add(0.0, Eigen::VectorXd::Zero(3)), std::invalid_argument);
     EXPECT_THROW(differentiator.add(-1.0, Eigen::VectorXd::Zero(3)), std::invalid_argument);
