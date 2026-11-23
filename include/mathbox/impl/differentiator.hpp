@@ -19,6 +19,12 @@
 namespace math {
 
 template<std::floating_point Scalar_>
+inline std::size_t LocalPolynomialDifferentiator<Scalar_>::central_index(const std::size_t window_size) {
+    throw_if(window_size % 2 == 0, "Window size must be odd for its centre to be a sample.", std::invalid_argument);
+    return (window_size - 1) / 2;
+}
+
+template<std::floating_point Scalar_>
 inline unsigned int LocalPolynomialDifferentiator<Scalar_>::derivative_order() const {
     return derivative_order_;
 }
@@ -53,12 +59,6 @@ LocalPolynomialDifferentiator<Scalar_>::LocalPolynomialDifferentiator(const std:
     throw_if(derivative_order() > polynomial_degree(), "Derivative order must not exceed the polynomial degree.",
             std::invalid_argument);
     throw_if(evaluation_index() >= window_size(), "Evaluation index must be within the window.", std::invalid_argument);
-}
-
-template<std::floating_point Scalar_>
-inline std::size_t LocalPolynomialDifferentiator<Scalar_>::central_index(const std::size_t window_size) {
-    throw_if(window_size % 2 == 0, "Window size must be odd for its centre to be a sample.", std::invalid_argument);
-    return (window_size - 1) / 2;
 }
 
 template<std::floating_point Scalar_>

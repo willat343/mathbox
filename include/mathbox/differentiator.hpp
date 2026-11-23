@@ -56,6 +56,15 @@ public:
     using Scalar = Scalar_;
 
     /**
+     * @brief Get the index of the central sample of a window, \f$ s = (N - 1) / 2 \f$, the evaluation index when none
+     * is given, checking that the window size is odd so that its centre is a sample.
+     *
+     * @param window_size number of samples in the window \f$ N \f$, odd
+     * @return std::size_t
+     */
+    static std::size_t central_index(const std::size_t window_size);
+
+    /**
      * @brief Get the order of the derivative \f$ d \f$.
      *
      * @return unsigned int
@@ -92,19 +101,11 @@ protected:
      * @param polynomial_degree_ degree of the fitted polynomial \f$ p \f$, at least the derivative order
      * @param derivative_order_ order of the derivative \f$ d \f$, where order 0 smooths the samples
      * @param evaluation_index_ index \f$ s \f$ of the sample at which the derivative is evaluated, counted from the
-     * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$
+     * first sample of the window, in \f$ \{0, \dots, N - 1\} \f$, or none for the centre of an odd window (see
+     * central_index)
      */
     explicit LocalPolynomialDifferentiator(const std::size_t window_size_, const unsigned int polynomial_degree_,
-            const unsigned int derivative_order_, const std::size_t evaluation_index_);
-
-    /**
-     * @brief Get the index of the central sample of a window, \f$ s = (N - 1) / 2 \f$, for the centred constructors,
-     * checking that the window size is odd so that its centre is a sample.
-     *
-     * @param window_size number of samples in the window \f$ N \f$, odd
-     * @return std::size_t
-     */
-    static std::size_t central_index(const std::size_t window_size);
+            const unsigned int derivative_order_, const std::optional<std::size_t> evaluation_index_);
 
     /**
      * @brief Check that a range has one element for each sample of the window.
