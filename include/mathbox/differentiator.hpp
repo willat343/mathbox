@@ -410,20 +410,33 @@ private:
 
 /**
  * @brief Differentiator of samples that arrive one by one at increasing points, which buffers them and differentiates a
- * buffered sample by a local polynomial fit over the window of samples centred on it (see
- * NonUniformLocalPolynomialDifferentiator).
+ * buffered sample by a local polynomial fit over its window of samples (see NonUniformLocalPolynomialDifferentiator).
  *
- * The samples are added as they arrive, e.g. measurements as they are received, and a buffered sample is
- * differentiated once the samples after it are buffered:
- * 1. A sample is differentiated over its centred window: the \f$ N \f$ samples from \f$ (N - 1) / 2 \f$ before it to
- *    \f$ (N - 1) / 2 \f$ after it, which must all be buffered.
- * 2. With a maximum sample spacing, a window must not span a gap, i.e. two consecutive samples spaced by more than it.
- *    The samples within half a window of a gap, or of the first buffered sample, therefore have no derivative.
- * 3. The window of a sample is final, i.e. its derivatives no longer change as samples are added, once it is buffered,
- *    or once it cannot be, because it would start before the first buffered sample or span a gap. Windows become final
- *    in the order of their samples, so all samples up to a point can be differentiated once the window of the last of
- *    them is final.
- * 4. Samples that no later window needs are removed explicitly, e.g. after differentiating each sample in turn.
+ * The samples are added as they arrive, e.g. measurements as they are received:
+ * 1. Window: a sample is differentiated over its window, the \f$ N \f$ samples from \f$ s \f$ before it to
+ *    \f$ N - 1 - s \f$ after it, with the evaluation index \f$ s \f$. The centred window, \f$ s = (N - 1) / 2 \f$,
+ *    delays the derivatives by half a window, while the window ending at the sample, \f$ s = N - 1 \f$, needs no
+ *    later samples, so it has no delay but noisier derivatives (see LocalPolynomialDifferentiator).
+ *    Unlike the latency, the derivatives have no lag, i.e. no delay of the signal as a causal low-pass filter has:
+ *    the fit is exact for polynomials of degree up to \f$ p \f$, so their derivatives are at the sample itself for any
+ *    \f$ s \f$, and the centred window of uniformly spaced samples has symmetric weights, so no phase shift at any
+ *    frequency, only attenuation of the fast changes. Off centre, the weights are asymmetric, so content faster than
+ *    the window fits well is shifted in phase, and amplified rather than attenuated near an end of the window.
+ * 2. Edges and gaps: with a maximum sample spacing, a window must not span a gap, i.e. two consecutive samples
+ *    spaced by more than it. Where the window of a sample does not fit in its run of buffered samples without a gap,
+ *    i.e. near the first buffered sample, next to a gap, or near the newest sample until later samples arrive, the
+ *    window is shifted to fit the run, and shortened to the run if the run has fewer than \f$ N \f$ samples. The
+ *    derivatives from such a window are incomplete (see `is_derivative_complete()`), so less accurate, as point 1
+ *    describes off centre, and not computable below \f$ p + 1 \f$ samples (see `is_derivative_computable()`).
+ * 3. Final derivatives: the derivatives of a sample are final once adding samples can no longer change them, or its
+ *    window: once it is buffered as the window of \f$ N \f$ samples that the run allows, or once the run is ended
+ *    by a gap (see `is_derivative_final()`). A sample processed as samples arrive should be differentiated once its
+ *    derivatives are final, and they used, or not, depending on whether they are complete. Derivatives become final
+ *    in the order of their samples, so those of all samples up to a point are final once those of the last one are
+ *    (see `is_derivative_final_up_to()`).
+ * 4. Removal: the buffer keeps every added sample until removed, so samples that no later window needs can be removed
+ *    explicitly (see `remove_before()`), e.g. after differentiating each sample in turn, to bound its memory and the
+ *    cost of finding a sample in it.
  *
  * Choosing the maximum sample spacing:
  * - A window that spans missing samples is fitted at the actual sample points, so its derivatives remain valid, but
@@ -433,9 +446,9 @@ private:
  *   points, whose spacings are converted to seconds after their subtraction.
  * - To accept up to \f$ k \f$ missing samples in a row, it lies between \f$ k + 1 \f$ and \f$ k + 2 \f$ sample periods,
  *   e.g. \f$ k + 1.5 \f$ periods so that jitter does not turn \f$ k \f$ missing samples into a gap.
- * - Samples near a gap get no derivative rather than one from a window shifted off centre to avoid the gap, as
- *   LocalPolynomialDifferentiator describes for edges: near an end of a window, the derivatives other than of order
- *   \f$ d = p \f$ are much less accurate than from a centred window across a short gap.
+ * - Samples near a gap get an incomplete window shifted to avoid the gap, whose derivatives other than of order
+ *   \f$ d = p \f$ are much less accurate than from their own window across a short gap (see point 1), so a short
+ *   run of missing samples is better spanned than treated as a gap.
  *
  * Example: the first and second derivatives of 12 values sampled at about 400 Hz, from fitted cubics over 11 samples,
  * with up to 4 missing samples in a row accepted by a maximum spacing of 5.5 sample periods,
@@ -444,15 +457,20 @@ private:
  *         differentiator(11, 3, 0.01375);
  * // For each sample, as it arrives
  * differentiator.add(stamp, values);
- * // For a buffered sample, e.g. that of the next measurement to process
- * if (differentiator.is_window_final(sample_stamp)) {
+ * // For a buffered sample, e.g. that of the next measurement to process, once its derivatives are final
+ * if (differentiator.is_derivative_final(sample_stamp)) {
  *     const std::optional<Eigen::Matrix<double, 12, 1>> derivatives = differentiator.differentiate(sample_stamp, 1);
- *     const std::optional<Eigen::Matrix<double, 12, 1>> second_derivatives =
- *             differentiator.differentiate(sample_stamp, 2);
+ *     // Only from a complete window, since second derivatives from an incomplete one are much less accurate
+ *     std::optional<Eigen::Matrix<double, 12, 1>> second_derivatives;
+ *     if (differentiator.is_derivative_complete(sample_stamp)) {
+ *         second_derivatives = differentiator.differentiate(sample_stamp, 2);
+ *     }
  *     differentiator.remove_before(sample_stamp);
  * }
  * @endcode
- * where the window of a sample is final once the samples up to 5 samples (12.5 ms) after it are buffered.
+ * where the derivatives of a sample are final once the samples up to 5 samples (12.5 ms) after it are buffered. With
+ * `differentiator(11, 3, 10, 0.01375)` instead, each sample is differentiated over the 11 samples up to it, so its
+ * derivatives are final as soon as it is added.
  *
  * @tparam SamplePoint_ type of the sample points, a floating-point scalar or a `std::chrono::time_point`
  * @tparam Sample_ type of the samples, a floating-point scalar or an Eigen matrix of floating-point scalars,
@@ -483,13 +501,28 @@ public:
     /**
      * @brief Construct an empty buffer.
      *
+     * @param window_size_ number of samples in the window \f$ N \f$, greater than the polynomial degree
+     * @param polynomial_degree_ degree of the fitted polynomials \f$ p \f$, the highest order of the derivatives
+     * @param evaluation_index_ index \f$ s \f$ of the differentiated sample in its window, counted from the first
+     * sample of the window, in \f$ \{0, \dots, N - 1\} \f$ (e.g. \f$ N - 1 \f$ for windows ending at the sample)
+     * @param max_sample_spacing_ largest spacing of consecutive sample points that a window may span, positive and
+     * finite, in seconds for time points, or none for windows that span any spacing
+     */
+    explicit BufferedLocalPolynomialDifferentiator(const std::size_t window_size_,
+            const unsigned int polynomial_degree_, const std::size_t evaluation_index_,
+            const std::optional<Scalar> max_sample_spacing_);
+
+    /**
+     * @brief Construct an empty buffer that differentiates each sample over the window centred on it,
+     * \f$ s = (N - 1) / 2 \f$, where the window size must be odd so that its centre is a sample.
+     *
      * @param window_size_ number of samples in the window \f$ N \f$, odd and greater than the polynomial degree
      * @param polynomial_degree_ degree of the fitted polynomials \f$ p \f$, the highest order of the derivatives
      * @param max_sample_spacing_ largest spacing of consecutive sample points that a window may span, positive and
      * finite, in seconds for time points, or none for windows that span any spacing
      */
     explicit BufferedLocalPolynomialDifferentiator(const std::size_t window_size_,
-            const unsigned int polynomial_degree_, const std::optional<Scalar> max_sample_spacing_ = std::nullopt);
+            const unsigned int polynomial_degree_, const std::optional<Scalar> max_sample_spacing_);
 
     /**
      * @brief Add a sample after the buffered samples.
@@ -500,36 +533,68 @@ public:
     void add(const SamplePoint& sample_point, const Sample& sample);
 
     /**
-     * @brief Check if the centred windows of all the buffered samples at or before a point are final (see
-     * `is_window_final()`), e.g. to wait until all samples up to a point can be differentiated.
-     *
-     * @param sample_point point, of a buffered sample or not
-     * @return true if they are, including if no sample at or before the point is buffered
-     * @return false
-     */
-    bool are_windows_final_up_to(const SamplePoint& sample_point) const;
-
-    /**
-     * @brief Differentiate the buffered sample at a point over its centred window,
-     * \f$ y^{(d)}(x_s) = \sum_{i=0}^{N-1} w_i y_i \f$.
+     * @brief Differentiate the buffered sample at a point over its window, \f$ y^{(d)}(x_s) = \sum_i w_i y_i \f$,
+     * where an incomplete window (see `is_derivative_complete()`) is shifted or shortened to fit the run of samples
+     * without a gap that contains the sample.
      *
      * @param sample_point point of a buffered sample
      * @param derivative_order order of the derivative \f$ d \f$, at most the polynomial degree
      * @return std::optional<Sample> derivative at the sample, per second to the power \f$ d \f$ for time points, or
-     * `std::nullopt` if its centred window is not buffered or spans a gap
+     * `std::nullopt` if they are not computable (see `is_derivative_computable()`)
      */
     std::optional<Sample> differentiate(const SamplePoint& sample_point, const unsigned int derivative_order) const;
 
     /**
-     * @brief Check if the centred window of the buffered sample at a point is final, i.e. if its derivatives (see
-     * `differentiate()`) no longer change as samples are added: once its window is buffered, or once it cannot be, with
-     * fewer than half a window of buffered samples before it or with a gap in the part of its window buffered so far.
+     * @brief Get the index \f$ s \f$ of the differentiated sample in its window, counted from the first sample of the
+     * window, i.e. the number of samples before it in its window.
+     *
+     * @return std::size_t
+     */
+    std::size_t evaluation_index() const;
+
+    /**
+     * @brief Check if the derivatives of the buffered sample at a point are complete, i.e. if its window is the window
+     * of \f$ N \f$ samples from \f$ s \f$ before the sample to \f$ N - 1 - s \f$ after it, all buffered and spanning
+     * no gap, so that its derivatives are as accurate as configured. Complete derivatives are final.
      *
      * @param sample_point point of a buffered sample
      * @return true
      * @return false
      */
-    bool is_window_final(const SamplePoint& sample_point) const;
+    bool is_derivative_complete(const SamplePoint& sample_point) const;
+
+    /**
+     * @brief Check if the derivatives of the buffered sample at a point can be computed (see `differentiate()`),
+     * i.e. if its window, shifted or shortened to fit its run of samples without a gap, has more than \f$ p \f$
+     * samples.
+     *
+     * @param sample_point point of a buffered sample
+     * @return true
+     * @return false
+     */
+    bool is_derivative_computable(const SamplePoint& sample_point) const;
+
+    /**
+     * @brief Check if the derivatives of the buffered sample at a point are final, i.e. if they (see
+     * `differentiate()`), and its window, no longer change as samples are added: once the window of \f$ N \f$
+     * samples that its run of samples without a gap allows is buffered, or once the run is ended by a gap. They may be
+     * incomplete (see `is_derivative_complete()`) or not computable (see `is_derivative_computable()`).
+     *
+     * @param sample_point point of a buffered sample
+     * @return true
+     * @return false
+     */
+    bool is_derivative_final(const SamplePoint& sample_point) const;
+
+    /**
+     * @brief Check if the derivatives of all the buffered samples at or before a point are final (see
+     * `is_derivative_final()`), e.g. to wait until all samples up to a point can be differentiated.
+     *
+     * @param sample_point point, of a buffered sample or not
+     * @return true if they are, including if no sample at or before the point is buffered
+     * @return false
+     */
+    bool is_derivative_final_up_to(const SamplePoint& sample_point) const;
 
     /**
      * @brief Get the largest spacing of consecutive sample points that a window may span, if any, in seconds for time
@@ -548,10 +613,10 @@ public:
 
     /**
      * @brief Remove the buffered samples before a point that the windows of the samples at or after it do not need,
-     * i.e. all but the last half window of them.
+     * i.e. all but the last \f$ N - 1 \f$ of them, which a window shifted to fit its run may need.
      *
      * The samples before the point should then no longer be queried: the removed ones throw, and the windows of the
-     * kept ones lack samples, so they are final without derivatives, as if near the first buffered sample.
+     * kept ones lack samples, so they are differentiated as if near the first buffered sample.
      *
      * @param sample_point point, e.g. that of the last differentiated sample when the samples are differentiated in
      * increasing order
@@ -577,17 +642,41 @@ private:
      * @brief Find the index of the buffered sample at exactly a point, from the oldest buffered sample.
      *
      * @param sample_point point
-     * @return std::size_t index of the sample, or the number of buffered samples if none is at the point
+     * @return std::optional<std::size_t> index of the sample, or `std::nullopt` if none is at the point
      */
-    std::size_t find_index(const SamplePoint& sample_point) const;
+    std::optional<std::size_t> find_index(const SamplePoint& sample_point) const;
 
     /**
-     * @brief Get the number of samples on each side of the centre of a window, \f$ (N - 1) / 2 \f$, i.e. the evaluation
-     * index of the centred differentiators.
+     * @brief Window over which the derivatives of a buffered sample are computed: its configured window, or, if
+     * incomplete, that window shifted or shortened to fit the sample's run of samples without a gap.
+     *
+     */
+    struct DerivativeWindow {
+        // Index of the first sample of the window
+        std::size_t first;
+        // Index after the last sample of the window
+        std::size_t end;
+        // Whether the window, and so the derivatives, no longer change as samples are added
+        bool final;
+    };
+
+    /**
+     * @brief Get the derivative window of the buffered sample at an index (see DerivativeWindow): its configured window
+     * if it is buffered and spans no gap, and otherwise the window of at most \f$ N \f$ samples nearest to it within
+     * its run of samples without a gap (see point 2 of the class description).
+     *
+     * @param index index of the sample
+     * @return DerivativeWindow
+     */
+    DerivativeWindow derivative_window(const std::size_t index) const;
+
+    /**
+     * @brief Get the number of samples after the differentiated sample in its window, \f$ N - 1 - s \f$, e.g.
+     * \f$ (N - 1) / 2 \f$, half a window, for the centred window.
      *
      * @return std::size_t
      */
-    std::size_t half_window_size() const;
+    std::size_t num_samples_after() const;
 
     /**
      * @brief Check if the buffered samples with indices from `first` to `last - 1` span a gap, i.e. if there is a
@@ -600,7 +689,7 @@ private:
      */
     bool spans_gap(const std::size_t first, const std::size_t last) const;
 
-    // Centred differentiators, indexed by their derivative order, from 0 to the polynomial degree
+    // Differentiators at the evaluation index, indexed by their derivative order, from 0 to the polynomial degree
     std::vector<NonUniformLocalPolynomialDifferentiator<Scalar>> differentiators_;
     // Largest spacing of consecutive sample points that a window may span, if any
     std::optional<Scalar> max_sample_spacing_;
